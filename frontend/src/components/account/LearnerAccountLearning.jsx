@@ -20,7 +20,7 @@ const LEARNING_FILTERS = [
   },
   {
     value: "assigned",
-    label: "Ожидают начала",
+    label: "Не начаты",
   },
   {
     value: "completed",
@@ -39,7 +39,7 @@ function countWhere(items, predicate) {
 function getStatusLabel(status) {
   switch (status) {
     case "assigned":
-      return "Ожидает начала";
+      return "Не начато";
 
     case "active":
       return "В процессе";
@@ -86,6 +86,9 @@ function getCourseActionLabel(status) {
 
     case "completed":
       return "Посмотреть программу";
+
+    case "cancelled":
+      return "";
 
     default:
       return "Открыть программу";
@@ -335,42 +338,47 @@ function LearningCourseCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 p-4 md:px-6">
-        <button
-          type="button"
-          onClick={handlePrimaryAction}
-          disabled={!course.enrollment_id}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {course.status === "completed" ? (
-            <CheckCircle2
+        {actionLabel && (
+          <button
+            type="button"
+            onClick={handlePrimaryAction}
+            disabled={!course.enrollment_id}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {course.status === "completed" ? (
+              <CheckCircle2
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            ) : (
+              <PlayCircle
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            )}
+
+            {actionLabel}
+          </button>
+        )}
+
+        {course.status !== "assigned"
+        && course.status !== "cancelled" && (
+          <button
+            type="button"
+            onClick={() => onLoadDetail?.(course)}
+            disabled={detailLoading}
+            className="inline-flex items-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {detail
+              ? "Обновить прогресс"
+              : "Показать прогресс"}
+
+            <ChevronRight
               className="h-4 w-4"
               aria-hidden="true"
             />
-          ) : (
-            <PlayCircle
-              className="h-4 w-4"
-              aria-hidden="true"
-            />
-          )}
-
-          {actionLabel}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onLoadDetail?.(course)}
-          disabled={detailLoading}
-          className="inline-flex items-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {detail
-            ? "Обновить прогресс"
-            : "Показать прогресс"}
-
-          <ChevronRight
-            className="h-4 w-4"
-            aria-hidden="true"
-          />
-        </button>
+          </button>
+        )}
 
         {course.course_slug && onOpenCourse && (
           <button
@@ -455,7 +463,7 @@ export function LearnerAccountLearning({
             </h1>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-              Здесь собраны назначенные программы, их статус и текущий прогресс обучения.
+              Здесь собраны ваши программы обучения, их статус и текущий прогресс.
             </p>
           </div>
         </div>
@@ -489,7 +497,7 @@ export function LearnerAccountLearning({
 
         <LearningStat
           icon={CircleAlert}
-          label="Ожидают начала"
+          label="Не начаты"
           value={loading ? "—" : assignedCount}
           tone="amber"
         />
@@ -544,11 +552,11 @@ export function LearnerAccountLearning({
           </div>
 
           <h2 className="mt-4 text-xl font-black text-slate-950">
-            Пока нет назначенных программ
+            Пока нет программ обучения
           </h2>
 
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-            После назначения программы она появится здесь. Также можно посмотреть доступные программы в каталоге.
+            После записи или назначения программа появится здесь. Доступные программы можно выбрать в каталоге.
           </p>
 
           {onOpenCatalog && (

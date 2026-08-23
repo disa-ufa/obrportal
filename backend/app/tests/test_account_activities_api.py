@@ -77,6 +77,21 @@ def activity_by_type(
     )
 
 
+def start_learner_course(token: str, enrollment_id: str) -> dict:
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
+    return started
+
+
 def test_account_activities_aggregate_quiz_and_assignment_state() -> None:
     admin_token = login(
         ADMIN_EMAIL,
@@ -204,6 +219,8 @@ def test_account_activities_aggregate_quiz_and_assignment_state() -> None:
         assert assignment_item["status"] == "not_started"
         assert assignment_item["requires_action"] is True
         assert "content_json" not in assignment_item
+
+        start_learner_course(learner_token, enrollment_id)
 
         # -----------------------------------------------
         # Failed quiz attempt -> in_progress

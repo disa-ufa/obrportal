@@ -90,6 +90,32 @@ def test_completed_start_error_contract_is_preserved() -> None:
     )
 
 
+def test_assigned_learning_requires_explicit_start_contract() -> None:
+    text = read_account_api()
+    guard = get_mutation_guard_body(text)
+
+    assert "allow_assigned: bool = False" in guard
+    assert (
+        'if enrollment.status == "assigned" and not allow_assigned:'
+        in guard
+    )
+    assert '"code": "course_not_started"' in guard
+    assert (
+        '"message": "Start course before changing learning progress"'
+        in guard
+    )
+
+    assert (
+        text.count(
+            'if enrollment.status == "assigned":\n'
+            '        enrollment.status = "active"'
+        )
+        == 0
+    )
+
+    assert text.count("allow_assigned=True") == 1
+    assert text.count('    enrollment.status = "active"') == 1
+
 def test_learning_reads_are_not_guarded() -> None:
     text = read_account_api()
 

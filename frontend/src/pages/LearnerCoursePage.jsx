@@ -4,7 +4,6 @@ import {
   BookOpen,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Circle,
   LockKeyhole,
@@ -29,7 +28,7 @@ import { formatApiError } from "../utils/apiErrors";
 function getStatusLabel(status) {
   switch (status) {
     case "assigned":
-      return "Ожидает начала";
+      return "Не начато";
     case "active":
       return "В процессе";
     case "completed":
@@ -236,6 +235,11 @@ export function LearnerCoursePage() {
   ] = useState("");
 
   const readOnly = detail?.status !== "active";
+  const isOverviewRoute = !lessonId;
+  const lessonAccessBlocked = Boolean(
+    lessonId
+    && detail?.status === "assigned"
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -292,26 +296,20 @@ export function LearnerCoursePage() {
   );
 
   const selectedLesson = useMemo(() => {
-    if (!allLessons.length) {
+    if (
+      !lessonId
+      || detail?.status === "assigned"
+      || !allLessons.length
+    ) {
       return null;
-    }
-
-    if (lessonId) {
-      return (
-        allLessons.find(
-          (lesson) => lesson.id === lessonId
-        ) || null
-      );
     }
 
     return (
       allLessons.find(
-        (lesson) => !lesson.is_completed
-      ) ||
-      allLessons[0] ||
-      null
+        (lesson) => lesson.id === lessonId
+      ) || null
     );
-  }, [allLessons, lessonId]);
+  }, [allLessons, detail?.status, lessonId]);
 
   const nextIncompleteLesson = useMemo(
     () =>
@@ -352,9 +350,10 @@ export function LearnerCoursePage() {
       : 0;
 
   const requestedLessonMissing = Boolean(
-    lessonId &&
-    detail &&
-    !selectedLesson
+    lessonId
+    && detail
+    && detail.status !== "assigned"
+    && !selectedLesson
   );
 
   const effectiveProgress = clampPercent(
@@ -415,7 +414,11 @@ export function LearnerCoursePage() {
 
 
   function handleOpenLesson(nextLessonId) {
-    if (!enrollmentId || !nextLessonId) {
+    if (
+      !enrollmentId
+      || !nextLessonId
+      || detail?.status === "assigned"
+    ) {
       return;
     }
 
@@ -443,7 +446,23 @@ export function LearnerCoursePage() {
         enrollmentId
       );
 
+      const lessons =
+        flattenCourseLessons(response);
+
+      const firstLesson =
+        lessons.find(
+          (lesson) => !lesson.is_completed
+        )
+        || lessons[0]
+        || null;
+
       setDetail(response);
+
+      if (firstLesson?.id) {
+        navigate(
+          `/account/courses/${enrollmentId}/lessons/${firstLesson.id}`
+        );
+      }
     } catch (err) {
       setError(
         formatApiError(
@@ -682,7 +701,7 @@ export function LearnerCoursePage() {
             ) : null}
           </div>
 
-          {detail.status === "assigned" ? (
+          {isOverviewRoute && detail.status === "assigned" ? (
             <button
               type="button"
               onClick={handleStartCourse}
@@ -699,7 +718,11 @@ export function LearnerCoursePage() {
 
         <div
             data-testid="learner-course-progress-summary"
-            className="mt-6 border-t border-slate-100 pt-5"
+            className={
+              isOverviewRoute
+                ? "mt-6 border-t border-slate-100 pt-5"
+                : "hidden"
+            }
         >
           <div
             data-testid="learner-course-progress-card"
@@ -723,12 +746,20 @@ export function LearnerCoursePage() {
                 className={
                   detail?.status === "completed"
                     ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-200"
-                    : "rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
+                    : detail?.status === "assigned"
+                      ? "rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200"
+                      : detail?.status === "cancelled"
+                        ? "rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
+                        : "rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
                 }
               >
                 {detail?.status === "completed"
                   ? "Курс завершён"
-                  : "В процессе"}
+                  : detail?.status === "assigned"
+                    ? "Не начато"
+                    : detail?.status === "cancelled"
+                      ? "Обучение отменено"
+                      : "В процессе"}
               </div>
             </div>
 
@@ -780,7 +811,9 @@ export function LearnerCoursePage() {
             )}
           </div>
 
-          {nextIncompleteLesson ? (
+          {isOverviewRoute
+          && detail.status === "active"
+          && nextIncompleteLesson ? (
             <div
                 data-testid="learner-course-next-step"
                 className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -807,7 +840,7 @@ export function LearnerCoursePage() {
         </div>
       </header>
 
-      {detail.status === "active" ? (
+      {isOverviewRoute && detail.status === "active" ? (
         <div
           data-testid="learner-course-course-completion"
           className={courseCompletionEligible ? "mt-4 rounded-2xl bg-green-50 p-5 ring-1 ring-green-200" : "mt-4 rounded-2xl bg-white p-5 ring-1 ring-slate-200"}
@@ -984,18 +1017,23 @@ export function LearnerCoursePage() {
                         key={lesson.id}
                         type="button"
                         data-testid={active ? "learner-course-active-lesson" : lesson.is_completed ? "learner-course-completed-lesson" : "learner-course-sidebar-lesson"}
+                        disabled={detail.status === "assigned"}
                         onClick={() =>
                           handleOpenLesson(lesson.id)
                         }
                         className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left ${
-                          active
-                            ? "bg-blue-50 text-blue-950 ring-1 ring-blue-200"
-                            : lesson.is_completed
-                              ? "bg-green-50 text-green-900 ring-1 ring-green-100"
-                              : "text-slate-700 hover:bg-slate-50"
+                          detail.status === "assigned"
+                            ? "cursor-not-allowed bg-slate-50 text-slate-400"
+                            : active
+                              ? "bg-blue-50 text-blue-950 ring-1 ring-blue-200"
+                              : lesson.is_completed
+                                ? "bg-green-50 text-green-900 ring-1 ring-green-100"
+                                : "text-slate-700 hover:bg-slate-50"
                         }`}
                       >
-                        {lesson.is_completed ? (
+                        {detail.status === "assigned" ? (
+                          <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                        ) : lesson.is_completed ? (
                           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                         ) : (
                           <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
@@ -1037,7 +1075,35 @@ export function LearnerCoursePage() {
         </aside>
 
         <main>
-          {requestedLessonMissing ? (
+          {lessonAccessBlocked ? (
+            <div
+              data-testid="learner-course-start-required"
+              className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
+            >
+              <LockKeyhole className="h-8 w-8 text-amber-500" />
+
+              <h2 className="mt-4 text-xl font-black text-slate-950">
+                Сначала начните обучение
+              </h2>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                Материалы уроков станут доступны после начала обучения по программе.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleStartCourse}
+                disabled={actionLoading}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <PlayCircle className="h-4 w-4" />
+
+                {actionLoading
+                  ? "Начинаем..."
+                  : "Начать обучение"}
+              </button>
+            </div>
+          ) : requestedLessonMissing ? (
             <div
               data-testid="learner-course-lesson-not-found"
               className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
@@ -1079,37 +1145,6 @@ export function LearnerCoursePage() {
 
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    data-testid="learner-course-previous-lesson-button"
-                    onClick={() =>
-                      previousLesson
-                        ? handleOpenLesson(previousLesson.id)
-                        : null
-                    }
-                    disabled={!previousLesson}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Предыдущий</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    data-testid="learner-course-toolbar-next-lesson-button"
-                    onClick={() =>
-                      nextLesson
-                        ? handleOpenLesson(nextLesson.id)
-                        : null
-                    }
-                    disabled={!nextLesson}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <span className="hidden sm:inline">Следующий</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1362,7 +1397,7 @@ export function LearnerCoursePage() {
                     data-testid="learner-course-lesson-completion-read-only"
                     className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200"
                   >
-                    \u0418\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430 \u0434\u043b\u044f \u044d\u0442\u043e\u0439 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e.
+                    Изменение прогресса для этой программы недоступно.
                   </div>
                 )}
 
@@ -1424,6 +1459,35 @@ export function LearnerCoursePage() {
               </nav>
 
             </article>
+          ) : isOverviewRoute ? (
+            <div
+              data-testid="learner-course-overview-state"
+              className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
+            >
+              <BookOpen className="h-8 w-8 text-blue-500" />
+
+              <h2 className="mt-4 text-xl font-black text-slate-950">
+                Программа обучения
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                {detail.status === "assigned"
+                  ? "Курс готов к началу. Ознакомьтесь с программой и нажмите «Начать обучение»."
+                  : detail.status === "active"
+                    ? "Продолжите обучение с первого незавершённого урока."
+                    : detail.status === "completed"
+                      ? "Обучение завершено. Материалы программы доступны для просмотра."
+                      : detail.status === "cancelled"
+                        ? "Обучение по этой программе отменено."
+                        : "Выберите урок в содержании программы."}
+              </p>
+
+              {!allLessons.length ? (
+                <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
+                  В программе пока нет активных уроков.
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
               <BookOpen className="mx-auto h-8 w-8 text-slate-300" />

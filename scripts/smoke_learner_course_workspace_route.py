@@ -71,12 +71,120 @@ def test_workspace_supports_enrollment_and_lesson_deep_links() -> None:
     assert "enrollmentId" in page
     assert "lessonId" in page
 
+    assert "const isOverviewRoute = !lessonId;" in page
+
+    assert (
+        "const lessonAccessBlocked = Boolean("
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-overview-state"'
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-start-required"'
+        in page
+    )
+
+    selected_start = page.index(
+        "  const selectedLesson = useMemo(() => {"
+    )
+
+    selected_end = page.index(
+        "  const nextIncompleteLesson = useMemo(",
+        selected_start,
+    )
+
+    selected_source = page[
+        selected_start:selected_end
+    ]
+
+    assert "!lessonId" in selected_source
+
+    assert (
+        'detail?.status === "assigned"'
+        in selected_source
+    )
+
+    assert "allLessons[0]" not in selected_source
+
+    assert (
+        "(lesson) => !lesson.is_completed"
+        not in selected_source
+    )
+
     assert (
         "`/account/courses/${enrollmentId}/lessons/${nextLessonId}`"
         in page
     )
 
+    assert (
+        "`/account/courses/${enrollmentId}/lessons/${firstLesson.id}`"
+        in page
+    )
+
+    assert "firstLesson?.id" in page
     assert "(lesson) => !lesson.is_completed" in page
+
+    sidebar_index = page.index(
+        'data-testid={active ? "learner-course-active-lesson"'
+    )
+
+    sidebar_end = page.index(
+        "                      </button>",
+        sidebar_index,
+    )
+
+    sidebar_source = page[
+        sidebar_index:sidebar_end
+    ]
+
+    assert (
+        'disabled={detail.status === "assigned"}'
+        in sidebar_source
+    )
+
+    assert (
+        'detail.status === "assigned"'
+        in sidebar_source
+    )
+
+    assert (
+        "cursor-not-allowed bg-slate-50 text-slate-400"
+        in sidebar_source
+    )
+
+    assert "LockKeyhole" in sidebar_source
+
+    assert (
+        page.count(
+            'data-testid="learner-course-toolbar-next-lesson-button"'
+        )
+        == 0
+    )
+
+    assert (
+        page.count(
+            'data-testid="learner-course-previous-lesson-button"'
+        )
+        == 0
+    )
+
+    assert (
+        page.count(
+            'data-testid="learner-course-lesson-bottom-navigation"'
+        )
+        == 1
+    )
+
+    assert (
+        page.count(
+            'data-testid="learner-course-next-lesson-button"'
+        )
+        == 1
+    )
 
 
 def test_workspace_uses_effective_progress_and_statuses() -> None:
@@ -90,6 +198,23 @@ def test_workspace_uses_effective_progress_and_statuses() -> None:
     assert 'detail.status === "completed"' in page
     assert 'detail.status === "cancelled"' in page
 
+    assert (
+        'return "Не начато";'
+        in page
+    )
+
+    assert (
+        'isOverviewRoute && detail.status === "assigned"'
+        in page
+    )
+
+    assert (
+        'isOverviewRoute\n'
+        '          && detail.status === "active"\n'
+        '          && nextIncompleteLesson'
+        in page
+    )
+
 
 def test_workspace_has_stable_ui_markers() -> None:
     page = read(PAGE)
@@ -102,6 +227,8 @@ def test_workspace_has_stable_ui_markers() -> None:
         '"learner-course-completed-lesson"',
         '"learner-course-sidebar-lesson"',
         'data-testid="learner-course-lesson-not-found"',
+        'data-testid="learner-course-overview-state"',
+        'data-testid="learner-course-start-required"',
     ):
         assert marker in page
 
@@ -165,6 +292,67 @@ def test_dashboard_actions_open_authenticated_workspace() -> None:
 
     assert "onOpenCourse" not in dashboard
 
+    assert (
+        'currentCourse?.status === "active"'
+        in dashboard
+    )
+
+    assert (
+        'Можно начать '
+        'обучение по '
+        'программе'
+        in dashboard
+    )
+
+    assert (
+        'label="Не начаты"'
+        in dashboard
+    )
+
+    assert (
+        '? "Начать обучение"'
+        in dashboard
+    )
+
+    assert (
+        'currentCourse?.status === "assigned" ? ('
+        in dashboard
+    )
+
+    assert (
+        'currentCourse.status !== "cancelled" && ('
+        in dashboard
+    )
+
+    assert (
+        'currentCourse?.status === "cancelled" ? ('
+        in dashboard
+    )
+
+    assert (
+        '["active", "completed"].includes('
+        in dashboard
+    )
+
+    assert (
+        '{detail\n'
+        '                  && ["active", "completed"].includes(\n'
+        '                    currentCourse.status\n'
+        '                  ) && ('
+        in dashboard
+    )
+
+    assert (
+        'currentCourse.status === "completed"'
+        in dashboard
+    )
+
+    assert "nextLesson?.title ||" in dashboard
+
+    assert "Отменена" in dashboard
+    assert "Вам назначена программа" not in dashboard
+    assert 'label="Ожидают начала"' not in dashboard
+
 
 def test_learning_primary_action_opens_workspace_and_public_info_remains() -> None:
     learning = read(
@@ -191,6 +379,57 @@ def test_learning_primary_action_opens_workspace_and_public_info_remains() -> No
     )
 
     assert 'case "cancelled":' in learning
+
+    assert (
+        'return "Не начато";'
+        in learning
+    )
+
+    assert (
+        'label: "Не начаты"'
+        in learning
+    )
+
+    assert (
+        'course.status !== "assigned"'
+        in learning
+    )
+
+    assert (
+        'course.status !== "cancelled"'
+        in learning
+    )
+
+    assert "{actionLabel && (" in learning
+
+    cancelled_index = learning.index(
+        'case "cancelled":',
+        learning.index(
+            "function getCourseActionLabel(status)"
+        ),
+    )
+
+    default_index = learning.index(
+        "    default:",
+        cancelled_index,
+    )
+
+    assert (
+        'return "";'
+        in learning[
+            cancelled_index:default_index
+        ]
+    )
+
+    assert (
+        'Здесь собраны '
+        'ваши программы '
+        'обучения'
+        in learning
+    )
+
+    assert "Ожидает начала" not in learning
+    assert "Ожидают начала" not in learning
 
 
 def test_assignment_action_uses_authenticated_enrollment_workspace() -> None:
@@ -716,6 +955,26 @@ def test_workspace_completion_has_completed_and_read_only_states() -> None:
     assert "selectedLesson.is_completed" in page
     assert 'detail?.status !== "active"' in page
 
+    assert (
+        "Изменение "
+        "прогресса "
+        "для этой "
+        "программы "
+        "недоступно."
+        in page
+    )
+
+    escaped_prefix = (
+        chr(92)
+        + "u0418"
+        + chr(92)
+        + "u0437"
+        + chr(92)
+        + "u043c"
+    )
+
+    assert escaped_prefix not in page
+
 
 # STEP_7H_B2_B3_MEDIA
 def test_workspace_routes_presentation_through_content_renderer() -> None:
@@ -865,7 +1124,7 @@ def test_course_completion_uses_existing_account_api_active_only() -> None:
     )
 
     assert (
-        'detail.status === "active" ? ('
+        'isOverviewRoute && detail.status === "active" ? ('
         in page
     )
 
