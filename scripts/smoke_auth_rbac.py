@@ -171,7 +171,7 @@ def request_multipart(
     fields: dict[str, str] | None = None,
     files: dict[str, tuple[str, str, bytes]] | None = None,
     token: str | None = None,
-) -> tuple[int, dict | list | None]:
+) -> tuple[int, dict | list | None, dict]:
     boundary = f"----obrportal-smoke-{uuid4().hex}"
     headers = {
         "Accept": "application/json",
@@ -214,11 +214,11 @@ def request_multipart(
         with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
             raw = response.read().decode("utf-8")
             payload = json.loads(raw) if raw else None
-            return response.status, payload
+            return response.status, payload, dict(response.headers)
     except HTTPError as error:
         raw = error.read().decode("utf-8")
         payload = json.loads(raw) if raw else None
-        return error.code, payload
+        return error.code, payload, dict(error.headers)
 
 
 def request_binary(
@@ -319,7 +319,7 @@ def main() -> int:
         ";bad-email;;Smoke import course\n"
     ).encode("utf-8-sig")
 
-    status, anonymous_learner_import = request_multipart(
+    status, anonymous_learner_import, _ = request_multipart(
         "POST",
         "/api/v1/admin/learner-imports",
         files={
@@ -330,7 +330,7 @@ def main() -> int:
     assert isinstance(anonymous_learner_import, dict)
     checks.append("admin learner import requires auth")
 
-    status, learner_import = request_multipart(
+    status, learner_import, learner_import_headers = request_multipart(
         "POST",
         "/api/v1/admin/learner-imports",
         fields={
@@ -341,26 +341,42 @@ def main() -> int:
         },
         token=admin_token,
     )
-    assert_status(status, 201, "admin learner import upload")
+    import_reused = status == 200
+
+    if import_reused:
+        normalized_headers = {
+            key.lower(): value
+            for key, value in learner_import_headers.items()
+        }
+        assert normalized_headers.get("x-import-reused") == "true"
+    else:
+        assert_status(status, 201, "admin learner import upload")
     assert isinstance(learner_import, dict)
     assert learner_import["id"]
     assert learner_import["import_type"] == "learner_roster"
     assert learner_import["source_filename"] == "smoke-learners.csv"
     assert learner_import["source_content_type"] == "text/csv"
-    assert learner_import["status"] == "parsed"
+    if import_reused:
+        assert learner_import["status"] == "applied"
+    else:
+        assert learner_import["status"] == "parsed"
     assert learner_import["total_rows"] == 2
     assert learner_import["valid_rows"] == 1
     assert learner_import["invalid_rows"] == 1
-    assert learner_import["created_users_count"] == 0
-    assert learner_import["created_profiles_count"] == 0
-    assert learner_import["created_enrollments_count"] == 0
+    if not import_reused:
+        assert learner_import["created_users_count"] == 0
+        assert learner_import["created_profiles_count"] == 0
+        assert learner_import["created_enrollments_count"] == 0
     assert learner_import["uploaded_by_user_id"] == me["id"]
     assert learner_import["notes"] == "Smoke learner import"
     assert isinstance(learner_import["rows"], list)
     assert len(learner_import["rows"]) == 2
 
     learner_import_rows = sorted(learner_import["rows"], key=lambda item: item["row_number"])
-    assert learner_import_rows[0]["status"] == "valid"
+    if import_reused:
+        assert learner_import_rows[0]["status"] == "applied"
+    else:
+        assert learner_import_rows[0]["status"] == "valid"
     assert learner_import_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
     assert learner_import_rows[0]["normalized_data_json"]["phone"] == "+79171234567"
     assert learner_import_rows[0]["validation_errors_json"] == []
@@ -369,9 +385,11 @@ def main() -> int:
     assert "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 email." in learner_import_rows[1]["validation_errors_json"]
     checks.append("admin learner import upload ok")
 
+    import_status_filter = "applied" if import_reused else "parsed"
+
     status, learner_imports_list = request_json(
         "GET",
-        "/api/v1/admin/learner-imports?status=parsed&q=smoke-learners.csv&limit=20",
+        f"/api/v1/admin/learner-imports?status={import_status_filter}&q=smoke-learners.csv&limit=20",
         token=admin_token,
     )
     assert_status(status, 200, "admin learner imports list")
@@ -390,7 +408,10 @@ def main() -> int:
     assert learner_import_item["import_type"] == "learner_roster"
     assert learner_import_item["source_filename"] == "smoke-learners.csv"
     assert learner_import_item["source_content_type"] == "text/csv"
-    assert learner_import_item["status"] == "parsed"
+    if import_reused:
+        assert learner_import_item["status"] == "applied"
+    else:
+        assert learner_import_item["status"] == "parsed"
     assert learner_import_item["total_rows"] == 2
     assert learner_import_item["valid_rows"] == 1
     assert learner_import_item["invalid_rows"] == 1
@@ -407,7 +428,10 @@ def main() -> int:
     assert learner_import_detail["id"] == learner_import["id"]
     assert learner_import_detail["import_type"] == "learner_roster"
     assert learner_import_detail["source_filename"] == "smoke-learners.csv"
-    assert learner_import_detail["status"] == "parsed"
+    if import_reused:
+        assert learner_import_detail["status"] == "applied"
+    else:
+        assert learner_import_detail["status"] == "parsed"
     assert learner_import_detail["total_rows"] == 2
     assert learner_import_detail["valid_rows"] == 1
     assert learner_import_detail["invalid_rows"] == 1
@@ -418,7 +442,10 @@ def main() -> int:
         learner_import_detail["rows"],
         key=lambda item: item["row_number"],
     )
-    assert learner_import_detail_rows[0]["status"] == "valid"
+    if import_reused:
+        assert learner_import_detail_rows[0]["status"] == "applied"
+    else:
+        assert learner_import_detail_rows[0]["status"] == "valid"
     assert learner_import_detail_rows[0]["normalized_data_json"]["email"] == "smoke-import-learner@mail.ru"
     assert learner_import_detail_rows[1]["status"] == "invalid"
     assert "\u0424\u0418\u041e \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e." in learner_import_detail_rows[1]["validation_errors_json"]
@@ -434,12 +461,16 @@ def main() -> int:
     assert isinstance(missing_learner_import_detail, dict)
     checks.append("admin missing learner import detail returns 404")
 
-    status, applied_learner_import = request_json(
-        "POST",
-        f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
-        token=admin_token,
-    )
-    assert_status(status, 200, "admin learner import apply")
+    if import_reused:
+        applied_learner_import = learner_import_detail
+    else:
+        status, applied_learner_import = request_json(
+            "POST",
+            f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
+            token=admin_token,
+        )
+        assert_status(status, 200, "admin learner import apply")
+
     assert isinstance(applied_learner_import, dict)
     assert applied_learner_import["id"] == learner_import["id"]
     assert applied_learner_import["status"] == "applied"
@@ -2344,6 +2375,44 @@ def main() -> int:
     assert updated_learning_group["is_active"] is False
     checks.append("admin learning group update ok")
 
+    status, group_scope_roles = request_json(
+        "GET",
+        "/api/v1/admin/roles",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin roles for learning group member scope")
+    assert isinstance(group_scope_roles, list)
+
+    group_learner_role = next(
+        (
+            item
+            for item in group_scope_roles
+            if isinstance(item, dict) and item.get("code") == "learner_fl"
+        ),
+        None,
+    )
+    if group_learner_role is None:
+        raise AssertionError("learner_fl role not found for learning group member scope")
+
+    status, scoped_group_learner_user = request_json(
+        "POST",
+        f"/api/v1/admin/users/{learner_user_id}/roles",
+        {
+            "role_id": str(group_learner_role["id"]),
+            "organization_id": created_organization_id,
+        },
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner organization scope assign for group")
+    assert isinstance(scoped_group_learner_user, dict)
+    assert scoped_group_learner_user["id"] == learner_user_id
+
+    scoped_group_learner_role_id = find_user_role_id(
+        scoped_group_learner_user,
+        role_code="learner_fl",
+        organization_id=created_organization_id,
+    )
+    checks.append("admin learner organization scope assign for group ok")
 
     status, initial_group_members = request_json(
         "GET",
@@ -2684,6 +2753,22 @@ def main() -> int:
     assert isinstance(missing_group_member_delete, dict)
     checks.append("admin learning group member delete 404 ok")
 
+    status, scoped_group_learner_role_removed = request_json(
+        "DELETE",
+        (
+            f"/api/v1/admin/users/{learner_user_id}/roles/"
+            f"{scoped_group_learner_role_id}"
+        ),
+        token=admin_token,
+    )
+    assert_status(
+        status,
+        200,
+        "admin learner organization scope cleanup after group",
+    )
+    assert isinstance(scoped_group_learner_role_removed, dict)
+    assert scoped_group_learner_role_removed["id"] == learner_user_id
+    checks.append("admin learner organization scope cleanup after group ok")
 
     status, duplicate_learning_group = request_json(
         "POST",
@@ -3259,16 +3344,50 @@ def main() -> int:
     assert self_enroll_detail_lesson["id"] == self_enroll_lesson_id
     assert self_enroll_detail_lesson["is_required"] is True
     assert self_enroll_detail_lesson["is_completed"] is False
+    assert learner_course_detail["status"] == "assigned"
+    assert learner_course_detail["started_at"] is None
+    assert learner_course_detail["completed_at"] is None
     checks.append("learner account course detail includes required lesson")
+
+    status, blocked_before_start = request_json(
+        "POST",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
+        token=learner_token,
+    )
+    assert_status(status, 409, "learner course completion before explicit start")
+    assert isinstance(blocked_before_start, dict)
+    assert isinstance(blocked_before_start["detail"], dict)
+    assert blocked_before_start["detail"]["code"] == "course_not_started"
+    assert (
+        blocked_before_start["detail"]["message"]
+        == "Start course before changing learning progress"
+    )
+    checks.append("learner course mutation before explicit start returns 409")
+
+    status, started_self_enrollment = request_json(
+        "POST",
+        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/start",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner explicitly starts self enrolled course")
+    assert isinstance(started_self_enrollment, dict)
+    assert started_self_enrollment["enrollment_id"] == self_enrollment["enrollment_id"]
+    assert started_self_enrollment["status"] == "active"
+    assert started_self_enrollment["started_at"] is not None
+    assert started_self_enrollment["completed_at"] is None
+    checks.append("learner explicit course start ok")
 
     status, blocked_self_completion = request_json(
         "POST",
         "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
         token=learner_token,
     )
-    assert_status(status, 400, "learner complete self enrolled course before required lesson")
+    assert_status(status, 400, "learner complete active course before required lesson")
     assert isinstance(blocked_self_completion, dict)
-    assert blocked_self_completion["detail"] == "Complete required lessons before completing course"
+    assert (
+        blocked_self_completion["detail"]
+        == "Complete required lessons before completing course"
+    )
     checks.append("learner course completion requires required lesson")
 
     status, detail_after_required_lesson = request_json(
