@@ -4346,6 +4346,17 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
 
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
     status, completed = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/complete",
@@ -5828,6 +5839,17 @@ def test_complete_course_creates_draft_document() -> None:
 
     enrollment_id = enrolled["enrollment_id"]
 
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
     status, completed = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/complete",
@@ -5929,6 +5951,17 @@ def test_draft_completion_document_cannot_be_downloaded_by_learner() -> None:
 
     enrollment_id = enrolled["enrollment_id"]
 
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
     status, completed = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/complete",
@@ -6004,6 +6037,17 @@ def test_admin_can_publish_completion_document_for_learner_download() -> None:
     assert isinstance(enrolled, dict)
 
     enrollment_id = enrolled["enrollment_id"]
+
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
 
     status, completed = request_json(
         "POST",
@@ -6490,6 +6534,17 @@ def test_learner_course_completion_generates_draft_pdf_file() -> None:
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
 
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
     status, completed = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/complete",
@@ -6653,6 +6708,17 @@ def test_completion_document_keeps_enrollment_course_and_user_integrity() -> Non
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
 
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
     status, completed = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/complete",
@@ -6747,6 +6813,17 @@ def test_admin_can_publish_generated_completion_pdf_without_reupload() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
 
     status, completed = request_json(
         "POST",
@@ -6861,6 +6938,17 @@ def test_public_can_verify_published_generated_completion_pdf() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=learner_token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
 
     status, completed = request_json(
         "POST",

@@ -1816,8 +1816,7 @@ async def submit_account_course_lesson_quiz_attempt(
     result = grade_quiz_attempt(block.content_json or {}, answers)
     attempt_number = last_attempt_number + 1
 
-    if enrollment.status == "assigned":
-        enrollment.status = "active"
+
 
     if enrollment.started_at is None:
         enrollment.started_at = now
@@ -1955,8 +1954,7 @@ async def submit_account_course_lesson_assignment_answer(
 
     now = datetime.now(timezone.utc)
 
-    if enrollment.status == "assigned":
-        enrollment.status = "active"
+
 
     if enrollment.started_at is None:
         enrollment.started_at = now
@@ -2058,8 +2056,7 @@ async def complete_account_course_lesson_assignment_submission(
     now = datetime.now(timezone.utc)
     target_status = "submitted" if review_mode == "submit_only" else "completed"
 
-    if enrollment.status == "assigned":
-        enrollment.status = "active"
+
 
     if enrollment.started_at is None:
         enrollment.started_at = now
@@ -2182,8 +2179,7 @@ async def complete_account_course_lesson(
 
     now = datetime.now(timezone.utc)
 
-    if enrollment.status == "assigned":
-        enrollment.status = "active"
+
 
     if enrollment.started_at is None:
         enrollment.started_at = now
@@ -2298,6 +2294,7 @@ async def ensure_account_learning_mutation_allowed(
     session: AsyncSession,
     *,
     completed_detail: str = "Completed course cannot be changed",
+    allow_assigned: bool = False,
 ) -> None:
     if enrollment.status == "completed":
         raise HTTPException(
@@ -2309,6 +2306,15 @@ async def ensure_account_learning_mutation_allowed(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cancelled enrollment cannot be changed",
+        )
+
+    if enrollment.status == "assigned" and not allow_assigned:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "course_not_started",
+                "message": "Start course before changing learning progress",
+            },
         )
 
     if enrollment.status not in {"assigned", "active"}:
@@ -2352,6 +2358,7 @@ async def start_account_course_learning(
         enrollment,
         session,
         completed_detail="Completed course cannot be started",
+        allow_assigned=True,
     )
 
     enrollment.status = "active"

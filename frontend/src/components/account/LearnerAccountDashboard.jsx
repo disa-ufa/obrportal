@@ -281,8 +281,17 @@ export function LearnerAccountDashboard({
     (documentItem) => documentItem.status === "available"
   );
 
-  const nextLesson = getNextLesson(detail);
-  const activities = getLearningActivities(detail).slice(0, 3);
+  const nextLesson =
+    currentCourse?.status === "active"
+      ? getNextLesson(detail)
+      : null;
+
+  const activities =
+    ["active", "completed"].includes(
+      currentCourse?.status
+    )
+      ? getLearningActivities(detail).slice(0, 3)
+      : [];
 
   const visibleDocuments = Array.isArray(documents)
     ? documents.slice(0, 2)
@@ -345,7 +354,7 @@ export function LearnerAccountDashboard({
               {currentCourse.status === "active"
                 ? "Вы продолжаете обучение по программе"
                 : currentCourse.status === "assigned"
-                  ? "Вам назначена программа"
+                  ? "Можно начать обучение по программе"
                   : "Последняя программа"}{" "}
               <span className="font-bold text-slate-800">
                 «{currentCourse.course_title}»
@@ -362,7 +371,7 @@ export function LearnerAccountDashboard({
             </p>
           ) : (
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Здесь появится ваш учебный маршрут после назначения программы.
+              Здесь появится ваш учебный маршрут, когда у вас появится программа обучения.
             </p>
           )}
         </div>
@@ -388,7 +397,7 @@ export function LearnerAccountDashboard({
           icon={BookOpen}
           label="Всего программ"
           value={loading ? "—" : totalCourses}
-          secondary="назначено"
+          secondary="в кабинете"
         />
 
         <DashboardStatCard
@@ -401,7 +410,7 @@ export function LearnerAccountDashboard({
 
         <DashboardStatCard
           icon={CircleAlert}
-          label="Ожидают начала"
+          label="Не начаты"
           value={loading ? "—" : assignedCoursesCount}
           secondary="программ"
           tone="amber"
@@ -427,7 +436,7 @@ export function LearnerAccountDashboard({
 
             {!currentCourse ? (
               <div className="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
-                Пока нет назначенных программ.
+                Пока нет программ обучения.
               </div>
             ) : (
               <div className="rounded-2xl bg-white ring-1 ring-slate-200">
@@ -453,14 +462,26 @@ export function LearnerAccountDashboard({
                       </div>
                     </div>
 
-                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-100">
+                    <span
+                      className={
+                        currentCourse.status === "active"
+                          ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-100"
+                          : currentCourse.status === "assigned"
+                            ? "rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-100"
+                            : currentCourse.status === "completed"
+                              ? "rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
+                              : "rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
+                      }
+                    >
                       {currentCourse.status === "active"
                         ? "В процессе"
                         : currentCourse.status === "assigned"
-                          ? "Назначена"
+                          ? "Не начато"
                           : currentCourse.status === "completed"
                             ? "Завершена"
-                            : currentCourse.status}
+                            : currentCourse.status === "cancelled"
+                              ? "Отменена"
+                              : currentCourse.status}
                     </span>
                   </div>
 
@@ -484,7 +505,10 @@ export function LearnerAccountDashboard({
                     </div>
                   </div>
 
-                  {detail && (
+                  {detail
+                  && ["active", "completed"].includes(
+                    currentCourse.status
+                  ) && (
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
                       <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                         <div className="text-xs font-semibold text-slate-400">
@@ -498,11 +522,15 @@ export function LearnerAccountDashboard({
 
                       <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                         <div className="text-xs font-semibold text-slate-400">
-                          Следующий шаг
+                          {currentCourse.status === "completed"
+                            ? "Результат"
+                            : "Следующий шаг"}
                         </div>
 
                         <div className="mt-1 line-clamp-2 font-bold text-slate-900">
-                          {nextLesson?.title || "Программа пройдена"}
+                          {currentCourse.status === "completed"
+                            ? "Программа пройдена"
+                            : nextLesson?.title || "Все уроки пройдены"}
                         </div>
                       </div>
                     </div>
@@ -510,20 +538,24 @@ export function LearnerAccountDashboard({
                 </div>
 
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 p-4">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onOpenLearningCourse?.(
-                        currentCourse
-                      )
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
-                  >
-                    <PlayCircle className="h-4 w-4" aria-hidden="true" />
-                    {currentCourse.status === "assigned"
-                      ? "Перейти к программе"
-                      : "Продолжить обучение"}
-                  </button>
+                  {currentCourse.status !== "cancelled" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenLearningCourse?.(
+                          currentCourse
+                        )
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                    >
+                      <PlayCircle className="h-4 w-4" aria-hidden="true" />
+                      {currentCourse.status === "assigned"
+                        ? "Начать обучение"
+                        : currentCourse.status === "active"
+                          ? "Продолжить обучение"
+                          : "Посмотреть программу"}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -538,7 +570,7 @@ export function LearnerAccountDashboard({
 
             {courses.length === 0 ? (
               <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
-                Назначенных программ пока нет.
+                Программ обучения пока нет.
               </div>
             ) : (
               <div className="space-y-2">
@@ -572,7 +604,11 @@ export function LearnerAccountDashboard({
                         ? "В процессе"
                         : course.status === "completed"
                           ? "Завершена"
-                          : "Назначена"}
+                          : course.status === "assigned"
+                            ? "Не начато"
+                            : course.status === "cancelled"
+                              ? "Отменена"
+                              : course.status}
                     </span>
 
                     <ChevronRight
@@ -594,7 +630,15 @@ export function LearnerAccountDashboard({
               onAction={() => openSection("assignments")}
             />
 
-            {!detail ? (
+            {currentCourse?.status === "cancelled" ? (
+              <div className="rounded-2xl bg-slate-100 p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
+                Обучение по этой программе отменено.
+              </div>
+            ) : currentCourse?.status === "assigned" ? (
+              <div className="rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 ring-1 ring-amber-200">
+                Начните обучение, чтобы перейти к заданиям и тестам программы.
+              </div>
+            ) : !detail ? (
               <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-500 ring-1 ring-slate-200">
                 Откройте текущую программу, чтобы увидеть опубликованные задания и тесты.
               </div>

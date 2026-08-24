@@ -53,6 +53,21 @@ def find_lesson(detail: dict, lesson_id: str) -> dict:
     raise AssertionError(f"lesson {lesson_id} not found in detail response")
 
 
+def start_learner_course(token: str, enrollment_id: str) -> dict:
+    status, started = request_json(
+        "POST",
+        f"/api/v1/account/courses/{enrollment_id}/start",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(started, dict)
+    assert started["enrollment_id"] == enrollment_id
+    assert started["status"] == "active"
+
+    return started
+
+
 def delete_admin_documents_for_enrollment(token: str, enrollment_id: str) -> None:
     status, documents = request_json(
         "GET",
@@ -108,6 +123,25 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         lesson_before = find_lesson(detail_before, lesson_id)
         assert lesson_before["is_completed"] is False
         assert lesson_before["completed_at"] is None
+
+        status, not_started = request_json(
+            "POST",
+            f"/api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete",
+            token=learner_token,
+        )
+
+        assert status == 409
+        assert isinstance(not_started, dict)
+        assert not_started["detail"]["code"] == "course_not_started"
+        assert not_started["detail"]["message"] == (
+            "Start course before changing learning progress"
+        )
+
+        started = start_learner_course(
+            learner_token,
+            enrollment_id,
+        )
+        assert started["started_at"] is not None
 
         status, detail_after = request_json(
             "POST",
@@ -169,6 +203,8 @@ def test_lesson_complete_is_idempotent() -> None:
         enrollment = enroll_learner_to_course(learner_token, course_id)
         enrollment_id = str(enrollment["enrollment_id"])
 
+        start_learner_course(learner_token, enrollment_id)
+
         status, first_detail = request_json(
             "POST",
             f"/api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete",
@@ -218,6 +254,8 @@ def test_lesson_complete_rejects_foreign_enrollment_foreign_lesson_and_guest() -
         enrollment = enroll_learner_to_course(owner_token, first_course_id)
         enrollment_id = str(enrollment["enrollment_id"])
 
+        start_learner_course(owner_token, enrollment_id)
+
         status, _ = request_json(
             "POST",
             f"/api/v1/account/courses/{enrollment_id}/lessons/{first_lesson_id}/complete",
@@ -257,6 +295,8 @@ def test_course_completion_requires_required_lessons() -> None:
         enrollment = enroll_learner_to_course(learner_token, course_id)
         enrollment_id = str(enrollment["enrollment_id"])
 
+        start_learner_course(learner_token, enrollment_id)
+
         status, payload = request_json(
             "POST",
             f"/api/v1/account/courses/{enrollment_id}/complete",
@@ -273,7 +313,7 @@ def test_course_completion_requires_required_lessons() -> None:
         )
 
         assert status == 200
-        assert detail["status"] == "assigned"
+        assert detail["status"] == "active"
         assert detail["completed_at"] is None
         assert detail["required_lessons_total"] == 1
         assert detail["required_lessons_completed"] == 0
@@ -296,6 +336,8 @@ def test_lesson_complete_rejects_completed_course() -> None:
     try:
         enrollment = enroll_learner_to_course(learner_token, course_id)
         enrollment_id = str(enrollment["enrollment_id"])
+
+        start_learner_course(learner_token, enrollment_id)
 
         status, detail_after_lesson = request_json(
             "POST",
@@ -404,6 +446,8 @@ def test_course_completion_falls_back_to_all_active_lessons_when_none_are_requir
         assert detail["required_lessons_total"] == 2
         assert detail["required_lessons_completed"] == 0
         assert detail["required_progress_percent"] == 0
+
+        start_learner_course(learner_token, enrollment_id)
 
         status, payload = request_json(
             "POST",
