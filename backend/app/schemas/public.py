@@ -41,6 +41,7 @@ class PublicCourseItemResponse(BaseModel):
     format: str | None = None
     document_type: str | None = None
     direction: str | None = None
+    cover_image_url: str | None = None
 
 
 class PublicCourseLessonResponse(BaseModel):

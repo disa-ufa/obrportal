@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse
@@ -72,6 +72,57 @@ from app.schemas.account import (
 
 
 router = APIRouter(prefix="/account", tags=["account"])
+
+
+COURSE_COVER_ALLOWED_EXTENSIONS = frozenset(
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+    }
+)
+
+
+def build_account_course_cover_url(
+    *,
+    course_id,
+    storage_path: str | None,
+) -> str | None:
+    if not storage_path:
+        return None
+
+    normalized_path = str(
+        storage_path
+    ).replace("\\", "/")
+
+    cover_path = PurePosixPath(
+        normalized_path
+    )
+
+    expected_parent = (
+        PurePosixPath("course-covers")
+        / str(course_id)
+    )
+
+    if cover_path.parent != expected_parent:
+        return None
+
+    if (
+        cover_path.suffix.lower()
+        not in COURSE_COVER_ALLOWED_EXTENSIONS
+    ):
+        return None
+
+    asset_id = cover_path.stem
+
+    if not asset_id:
+        return None
+
+    return (
+        f"/api/v1/public/course-covers/"
+        f"{course_id}/{asset_id}/view"
+    )
 
 
 def _resolve_storage_path(storage_path: str) -> Path | None:
@@ -463,6 +514,7 @@ async def get_account_courses(
             Course.hours.label("hours"),
             Course.format.label("format"),
             Course.document_type.label("document_type"),
+            Course.cover_image_path.label("cover_image_path"),
             Organization.name.label("organization_name"),
             LearningGroup.name.label("learning_group_name"),
         )
@@ -483,6 +535,10 @@ async def get_account_courses(
             hours=row.hours,
             format=row.format,
             document_type=row.document_type,
+            cover_image_url=build_account_course_cover_url(
+                course_id=row.course_id,
+                storage_path=row.cover_image_path,
+            ),
             status=row.status,
             organization_id=row.organization_id,
             organization_name=row.organization_name,
@@ -1077,6 +1133,14 @@ def build_account_course_item_from_row(row) -> AccountCourseItemResponse:
         hours=row.hours,
         format=row.format,
         document_type=row.document_type,
+        cover_image_url=build_account_course_cover_url(
+            course_id=row.course_id,
+            storage_path=getattr(
+                row,
+                "cover_image_path",
+                None,
+            ),
+        ),
         organization_name=row.organization_name,
         learning_group_name=row.learning_group_name,
         started_at=getattr(row, "started_at", None),
@@ -1445,6 +1509,14 @@ def build_account_course_detail_from_row(
         hours=row.hours,
         format=row.format,
         document_type=row.document_type,
+        cover_image_url=build_account_course_cover_url(
+            course_id=row.course_id,
+            storage_path=getattr(
+                row,
+                "cover_image_path",
+                None,
+            ),
+        ),
         organization_name=row.organization_name,
         learning_group_name=row.learning_group_name,
         started_at=getattr(row, "started_at", None),
@@ -1477,6 +1549,7 @@ async def get_account_course_row_or_404(
             Course.hours.label("hours"),
             Course.format.label("format"),
             Course.document_type.label("document_type"),
+            Course.cover_image_path.label("cover_image_path"),
             Organization.name.label("organization_name"),
             LearningGroup.name.label("learning_group_name"),
         )

@@ -891,6 +891,22 @@ export async function updateAdminCourse(courseId, payload) {
   });
 }
 
+export async function uploadAdminCourseCover(courseId, file) {
+  const body = new FormData();
+  body.append("file", file);
+
+  return request(`/api/v1/admin/courses/${courseId}/cover`, {
+    method: "POST",
+    body,
+  });
+}
+
+export async function deleteAdminCourseCover(courseId) {
+  return request(`/api/v1/admin/courses/${courseId}/cover`, {
+    method: "DELETE",
+  });
+}
+
 export async function activateAdminCourse(courseId) {
   return request(`/api/v1/admin/courses/${courseId}/activate`, {
     method: "POST",

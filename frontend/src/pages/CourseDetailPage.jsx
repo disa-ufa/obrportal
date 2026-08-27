@@ -9,7 +9,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, startAccountCourse, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
+import { buildApiUrl, completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, startAccountCourse, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 import { buildInitialQuizAnswers } from "../components/admin/lesson-studio/quiz/quizGrading.js";
@@ -4956,6 +4956,34 @@ function CourseDetailGuestProgram({
 }
 
 
+function CourseHeroCover({
+  coverImageUrl,
+  testId,
+}) {
+  if (!coverImageUrl) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid={testId}
+      className="bg-slate-100"
+    >
+      <div
+        className="w-full overflow-hidden bg-slate-100"
+        style={{ aspectRatio: "2 / 1" }}
+      >
+        <img
+          src={buildApiUrl(coverImageUrl)}
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
+    </div>
+  );
+}
+
+
 function CourseDetailGuestState({
   course,
   enrollLoading,
@@ -5003,6 +5031,11 @@ function CourseDetailGuestState({
             data-testid="course-detail-guest-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
+            <CourseHeroCover
+              coverImageUrl={course.cover_image_url}
+              testId="course-detail-guest-cover"
+            />
+
             <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
@@ -5480,6 +5513,11 @@ function CourseDetailAuthenticatedUnenrolledState({
             data-testid="course-detail-authenticated-unenrolled-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
+            <CourseHeroCover
+              coverImageUrl={course.cover_image_url}
+              testId="course-detail-authenticated-unenrolled-cover"
+            />
+
             <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
               {course.direction ? (
                 <div className="flex flex-wrap gap-2">

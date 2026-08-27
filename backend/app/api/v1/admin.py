@@ -4,7 +4,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -184,6 +184,16 @@ LESSON_IMAGE_MIME_BY_EXTENSION = {
 }
 
 
+COURSE_COVER_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+COURSE_COVER_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+COURSE_COVER_MIME_BY_EXTENSION = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
 def normalize_learner_import_extension(filename: str | None) -> str:
     extension = Path(filename or "").suffix.lower()
 
@@ -258,6 +268,145 @@ def build_lesson_image_public_urls(
         "original_url": f"{base_path}/download",
         "download_url": f"{base_path}/download",
     }
+
+
+def normalize_course_cover_extension(filename: str | None) -> str:
+    extension = Path(filename or "").suffix.lower()
+
+    if extension not in COURSE_COVER_ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(COURSE_COVER_ALLOWED_EXTENSIONS))
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported course cover format. Allowed: {allowed}",
+        )
+
+    return extension
+
+
+def detect_course_cover_content_extension(content: bytes) -> str:
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+
+    if content.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+
+    if (
+        len(content) >= 12
+        and content[0:4] == b"RIFF"
+        and content[8:12] == b"WEBP"
+    ):
+        return ".webp"
+
+    raise HTTPException(
+        status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        detail="Unsupported or invalid course cover image content",
+    )
+
+
+def course_cover_extensions_match(
+    requested_extension: str,
+    detected_extension: str,
+) -> bool:
+    requested = requested_extension.lower()
+    detected = detected_extension.lower()
+
+    if requested in {".jpg", ".jpeg"}:
+        return detected == ".jpg"
+
+    return requested == detected
+
+
+def delete_course_cover_file_safely(
+    storage_path: str | None,
+) -> bool:
+    try:
+        return delete_private_storage_file(storage_path)
+    except OSError:
+        return False
+
+
+async def save_admin_course_cover_file(
+    file: UploadFile,
+    *,
+    course_id: str,
+    asset_id: str,
+    extension: str,
+) -> tuple[str, int]:
+    content = await file.read(COURSE_COVER_MAX_UPLOAD_BYTES + 1)
+    size_bytes = len(content)
+
+    if size_bytes <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Course cover image file is empty",
+        )
+
+    if size_bytes > COURSE_COVER_MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Course cover image file is too large",
+        )
+
+    detected_extension = detect_course_cover_content_extension(content)
+
+    if not course_cover_extensions_match(
+        extension,
+        detected_extension,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Course cover image content does not match file extension",
+        )
+
+    storage_path = (
+        f"course-covers/{course_id}/{asset_id}{extension}"
+    )
+
+    try:
+        saved_path = write_private_storage_file(
+            storage_path,
+            content,
+        )
+    except Exception:
+        delete_course_cover_file_safely(storage_path)
+        raise
+
+    return saved_path, size_bytes
+
+
+def build_course_cover_public_url(
+    course: Course,
+) -> str | None:
+    if not course.cover_image_path:
+        return None
+
+    normalized_path = str(
+        course.cover_image_path
+    ).replace("\\", "/")
+
+    cover_path = PurePosixPath(normalized_path)
+    expected_parent = (
+        PurePosixPath("course-covers") / str(course.id)
+    )
+
+    if cover_path.parent != expected_parent:
+        return None
+
+    if (
+        cover_path.suffix.lower()
+        not in COURSE_COVER_ALLOWED_EXTENSIONS
+    ):
+        return None
+
+    asset_id = cover_path.stem
+
+    if not asset_id:
+        return None
+
+    return (
+        f"/api/v1/public/course-covers/"
+        f"{course.id}/{asset_id}/view"
+    )
 
 
 async def get_user_roles(
@@ -3659,6 +3808,7 @@ def build_admin_course_item(course: Course) -> AdminCourseItem:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        cover_image_url=build_course_cover_public_url(course),
         is_public=course.is_public,
         is_active=course.is_active,
     )
@@ -3674,6 +3824,7 @@ def build_admin_course_detail(course: Course) -> AdminCourseDetail:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        cover_image_url=build_course_cover_public_url(course),
         is_public=course.is_public,
         is_active=course.is_active,
         created_at=course.created_at,
@@ -3691,6 +3842,7 @@ def course_snapshot(course: Course) -> dict:
         "format": course.format,
         "document_type": course.document_type,
         "direction": course.direction,
+        "cover_image_path": course.cover_image_path,
         "is_public": course.is_public,
         "is_active": course.is_active,
     }
@@ -3832,6 +3984,151 @@ async def get_admin_course_detail(
     return build_admin_course_detail(course)
 
 
+@router.post(
+    "/courses/{course_id}/cover",
+    response_model=AdminCourseDetail,
+)
+async def upload_admin_course_cover(
+    course_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(
+        require_permission("catalog.write")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    course = await get_admin_course_or_404(
+        course_id,
+        session,
+    )
+
+    extension = normalize_course_cover_extension(
+        file.filename
+    )
+
+    asset_id = str(uuid4())
+
+    new_storage_path, size_bytes = (
+        await save_admin_course_cover_file(
+            file,
+            course_id=str(course.id),
+            asset_id=asset_id,
+            extension=extension,
+        )
+    )
+
+    old_storage_path = course.cover_image_path
+    before = course_snapshot(course)
+    course.cover_image_path = new_storage_path
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_cover_updated",
+            entity_type="course",
+            entity_id=str(course.id),
+            payload={
+                "before": before,
+                "after": course_snapshot(course),
+                "changed_fields": [
+                    "cover_image_path",
+                ],
+                "original_filename": (
+                    file.filename
+                    or f"cover{extension}"
+                ),
+                "size_bytes": size_bytes,
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except Exception:
+        await session.rollback()
+
+        delete_course_cover_file_safely(
+            new_storage_path
+        )
+
+        raise
+
+    # The database already points to the new file here.
+    # If refresh fails, the new file MUST remain available.
+    await session.refresh(course)
+
+    if (
+        old_storage_path
+        and old_storage_path != new_storage_path
+    ):
+        delete_course_cover_file_safely(
+            old_storage_path
+        )
+
+    return build_admin_course_detail(course)
+
+
+@router.delete(
+    "/courses/{course_id}/cover",
+    response_model=AdminCourseDetail,
+)
+async def delete_admin_course_cover(
+    course_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission("catalog.write")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> AdminCourseDetail:
+    course = await get_admin_course_or_404(
+        course_id,
+        session,
+    )
+
+    if not course.cover_image_path:
+        return build_admin_course_detail(course)
+
+    old_storage_path = course.cover_image_path
+    before = course_snapshot(course)
+    course.cover_image_path = None
+
+    try:
+        await session.flush()
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.course_cover_deleted",
+            entity_type="course",
+            entity_id=str(course.id),
+            payload={
+                "before": before,
+                "after": course_snapshot(course),
+                "changed_fields": [
+                    "cover_image_path",
+                ],
+            },
+            request=request,
+        )
+
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+
+    # Commit is already durable. A refresh failure must not
+    # cause us to pretend that the database mutation rolled back.
+    await session.refresh(course)
+
+    delete_course_cover_file_safely(
+        old_storage_path
+    )
+
+    return build_admin_course_detail(course)
+
+
 @router.patch("/courses/{course_id}", response_model=AdminCourseDetail)
 async def update_admin_course(
     course_id: str,
@@ -3962,6 +4259,7 @@ async def delete_admin_course(
     await ensure_course_can_be_deleted(course, session)
 
     deleted_course_id = str(course.id)
+    cover_storage_path = course.cover_image_path
     before = course_snapshot(course)
 
     await session.delete(course)
@@ -3980,6 +4278,10 @@ async def delete_admin_course(
     )
 
     await session.commit()
+
+    delete_course_cover_file_safely(
+        cover_storage_path
+    )
 
     return AdminDeleteResult(status="deleted", id=deleted_course_id)
 
