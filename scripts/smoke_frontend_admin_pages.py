@@ -493,7 +493,7 @@ def main() -> None:
     require_contains(
         "frontend/src/pages/CatalogPage.jsx",
         [
-            'import { getAccountCourses, getPublicCourses } from "../api/client";',
+            'import { buildApiUrl, getAccountCourses, getPublicCourses } from "../api/client";',
             "function getDirectionOptions(courses)",
             "function getFormatOptions(courses)",
             "function getDocumentOptions(courses)",

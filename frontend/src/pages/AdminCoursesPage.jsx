@@ -3,17 +3,20 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
+  buildApiUrl,
   createAdminCourse,
   createAdminCourseLesson,
   createAdminCourseModule,
   deactivateAdminCourse,
   deleteAdminCourse,
+  deleteAdminCourseCover,
   deleteAdminCourseLesson,
   deleteAdminCourseModule,
   getAdminCourseLessons,
   getAdminCourseModules,
   getAdminCourses,
   updateAdminCourse,
+  uploadAdminCourseCover,
   updateAdminCourseLesson,
   updateAdminCourseModule,
 } from "../api/client";
@@ -232,6 +235,9 @@ const EMPTY_COURSE_FORM = {
   document_type: RU.certificate,
   is_public: false,
   is_active: true,
+  cover_file: null,
+  cover_image_url: "",
+  cover_remove: false,
 };
 
 const EMPTY_EDIT_FORM = {
@@ -244,6 +250,55 @@ const EMPTY_EDIT_FORM = {
   document_type: "",
   is_public: false,
   is_active: true,
+  cover_file: null,
+  cover_image_url: "",
+  cover_remove: false,
+};
+
+const COURSE_COVER_MAX_BYTES = 5 * 1024 * 1024;
+const COURSE_COVER_ACCEPT = "image/jpeg,image/png,image/webp";
+const COURSE_COVER_ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const COURSE_COVER_ALLOWED_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+]);
+
+const COURSE_COVER_TEXT = {
+  title: "\u041e\u0431\u043b\u043e\u0436\u043a\u0430 \u043a\u0443\u0440\u0441\u0430",
+  hint:
+    "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u043a\u0430\u0437\u0430\u043d\u043e \u0432 \u0432\u0435\u0440\u0445\u043d\u0435\u0439 \u0447\u0430\u0441\u0442\u0438 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u044b \u043a\u0443\u0440\u0441\u0430.",
+  recommendation:
+    "\u0420\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u0443\u0435\u043c 1600\u00d7800. JPEG, PNG \u0438\u043b\u0438 WebP, \u0434\u043e 5 \u041c\u0411.",
+  choose:
+    "\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435",
+  replace:
+    "\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435",
+  cancelSelection:
+    "\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c \u0432\u044b\u0431\u043e\u0440",
+  remove:
+    "\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443",
+  undoRemove:
+    "\u041e\u0442\u043c\u0435\u043d\u0438\u0442\u044c \u0443\u0434\u0430\u043b\u0435\u043d\u0438\u0435",
+  empty:
+    "\u041e\u0431\u043b\u043e\u0436\u043a\u0430 \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d\u0430",
+  emptyFile:
+    "\u0412\u044b\u0431\u0440\u0430\u043d \u043f\u0443\u0441\u0442\u043e\u0439 \u0444\u0430\u0439\u043b.",
+  badFormat:
+    "\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u044b \u0442\u043e\u043b\u044c\u043a\u043e JPEG, PNG \u0438 WebP.",
+  tooLarge:
+    "\u0420\u0430\u0437\u043c\u0435\u0440 \u043e\u0431\u043b\u043e\u0436\u043a\u0438 \u043d\u0435 \u0434\u043e\u043b\u0436\u0435\u043d \u043f\u0440\u0435\u0432\u044b\u0448\u0430\u0442\u044c 5 \u041c\u0411.",
+  createPartial:
+    "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430, \u043d\u043e \u043e\u0431\u043b\u043e\u0436\u043a\u0443 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c. \u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443 \u043d\u0430 \u0440\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0443.",
+  editPartial:
+    "\u041e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b, \u043d\u043e \u043e\u0431\u043b\u043e\u0436\u043a\u0443 \u0438\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c.",
+  operationFailed:
+    "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0438\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u043e\u0431\u043b\u043e\u0436\u043a\u0443.",
 };
 
 const EMPTY_MODULE_CREATE_FORM = {
@@ -371,6 +426,9 @@ function buildEditForm(course) {
     document_type: course.document_type || "",
     is_public: Boolean(course.is_public),
     is_active: Boolean(course.is_active),
+    cover_file: null,
+    cover_image_url: course.cover_image_url || "",
+    cover_remove: false,
   };
 }
 
@@ -432,6 +490,250 @@ function formatCourseApiError(err, fallback) {
   return `${status} ${readableMessage}`.trim();
 }
 
+function validateCourseCoverFile(file) {
+  if (!file) {
+    return "";
+  }
+
+  if (file.size <= 0) {
+    return COURSE_COVER_TEXT.emptyFile;
+  }
+
+  if (file.size > COURSE_COVER_MAX_BYTES) {
+    return COURSE_COVER_TEXT.tooLarge;
+  }
+
+  const extension = (() => {
+    const filename = `${file.name || ""}`.trim().toLowerCase();
+    const dotIndex = filename.lastIndexOf(".");
+
+    return dotIndex >= 0 ? filename.slice(dotIndex) : "";
+  })();
+
+  if (!COURSE_COVER_ALLOWED_EXTENSIONS.has(extension)) {
+    return COURSE_COVER_TEXT.badFormat;
+  }
+
+  const mimeType = `${file.type || ""}`.trim().toLowerCase();
+
+  if (
+    mimeType
+    && !COURSE_COVER_ALLOWED_MIME_TYPES.has(mimeType)
+  ) {
+    return COURSE_COVER_TEXT.badFormat;
+  }
+
+  return "";
+}
+
+function CourseCoverField({
+  values,
+  onChange,
+  prefix = "",
+}) {
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [validationError, setValidationError] = useState("");
+
+  const selectedFile = values.cover_file || null;
+  const persistedUrl = values.cover_image_url || "";
+  const removeRequested = Boolean(values.cover_remove);
+
+  useEffect(() => {
+    if (
+      !selectedFile
+      || typeof window === "undefined"
+      || !window.URL
+      || typeof window.URL.createObjectURL !== "function"
+    ) {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    const objectUrl = window.URL.createObjectURL(
+      selectedFile
+    );
+
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      window.URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedFile]);
+
+  const visibleImageUrl = selectedFile
+    ? previewUrl
+    : removeRequested
+      ? ""
+      : persistedUrl
+        ? buildApiUrl(persistedUrl)
+        : "";
+
+  const hasPersistedCover = Boolean(persistedUrl);
+  const hasVisibleCover = Boolean(visibleImageUrl);
+
+  function handleFileChange(event) {
+    const file = event.target.files?.[0] || null;
+
+    // Allow selecting the same file again after validation/reset.
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const nextError = validateCourseCoverFile(file);
+
+    if (nextError) {
+      setValidationError(nextError);
+      return;
+    }
+
+    setValidationError("");
+    onChange("cover_file", file);
+    onChange("cover_remove", false);
+  }
+
+  function handleCancelSelection() {
+    setValidationError("");
+    onChange("cover_file", null);
+    onChange("cover_remove", false);
+  }
+
+  function handleRemovePersistedCover() {
+    setValidationError("");
+    onChange("cover_file", null);
+    onChange("cover_remove", true);
+  }
+
+  function handleUndoRemove() {
+    setValidationError("");
+    onChange("cover_remove", false);
+  }
+
+  const fileInputId = `${prefix}course-cover-file`;
+
+  return (
+    <div
+      data-testid={`${prefix}course-cover-field`}
+      className="rounded-3xl bg-white p-5 ring-1 ring-slate-200"
+    >
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,440px)] lg:items-start">
+        <div>
+          <div className="text-sm font-black text-slate-950">
+            {COURSE_COVER_TEXT.title}
+          </div>
+
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+            {COURSE_COVER_TEXT.hint}
+          </p>
+
+          <p className="mt-2 text-xs font-semibold text-slate-600">
+            {COURSE_COVER_TEXT.recommendation}
+          </p>
+
+          {selectedFile ? (
+            <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-xs text-blue-800 ring-1 ring-blue-100">
+              <span className="font-bold">
+                {selectedFile.name}
+              </span>
+              <span className="ml-2 text-blue-600">
+                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              </span>
+            </div>
+          ) : null}
+
+          {removeRequested && hasPersistedCover ? (
+            <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800 ring-1 ring-amber-100">
+              {"\u041e\u0431\u043b\u043e\u0436\u043a\u0430 \u0431\u0443\u0434\u0435\u0442 \u0443\u0434\u0430\u043b\u0435\u043d\u0430 \u043f\u043e\u0441\u043b\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f."}
+            </div>
+          ) : null}
+
+          {validationError ? (
+            <div
+              role="alert"
+              className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 ring-1 ring-red-100"
+            >
+              {validationError}
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <label
+              htmlFor={fileInputId}
+              className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition hover:bg-blue-700"
+            >
+              {hasPersistedCover || selectedFile
+                ? COURSE_COVER_TEXT.replace
+                : COURSE_COVER_TEXT.choose}
+            </label>
+
+            <input
+              id={fileInputId}
+              data-testid={`${prefix}course-cover-input`}
+              type="file"
+              accept={COURSE_COVER_ACCEPT}
+              onChange={handleFileChange}
+              className="sr-only"
+            />
+
+            {selectedFile ? (
+              <button
+                type="button"
+                data-testid={`${prefix}course-cover-cancel-selection`}
+                onClick={handleCancelSelection}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+              >
+                {COURSE_COVER_TEXT.cancelSelection}
+              </button>
+            ) : null}
+
+            {!selectedFile && hasPersistedCover && !removeRequested ? (
+              <button
+                type="button"
+                data-testid={`${prefix}course-cover-remove`}
+                onClick={handleRemovePersistedCover}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-xs font-bold text-red-700 ring-1 ring-red-200 transition hover:bg-red-50"
+              >
+                {COURSE_COVER_TEXT.remove}
+              </button>
+            ) : null}
+
+            {!selectedFile && hasPersistedCover && removeRequested ? (
+              <button
+                type="button"
+                data-testid={`${prefix}course-cover-undo-remove`}
+                onClick={handleUndoRemove}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-white px-4 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+              >
+                {COURSE_COVER_TEXT.undoRemove}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          data-testid={`${prefix}course-cover-preview`}
+          className="overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200"
+          style={{ aspectRatio: "2 / 1" }}
+        >
+          {hasVisibleCover ? (
+            <img
+              src={visibleImageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full min-h-36 items-center justify-center px-5 text-center text-xs font-semibold text-slate-400">
+              {COURSE_COVER_TEXT.empty}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function CourseFormFields({ values, onChange, prefix = "" }) {
   return (
     <div className="space-y-5">
@@ -487,6 +789,12 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
           </label>
         </div>
       </div>
+
+      <CourseCoverField
+        values={values}
+        onChange={onChange}
+        prefix={prefix}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
         <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
@@ -4572,6 +4880,19 @@ export function AdminCoursesPage() {
       setSuccessMessage("");
 
       const created = await createAdminCourse(buildPayload(form));
+      let coverUploadError = null;
+
+      if (form.cover_file) {
+        try {
+          await uploadAdminCourseCover(
+            created.id,
+            form.cover_file
+          );
+        } catch (coverErr) {
+          coverUploadError = coverErr;
+        }
+      }
+
       const nextActiveFilter = created.is_active ? "true" : "false";
       const nextFilters = { q: "", is_active: nextActiveFilter };
       const params = new URLSearchParams();
@@ -4580,6 +4901,16 @@ export function AdminCoursesPage() {
       params.set("focus_course_id", created.id);
 
       setSuccessMessage(`${RU.createdMessage}: ${created.title}`);
+
+      if (coverUploadError) {
+        setError(
+          `${COURSE_COVER_TEXT.createPartial} ${formatCourseApiError(
+            coverUploadError,
+            COURSE_COVER_TEXT.operationFailed
+          )}`
+        );
+      }
+
       setShowCreateForm(false);
       resetForm();
       setFilterQuery("");
@@ -4619,6 +4950,38 @@ export function AdminCoursesPage() {
       setSuccessMessage("");
 
       const updated = await updateAdminCourse(courseId, buildPayload(editForm));
+      let coverMutationError = null;
+
+      try {
+        if (editForm.cover_file) {
+          await uploadAdminCourseCover(
+            courseId,
+            editForm.cover_file
+          );
+        } else if (
+          editForm.cover_remove
+          && editForm.cover_image_url
+        ) {
+          await deleteAdminCourseCover(courseId);
+        }
+      } catch (coverErr) {
+        coverMutationError = coverErr;
+      }
+
+      if (coverMutationError) {
+        setSuccessMessage(
+          `${RU.updatedMessage}: ${updated.title}`
+        );
+        setError(
+          `${COURSE_COVER_TEXT.editPartial} ${formatCourseApiError(
+            coverMutationError,
+            COURSE_COVER_TEXT.operationFailed
+          )}`
+        );
+
+        await refreshCoursesFastPath(buildFilters());
+        return;
+      }
 
       setSuccessMessage(`${RU.updatedMessage}: ${updated.title}`);
       resetEditState();

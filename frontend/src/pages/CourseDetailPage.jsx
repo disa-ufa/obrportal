@@ -9,7 +9,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
+import { buildApiUrl, completeAccountCourse, completeAccountCourseLesson, completeAccountCourseLessonAssignment, submitAccountCourseLessonAssignmentAnswer, downloadAccountDocument, enrollAccountCourse, getAccountCourseDetail, getAccountCourses, getAccountDocuments, startAccountCourse, getPublicCourseDetail, getPublicCourses, getAccountCourseLessonAssignmentSubmission, getAccountCourseLessonQuizAttempts, submitAccountCourseLessonQuizAttempt } from "../api/client";
 import { DocumentVerificationQrBlock } from "../components/documents/DocumentVerificationQrBlock";
 import { formatRuDateTimeDash as formatDateTime } from "../utils/dateFormat";
 import { buildInitialQuizAnswers } from "../components/admin/lesson-studio/quiz/quizGrading.js";
@@ -4726,7 +4726,7 @@ function CourseDetailGuestProgram({
             {"\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043a\u0443\u0440\u0441\u0430"}
           </h2>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          <p className="mt-2 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
             {cancelled
               ? "\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u043a\u0443\u0440\u0441 \u043e\u0442\u043c\u0435\u043d\u0435\u043d\u0430. \u0417\u0434\u0435\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0443\u0440\u043e\u043a\u043e\u0432."
               : completed
@@ -4781,22 +4781,22 @@ function CourseDetailGuestProgram({
                   <div
                     className={
                       guestPreview
-                        ? "flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-blue-50/50 px-4 py-4 sm:px-5"
+                        ? "flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-blue-50/50 px-4 py-5 sm:px-5"
                         : "flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5"
                     }
                   >
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <div className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                         {`\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
                       </div>
 
-                      <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      <h3 className="mt-1 text-xl font-semibold leading-7 text-slate-900 sm:text-2xl sm:leading-8">
                         {module?.title ||
                           `\u041c\u043e\u0434\u0443\u043b\u044c ${moduleIndex + 1}`}
                       </h3>
                     </div>
 
-                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+                    <span className="shrink-0 rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
                       {formatProgramCount(lessons.length, [
                         "\u0443\u0440\u043e\u043a",
                         "\u0443\u0440\u043e\u043a\u0430",
@@ -4867,14 +4867,14 @@ function CourseDetailGuestProgram({
                                   : isAssignedFirstLesson
                                     ? "flex items-center justify-between gap-4 border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 last:border-b-0 sm:px-5"
                                     : guestPreview
-                                      ? "flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-4 py-4 last:border-b-0 sm:items-center sm:px-5"
+                                      ? "flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-4 py-5 last:border-b-0 sm:items-center sm:px-5"
                                       : "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 sm:px-5"
                             }
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               <div
                                 aria-hidden="true"
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 ring-1 ring-slate-200"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-600 ring-1 ring-slate-200"
                               >
                                 {lessonIndex + 1}
                               </div>
@@ -4883,8 +4883,8 @@ function CourseDetailGuestProgram({
                                 <div
                                   className={
                                     guestPreview
-                                      ? "text-sm font-medium leading-5 text-slate-800"
-                                      : "truncate text-sm font-medium text-slate-800"
+                                      ? "text-lg font-semibold leading-7 text-slate-900 sm:text-xl sm:leading-8"
+                                      : "truncate text-lg font-semibold text-slate-900 sm:text-xl"
                                   }
                                 >
                                   {lesson?.title ||
@@ -4956,6 +4956,34 @@ function CourseDetailGuestProgram({
 }
 
 
+function CourseHeroCover({
+  coverImageUrl,
+  testId,
+}) {
+  if (!coverImageUrl) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid={testId}
+      className="bg-slate-100"
+    >
+      <div
+        className="w-full overflow-hidden bg-slate-100"
+        style={{ aspectRatio: "2 / 1" }}
+      >
+        <img
+          src={buildApiUrl(coverImageUrl)}
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
+    </div>
+  );
+}
+
+
 function CourseDetailGuestState({
   course,
   enrollLoading,
@@ -5003,6 +5031,11 @@ function CourseDetailGuestState({
             data-testid="course-detail-guest-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
+            <CourseHeroCover
+              coverImageUrl={course.cover_image_url}
+              testId="course-detail-guest-cover"
+            />
+
             <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200">
@@ -5480,22 +5513,19 @@ function CourseDetailAuthenticatedUnenrolledState({
             data-testid="course-detail-authenticated-unenrolled-hero"
             className="overflow-hidden rounded-shell bg-white shadow-sm ring-1 ring-slate-200"
           >
+            <CourseHeroCover
+              coverImageUrl={course.cover_image_url}
+              testId="course-detail-authenticated-unenrolled-cover"
+            />
+
             <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-7 sm:px-8 sm:py-9">
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 ring-1 ring-green-200">
-                  {"\u2713 \u0412\u044b \u0432\u043e\u0448\u043b\u0438 \u043a\u0430\u043a \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044c"}
-                </span>
-
-                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
-                  {"\u041d\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d \u043d\u0430 \u043a\u0443\u0440\u0441"}
-                </span>
-
-                {course.direction ? (
+              {course.direction ? (
+                <div className="flex flex-wrap gap-2">
                   <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                     {course.direction}
                   </span>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
 
               <h1 className="mt-7 max-w-4xl text-3xl font-bold leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
                 {course.title}
@@ -5576,29 +5606,7 @@ function CourseDetailAuthenticatedUnenrolledState({
             data-testid="course-detail-authenticated-unenrolled-mobile-status"
             className="rounded-shell bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:hidden"
           >
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
-              {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
-            </div>
 
-            <div className="mt-4 rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
-              <div className="text-sm font-bold text-green-900">
-                {"\u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
-              </div>
-
-              <p className="mt-1 text-sm leading-6 text-green-800">
-                {"\u041c\u043e\u0436\u043d\u043e \u0437\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f \u043d\u0430 \u043a\u0443\u0440\u0441 \u0438\u0437 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0443\u0447\u0451\u0442\u043d\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438."}
-              </p>
-            </div>
-
-            <div className="mt-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
-              <div className="text-sm font-bold text-amber-900">
-                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0435\u0449\u0451 \u043d\u0435 \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d\u0430"}
-              </div>
-
-              <p className="mt-1 text-sm leading-6 text-amber-800">
-                {"\u0423\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438."}
-              </p>
-            </div>
 
             {enrollError ? (
               <div
@@ -5775,29 +5783,7 @@ function CourseDetailAuthenticatedUnenrolledState({
           className="hidden lg:block lg:sticky lg:top-24 lg:self-start"
         >
           <div className="rounded-shell bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
-              {"\u0412\u0430\u0448 \u0441\u0442\u0430\u0442\u0443\u0441 \u043f\u043e \u043a\u0443\u0440\u0441\u0443"}
-            </div>
 
-            <div className="mt-5 rounded-2xl bg-green-50 p-4 ring-1 ring-green-200">
-              <div className="text-sm font-bold text-green-900">
-                {"\u2713 \u0412\u044b \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u044b"}
-              </div>
-
-              <p className="mt-1 text-sm leading-6 text-green-800">
-                {"\u0414\u043e\u0441\u0442\u0443\u043f \u043a \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0439 \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438 \u043e \u043a\u0443\u0440\u0441\u0435 \u043e\u0442\u043a\u0440\u044b\u0442."}
-              </p>
-            </div>
-
-            <div className="mt-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
-              <div className="text-sm font-bold text-amber-900">
-                {"\u041d\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043d \u043d\u0430 \u043a\u0443\u0440\u0441"}
-              </div>
-
-              <p className="mt-1 text-sm leading-6 text-amber-800">
-                {"\u0417\u0430\u043f\u0438\u0441\u044c \u0435\u0449\u0451 \u043d\u0435 \u043e\u0444\u043e\u0440\u043c\u043b\u0435\u043d\u0430."}
-              </p>
-            </div>
 
             {enrollError ? (
               <div
@@ -5899,6 +5885,8 @@ function CourseDetailAssignedState({
   course,
   enrollment,
   onStart,
+  startLoading,
+  startError,
   onAccount,
   onCatalog,
 }) {
@@ -5957,6 +5945,15 @@ function CourseDetailAssignedState({
       >
         {"\u2190 \u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043a\u0443\u0440\u0441\u043e\u0432"}
       </button>
+
+      {startError ? (
+        <div
+          data-testid="course-detail-assigned-start-error"
+          className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-200"
+        >
+          {startError}
+        </div>
+      ) : null}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
         <main className="min-w-0 space-y-6">
@@ -6106,9 +6103,10 @@ function CourseDetailAssignedState({
               type="button"
               data-testid="course-detail-assigned-mobile-start-action"
               onClick={onStart}
+              disabled={startLoading}
               className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
-              {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e"}
+              {startLoading ? "\u041d\u0430\u0447\u0438\u043d\u0430\u0435\u043c..." : "\u041d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
             </button>
 
             <button
@@ -6210,9 +6208,10 @@ function CourseDetailAssignedState({
                     type="button"
                     data-testid="course-detail-assigned-bottom-start-action"
                     onClick={onStart}
+                    disabled={startLoading}
                     className="min-h-12 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                   >
-                    {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e"}
+                    {startLoading ? "\u041d\u0430\u0447\u0438\u043d\u0430\u0435\u043c..." : "\u041d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
                   </button>
 
                   <button
@@ -6299,9 +6298,10 @@ function CourseDetailAssignedState({
             type="button"
             data-testid="course-detail-assigned-start-action"
             onClick={onStart}
+            disabled={startLoading}
             className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            {"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0443\u0447\u0435\u0431\u043d\u043e\u0435 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e"}
+            {startLoading ? "\u041d\u0430\u0447\u0438\u043d\u0430\u0435\u043c..." : "\u041d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435"}
           </button>
 
           <button
@@ -8501,6 +8501,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState("");
   const [enrollSuccess, setEnrollSuccess] = useState("");
+  const [startLoading, setStartLoading] = useState(false);
+  const [startError, setStartError] = useState("");
   const [existingEnrollment, setExistingEnrollment] = useState(null);
   const [accountCourseDetail, setAccountCourseDetail] = useState(null);
   const [lessonCompletionLoading, setLessonCompletionLoading] = useState(false);
@@ -8542,6 +8544,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setCompletionDocumentFocus(null);
       setPublicError("");
       setAccountError("");
+      setStartError("");
 
       if (!courseSlug) {
         setAccountDocumentsLoading(false);
@@ -9103,6 +9106,7 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollLoading(true);
       setEnrollError("");
       setEnrollSuccess("");
+      setStartError("");
 
       const createdEnrollment = await enrollAccountCourse(course.id);
       let createdCourseDetail = null;
@@ -9120,16 +9124,25 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setExistingEnrollment(createdCourseDetail || createdEnrollment);
       setAccountState(ACCOUNT_COURSE_LOAD_STATES.READY);
       setAccountError("");
+
+      if (createdEnrollmentId) {
+        try {
+          await startEnrollmentAndOpenFirstLesson(
+            createdEnrollmentId
+          );
+          return;
+        } catch (startErr) {
+          setStartError(
+            formatApiError(
+              startErr,
+              "\u0412\u044b \u0437\u0430\u043f\u0438\u0441\u0430\u043d\u044b \u043d\u0430 \u043a\u0443\u0440\u0441, \u043d\u043e \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u043d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435."
+            )
+          );
+        }
+      }
       setEnrollSuccess("Вы записаны на программу. Курс добавлен в личный кабинет.");
 
-      setAccountLearningEntryIntent({
-        tone: "green",
-        title: "Запись на курс",
-        message:
-          "Вы успешно записаны на программу. Курс добавлен в раздел «Моё обучение».",
-      });
 
-      onPageChange("account");
     } catch (err) {
       if (err.status === 409) {
         setExistingEnrollment({
@@ -9142,14 +9155,8 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
         setEnrollError("");
         setEnrollSuccess("Вы уже записаны на эту программу. Курс доступен в личном кабинете.");
 
-        setAccountLearningEntryIntent({
-          tone: "green",
-          title: "Курс уже назначен",
-          message:
-            "Вы уже записаны на эту программу. Она доступна в разделе «Моё обучение».",
-        });
 
-        onPageChange("account");
+        setReloadKey((value) => value + 1);
         return;
       }
 
@@ -9158,6 +9165,63 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       setEnrollLoading(false);
     }
   }
+  async function startEnrollmentAndOpenFirstLesson(enrollmentId) {
+    await startAccountCourse(enrollmentId);
+
+    const updatedCourseDetail = await getAccountCourseDetail(
+      enrollmentId
+    );
+
+    setAccountCourseDetail(updatedCourseDetail);
+    setExistingEnrollment(updatedCourseDetail);
+    setAccountState(ACCOUNT_COURSE_LOAD_STATES.READY);
+    setAccountError("");
+
+    const lessons = (
+      updatedCourseDetail?.modules || []
+    ).flatMap(
+      (module) => module?.lessons || []
+    );
+
+    const firstLesson =
+      lessons.find((lesson) => !lesson.is_completed)
+      || lessons[0]
+      || null;
+
+    if (firstLesson?.id) {
+      navigate(
+        `/account/courses/${enrollmentId}/lessons/${firstLesson.id}`
+      );
+      return;
+    }
+
+    navigate(`/account/courses/${enrollmentId}`);
+  }
+
+  async function handleStartAssignedCourse() {
+    const enrollmentId = getEnrollmentId(existingEnrollment);
+
+    if (!enrollmentId || startLoading) {
+      return;
+    }
+
+    try {
+      setStartLoading(true);
+      setStartError("");
+
+      await startEnrollmentAndOpenFirstLesson(enrollmentId);
+    } catch (err) {
+      setStartError(
+        formatApiError(
+          err,
+          "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043d\u0430\u0447\u0430\u0442\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435."
+        )
+      );
+    } finally {
+      setStartLoading(false);
+    }
+  }
+
   function handleOpenLearningWorkspace() {
     const enrollmentId = getEnrollmentId(
       existingEnrollment
@@ -9278,7 +9342,9 @@ export function CourseDetailPage({ courseSlug, onPageChange, onOpenCourse, user 
       <CourseDetailAssignedState
         course={course}
         enrollment={existingEnrollment}
-        onStart={handleOpenLearningWorkspace}
+        onStart={handleStartAssignedCourse}
+        startLoading={startLoading}
+        startError={startError}
         onAccount={() => {
           setAccountLearningEntryIntent();
           onPageChange("account");

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import PurePosixPath
+
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy import func, or_, select
@@ -49,6 +51,147 @@ LESSON_IMAGE_MIME_BY_EXTENSION = {
     ".gif": "image/gif",
 }
 
+
+
+COURSE_COVER_ALLOWED_EXTENSIONS = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+)
+
+COURSE_COVER_MIME_BY_EXTENSION = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def build_public_course_cover_url(
+    course: Course,
+) -> str | None:
+    if not course.cover_image_path:
+        return None
+
+    normalized_path = str(
+        course.cover_image_path
+    ).replace("\\", "/")
+
+    cover_path = PurePosixPath(normalized_path)
+    expected_parent = (
+        PurePosixPath("course-covers") / str(course.id)
+    )
+
+    if cover_path.parent != expected_parent:
+        return None
+
+    if (
+        cover_path.suffix.lower()
+        not in COURSE_COVER_ALLOWED_EXTENSIONS
+    ):
+        return None
+
+    asset_id = cover_path.stem
+
+    if not asset_id:
+        return None
+
+    return (
+        f"/api/v1/public/course-covers/"
+        f"{course.id}/{asset_id}/view"
+    )
+
+
+def resolve_current_course_cover_path(
+    course: Course,
+    *,
+    asset_id: str,
+):
+    if not course.cover_image_path:
+        return None, "application/octet-stream"
+
+    normalized_path = str(
+        course.cover_image_path
+    ).replace("\\", "/")
+
+    cover_path = PurePosixPath(normalized_path)
+    expected_parent = (
+        PurePosixPath("course-covers") / str(course.id)
+    )
+
+    if cover_path.parent != expected_parent:
+        return None, "application/octet-stream"
+
+    suffix = cover_path.suffix.lower()
+
+    if suffix not in COURSE_COVER_ALLOWED_EXTENSIONS:
+        return None, "application/octet-stream"
+
+    if cover_path.stem != asset_id:
+        return None, "application/octet-stream"
+
+    resolved_path = resolve_private_storage_path(
+        cover_path.as_posix()
+    )
+
+    if (
+        not resolved_path
+        or not resolved_path.exists()
+        or not resolved_path.is_file()
+    ):
+        return None, "application/octet-stream"
+
+    return (
+        resolved_path,
+        COURSE_COVER_MIME_BY_EXTENSION.get(
+            suffix,
+            "application/octet-stream",
+        ),
+    )
+
+
+@router.get(
+    "/course-covers/{course_id}/{asset_id}/view"
+)
+async def view_public_course_cover(
+    course_id: str,
+    asset_id: str,
+    session: AsyncSession = Depends(get_db),
+):
+    result = await session.execute(
+        select(Course).where(
+            Course.id == course_id
+        )
+    )
+
+    course = result.scalar_one_or_none()
+
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course cover image file not found",
+        )
+
+    resolved_path, media_type = (
+        resolve_current_course_cover_path(
+            course,
+            asset_id=asset_id,
+        )
+    )
+
+    if not resolved_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course cover image file not found",
+        )
+
+    return FileResponse(
+        path=resolved_path,
+        media_type=media_type,
+        filename=resolved_path.name,
+        content_disposition_type="inline",
+    )
 
 
 def resolve_public_lesson_image_path(
@@ -257,6 +400,7 @@ def build_public_course_item(course: Course) -> PublicCourseItemResponse:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        cover_image_url=build_public_course_cover_url(course),
     )
 
 
@@ -304,6 +448,7 @@ def build_public_course_detail(
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        cover_image_url=build_public_course_cover_url(course),
         modules=modules or [],
     )
 

@@ -253,7 +253,7 @@ function LearningCourseCard({
   course,
   detail,
   detailLoading,
-  onOpenLearningCourse,
+  onResumeLearningCourse,
   onOpenCourse,
   onLoadDetail,
 }) {
@@ -262,7 +262,7 @@ function LearningCourseCard({
   );
 
   function handlePrimaryAction() {
-    onOpenLearningCourse?.(course);
+    onResumeLearningCourse?.(course);
   }
 
   return (
@@ -404,7 +404,7 @@ export function LearnerAccountLearning({
   errorMessage = "",
   onStatusChange,
   onLoadCourseDetail,
-  onOpenLearningCourse,
+  onResumeLearningCourse,
   onOpenCourse,
   onOpenCatalog,
 }) {
@@ -596,8 +596,8 @@ export function LearnerAccountLearning({
                 course.enrollment_id
               }
               onLoadDetail={onLoadCourseDetail}
-              onOpenLearningCourse={
-                onOpenLearningCourse
+              onResumeLearningCourse={
+                onResumeLearningCourse
               }
               onOpenCourse={onOpenCourse}
             />

@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
+  buildApiUrl,
   completeAccountCourse,
   completeAccountCourseLesson,
   getAccountCourseDetail,
@@ -680,40 +681,64 @@ export function LearnerCoursePage() {
       </button>
 
       <header className="mt-4 border-b border-slate-100 pb-6">
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div className="min-w-0 flex-1">
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${getStatusClass(
-                detail.status
-              )}`}
+        <div
+          className={
+            detail.cover_image_url
+              ? "grid items-start gap-5 lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-8"
+              : "flex flex-wrap items-start justify-between gap-5"
+          }
+        >
+          {detail.cover_image_url ? (
+            <div
+              data-testid="learner-course-cover"
+              className="w-full overflow-hidden rounded-3xl bg-slate-100 shadow-sm ring-1 ring-slate-200"
+              style={{ aspectRatio: "2 / 1" }}
             >
-              {getStatusLabel(detail.status)}
-            </span>
-
-            <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-              {detail.course_title}
-            </h1>
-
-            {detail.course_description ? (
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                {detail.course_description}
-              </p>
-            ) : null}
-          </div>
-
-          {isOverviewRoute && detail.status === "assigned" ? (
-            <button
-              type="button"
-              onClick={handleStartCourse}
-              disabled={actionLoading}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              <PlayCircle className="h-4 w-4" />
-              {actionLoading
-                ? "Начинаем..."
-                : "Начать обучение"}
-            </button>
+              <img
+                src={buildApiUrl(detail.cover_image_url)}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </div>
           ) : null}
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div className="min-w-0 flex-1">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${getStatusClass(
+                    detail.status
+                  )}`}
+                >
+                  {getStatusLabel(detail.status)}
+                </span>
+
+                <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                  {detail.course_title}
+                </h1>
+
+                {detail.course_description ? (
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                    {detail.course_description}
+                  </p>
+                ) : null}
+              </div>
+
+              {isOverviewRoute && detail.status === "assigned" ? (
+                <button
+                  type="button"
+                  onClick={handleStartCourse}
+                  disabled={actionLoading}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  {actionLoading
+                    ? "Начинаем..."
+                    : "Начать обучение"}
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         <div
@@ -1159,14 +1184,7 @@ export function LearnerCoursePage() {
                   >
                     Урок завершён
                   </span>
-                ) : (
-                  <span
-                    data-testid="learner-course-lesson-status-badge"
-                    className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
-                  >
-                    Текущий урок
-                  </span>
-                )}
+                ) : null}
               </div>
 
               <div
@@ -1176,16 +1194,10 @@ export function LearnerCoursePage() {
                 <span>
                   Урок {selectedLessonNumber} из {allLessons.length}
                 </span>
-
-                {selectedLesson.is_required ? (
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 ring-1 ring-slate-200">
-                    Обязательный урок
-                  </span>
-                ) : null}
               </div>
 
               {selectedLesson.description ? (
-                <p className="mt-3 text-sm leading-6 text-slate-600">
+                <p className="mt-4 max-w-4xl text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
                   {selectedLesson.description}
                 </p>
               ) : null}
@@ -1199,7 +1211,7 @@ export function LearnerCoursePage() {
                     Материал урока
                   </div>
 
-                  <div className="max-w-3xl whitespace-pre-wrap text-base leading-7 text-slate-700">
+                  <div className="max-w-4xl whitespace-pre-wrap text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
                     {selectedLesson.content_text}
                   </div>
                 </div>
@@ -1239,7 +1251,7 @@ export function LearnerCoursePage() {
                     Материалы и задания
                   </div>
 
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-5">
                     {selectedLesson.blocks.map((block) =>
                       block.block_type === "quiz" ? (
                         <LearnerQuizBlock

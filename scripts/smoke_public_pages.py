@@ -228,11 +228,15 @@ def main() -> None:
         "frontend/src/pages/HomePage.jsx",
         [
             'import { useEffect, useState } from "react";',
-            'import { getPublicCourses } from "../api/client";',
+            'import { buildApiUrl, getPublicCourses } from "../api/client";',
             "const HOME_FEATURES = [",
             'page: "verify-document"',
             "function formatCourseDocument(course)",
             "function ProgramCard({ course, index, onOpenCourse })",
+            "course.cover_image_url",
+            'data-testid="home-course-cover"',
+            'style={{ aspectRatio: "2 / 1" }}',
+            "buildApiUrl(course.cover_image_url)",
             "export function HomePage",
             "const [featuredCourses, setFeaturedCourses] = useState([]);",
             "const [loadingCourses, setLoadingCourses] = useState(true);",
@@ -266,7 +270,7 @@ def main() -> None:
         "frontend/src/pages/CatalogPage.jsx",
         [
             'import { useEffect, useMemo, useState } from "react";',
-            'import { getAccountCourses, getPublicCourses } from "../api/client";',
+            'import { buildApiUrl, getAccountCourses, getPublicCourses } from "../api/client";',
             "function getEnrollmentStatusLabel(status)",
             "function getEnrollmentStatusTone(status)",
             "function buildEnrollmentMap(accountCourses)",
@@ -278,6 +282,10 @@ def main() -> None:
             "function getDocumentOptions(courses)",
             "function getInitialCatalogQuery()",
             "function CourseCard({",
+            "course.cover_image_url",
+            'data-testid="catalog-course-cover"',
+            'style={{ aspectRatio: "2 / 1" }}',
+            "buildApiUrl(course.cover_image_url)",
             "function CatalogEmptyState({",
             "export function CatalogPage",
             "const [courses, setCourses] = useState([]);",
@@ -456,7 +464,17 @@ def main() -> None:
             "function handleOpenLearningWorkspace()",
             "const navigate = useNavigate();",
             "`/account/courses/${enrollmentId}`",
-            "onStart={handleOpenLearningWorkspace}",
+            "async function startEnrollmentAndOpenFirstLesson(enrollmentId)",
+            "await startEnrollmentAndOpenFirstLesson(\n            createdEnrollmentId\n          );",
+            "async function handleStartAssignedCourse()",
+            "await startEnrollmentAndOpenFirstLesson(enrollmentId);",
+            "await startAccountCourse(enrollmentId);",
+            "const updatedCourseDetail = await getAccountCourseDetail(",
+            "lessons.find((lesson) => !lesson.is_completed)",
+            "`/account/courses/${enrollmentId}/lessons/${firstLesson.id}`",
+            "onStart={handleStartAssignedCourse}",
+            'data-testid="course-detail-assigned-start-error"',
+            "disabled={startLoading}",
             "function getCourseDetailOverviewLessons(course)",
             "function CourseDetailActiveState({",
             'data-testid="course-detail-active-state"',
@@ -523,6 +541,31 @@ def main() -> None:
             'const [error, setError] = useState("");',
             "const [courseResponse, coursesResponse, accountCoursesResponse] = await Promise.all([",
             "user ? getAccountCourses() : Promise.resolve(null)",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/routing/PublicRouteScrollTop.jsx",
+        [
+            'import { useLayoutEffect } from "react";',
+            'import { useLocation } from "react-router-dom";',
+            "export function PublicRouteScrollTop()",
+            "const { pathname } = useLocation();",
+            "useLayoutEffect(() => {",
+            "window.scrollTo({",
+            "top: 0,",
+            "left: 0,",
+            'behavior: "auto",',
+            "}, [pathname]);",
+            "return null;",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/App.jsx",
+        [
+            'import { PublicRouteScrollTop } from "./components/routing/PublicRouteScrollTop";',
+            "<PublicRouteScrollTop />",
         ],
     )
 

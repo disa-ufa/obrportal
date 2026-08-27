@@ -74,7 +74,6 @@ def main() -> None:
             'data-testid="lesson-studio-canvas-block"',
             'data-testid="lesson-studio-inspector-form"',
             "function LessonStudioTopbar",
-            'className="sticky top-4 z-20 rounded-[2rem] bg-white/95 p-5 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
             'const courseHref = courseId ? `/admin/courses#course-${courseId}` : "/admin/courses";',
             'К курсу',
             'data-testid="lesson-studio-quick-actions"',
@@ -87,10 +86,7 @@ def main() -> None:
             'data-testid="lesson-studio-sidebar-quick-add-button"',
             'data-testid="lesson-studio-sidebar-quick-add"',
             'function LessonStudioSidebarQuickAdd(',
-            'className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"',
-            'target.scrollIntoView({ behavior: "smooth", block: "center" });',
             'document.getElementById(`studio-block-${blockId}`)',
-            'const handleSelectBlock = useCallback((blockId) => {',
             'data-testid="lesson-studio-structure-block-issues"',
             'data-testid="lesson-studio-structure-block"',
             'data-testid="lesson-studio-structure-stats"',
@@ -121,7 +117,6 @@ def main() -> None:
             'blocks={studioStructureBlocks}',
             'const studioStructureBlocks = viewMode === "preview" ? visiblePreviewBlocks : blocks;',
             '',
-            '!previewMode && issues.length',
             'previewMode={previewMode}',
             'blocks.filter((block) => block.is_active !== false)',
             'const visibleBlocks = previewMode',
@@ -134,8 +129,6 @@ def main() -> None:
             'data-testid="lesson-studio-preview-panel"',
             'function LessonStudioPreviewPanel',
             'data-testid="lesson-studio-preview-mode-button"',
-            'data-testid="lesson-studio-editor-mode-button"',
-            'data-testid="lesson-studio-mode-switcher"',
             'onModeChange={setViewMode}',
             'mode={viewMode}',
             'const [viewMode, setViewMode] = useState("editor");',
@@ -168,14 +161,12 @@ def main() -> None:
             'data-testid="lesson-studio-callout-preview"',
             'data-testid="lesson-studio-assignment-preview"',
             'data-testid="lesson-studio-quiz-preview"',
-            'data-testid="lesson-studio-link-preview"',
             'data-testid="lesson-studio-video-preview"',
             'data-testid="lesson-studio-canvas-type-preview"',
             'function LessonCanvasTypePreview',
             'getBlockPreviewMeta',
             "function LessonStudioInspector",
             'stage83_3_4_3_clear_missing_selected_block',
-            'xl:grid-cols-[280px_minmax(0,1fr)]',
             'savingBlockId={blockActionId}',
             'variant="inline"',
             'data-testid="lesson-studio-inline-inspector-close"',
@@ -184,12 +175,10 @@ def main() -> None:
             'const draftBlock = selectedBlock && draftPayload ? { ...selectedBlock, ...draftPayload } : null;',
             'const draftPayload = selectedBlock ? buildInspectorBlockPayload(selectedBlock, form) : null;',
             'Перед сохранением проверьте поля:',
-            'Служебная информация',
             'Публикация',
             'Контент',
             'Нужно заполнить',
             'Блок готов',
-            'data-testid="lesson-studio-inspector-service-info"',
             'data-testid="lesson-studio-inspector-save-bar"',
             'data-testid="lesson-studio-inspector-issues"',
             'data-testid="lesson-studio-inspector-section-publication"',
@@ -279,7 +268,9 @@ def main() -> None:
     main_end = lesson_studio_source.index("</main>", main_start)
     main_source = lesson_studio_source[main_start:main_end]
     forbidden_persistent_inspector = [
-        "selectedBlock={selectedBlock}",
+        "<LessonStudioInspector",
+        'data-testid="lesson-studio-inspector-form"',
+        'data-testid="lesson-studio-inline-inspector-close"',
     ]
     present_persistent_inspector = [
         fragment for fragment in forbidden_persistent_inspector if fragment in main_source
@@ -464,7 +455,7 @@ def main() -> None:
         "Правка блока",
         'data-testid="lesson-studio-inline-inspector-cancel"',
         "getBlockDisplayTitle(selectedBlock)",
-        'className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-2 rounded-[1.25rem] bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
+        'className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-slate-200 backdrop-blur"',
     ]
     missing_compact_inline_form_fragments = [
         fragment for fragment in compact_inline_form_fragments
@@ -497,8 +488,8 @@ def main() -> None:
         'data-testid="lesson-studio-sidebar-quick-add-trigger"',
         'data-testid="lesson-studio-sidebar-quick-add-menu"',
         'data-testid="lesson-studio-structure-block-status"',
-        "Проблем:",
-        "Скрыто:",
+        "Проблем",
+        "Скрытых",
         "правится",
         "line-clamp-2",
     ]
@@ -620,9 +611,28 @@ def main() -> None:
 
     # stage83_3_6_8_simplified_topbar_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    lesson_studio_topbar_start = lesson_studio_source.find(
+        "function LessonStudioTopbar("
+    )
+
+    if lesson_studio_topbar_start < 0:
+        print("Lesson Studio topbar function is missing")
+        raise SystemExit(1)
+
+    lesson_studio_topbar_end = lesson_studio_source.find(
+        "\nfunction ",
+        lesson_studio_topbar_start + 1,
+    )
+
+    if lesson_studio_topbar_end < 0:
+        print("Lesson Studio topbar boundary is missing")
+        raise SystemExit(1)
+
+    lesson_studio_topbar_source = lesson_studio_source[
+        lesson_studio_topbar_start:lesson_studio_topbar_end
+    ]
     simplified_topbar_required_fragments = [
-        'data-testid="lesson-studio-mode-switcher"',
-        'data-testid="lesson-studio-editor-mode-button"',
         'data-testid="lesson-studio-preview-mode-button"',
         'data-testid="lesson-studio-back-to-courses"',
         'data-testid="lesson-studio-course-link"',
@@ -630,7 +640,7 @@ def main() -> None:
     ]
     missing_simplified_topbar_required_fragments = [
         fragment for fragment in simplified_topbar_required_fragments
-        if fragment not in lesson_studio_source
+        if fragment not in lesson_studio_topbar_source
     ]
     if missing_simplified_topbar_required_fragments:
         print("Lesson Studio simplified topbar required fragments are missing:")
@@ -646,7 +656,7 @@ def main() -> None:
     ]
     present_simplified_topbar_removed_fragments = [
         fragment for fragment in simplified_topbar_removed_fragments
-        if fragment in lesson_studio_source
+        if fragment in lesson_studio_topbar_source
     ]
     if present_simplified_topbar_removed_fragments:
         print("Lesson Studio simplified topbar still contains removed fragments:")
@@ -666,8 +676,10 @@ def main() -> None:
         'data-testid="lesson-studio-block-order-controls"',
         'data-testid="lesson-studio-card-actions-trigger"',
         'data-testid="lesson-studio-card-actions"',
-        'compact\n              ? "mt-2 flex items-center justify-end gap-2 border-t border-slate-100 pt-2"',
-        "{!compact && !inlineRichTextEditing ? (",
+        "const inlineEditing = !previewMode && selected && editing;",
+        "previewMode || inlineEditing",
+        "absolute right-5 top-5 z-10 flex items-center justify-end",
+        "{!compact && !inlineEditing ? (",
     ]
 
     missing_compact_canvas_required_fragments = [
@@ -731,7 +743,14 @@ def main() -> None:
         "setEditingBlockId(firstProblemBlock.id);",
         "showOnlyProblemBlocks",
         "setShowOnlyProblemBlocks",
-        "const displayedBlocks = showOnlyProblems ? problemBlocks : blocks;",
+        'const effectiveFilter = showOnlyProblems ? "problems" : structureFilter;',
+        "const displayedBlocks =",
+        'effectiveFilter === "problems"',
+        "? problemBlocks",
+        ': effectiveFilter === "required"',
+        "? requiredBlocks",
+        ": blocks;",
+        "const hiddenByProblemFilter = Math.max(blocks.length - displayedBlocks.length, 0);",
         'data-testid="lesson-studio-structure-problem-filter"',
         'data-testid="lesson-studio-structure-problems-filter-button"',
         "displayedBlocks.map((block, index) => {",
@@ -867,7 +886,8 @@ def main() -> None:
 
     expected_visual_numbering_fragments = [
         "#{item.index + 1} · {item.title}",
-        "#{index + 1} · {getLessonBlockTypeLabel(block.block_type)}",
+        'const blockTypeLabel = isLessonImageBlock(block) ? "Изображение" : getLessonBlockTypeLabel(block.block_type);',
+        "#{index + 1} · {blockTypeLabel}",
     ]
 
     missing_visual_numbering_fragments = [
@@ -897,7 +917,8 @@ def main() -> None:
         "lesson-rich-text-character-count",
         "lesson-rich-text-link-editor",
         "Совет: короткие абзацы",
-        "H2 Заголовок",
+        "toggleHeading({ level: 2 })",
+        '<Heading2 className="h-4 w-4" aria-hidden="true" />',
         "Ctrl+B · Ctrl+I · Enter",
         "Редактор учебного текста",
         "applyEditorLink",
@@ -954,7 +975,7 @@ def main() -> None:
 
     hide_text_preview_required_fragments = [
         "const inlineRichTextEditing = !previewMode && selected && editing && isLessonRichTextBlock(block);",
-        "{!compact && !inlineRichTextEditing ? (",
+        "{!compact && !inlineEditing ? (",
         "<LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />",
     ]
 
@@ -976,7 +997,14 @@ def main() -> None:
         "const inlineRichTextMode = inlineMode && richTextEditorMode;",
         "data-testid=\"lesson-studio-text-block-settings\"",
         "Настройки блока",
-        "Заголовок · обязательность · активность",
+        "Название, обязательность и видимость блока для обучающихся.",
+        "Обязательный",
+        "Показывать в уроке",
+        "checked={form.is_required}",
+        'handleFieldChange("is_required", event.target.checked)',
+        "checked={form.is_active}",
+        'handleFieldChange("is_active", event.target.checked)',
+        "data-testid=\"lesson-studio-inspector-section-publication\"",
         "data-testid=\"lesson-studio-inspector-title-field\"",
         "{inlineRichTextMode ? (",
     ]
@@ -1032,55 +1060,143 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
-    # stage83_3_7_9_safe_rich_text_preview_guard
+    # stage83_3_7_9_shared_safe_rich_text_preview_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    lesson_rich_text_view_source = read_text(
+        "frontend/src/components/lesson/LessonRichTextView.jsx"
+    )
 
-    safe_rich_text_preview_required_fragments = [
+    studio_shared_rich_text_required_fragments = [
+        'import LessonRichTextView, {',
+        "getSafeLessonRichTextHref,",
+        '} from "../components/lesson/LessonRichTextView";',
+        "getSafeLessonRichTextHref(sourceValue, buildApiUrl)",
+        "getSafeLessonRichTextHref(originalUrl, buildApiUrl)",
+        "getSafeLessonRichTextHref(getAudioBlockDownloadUrl(block), buildApiUrl)",
+        "getSafeLessonRichTextHref(audioUrl, buildApiUrl)",
+        "getSafeLessonRichTextHref(imageUrl, buildApiUrl)",
+        "getSafeLessonRichTextHref(presentationViewerUrl, buildApiUrl)",
+        "getSafeLessonRichTextHref(materialUrl, buildApiUrl)",
         "function LessonRichTextSafePreview({ block, preview, learnerMode = false })",
-        "function renderLessonRichTextNode(node, key)",
-        "function getSafeLessonRichTextHref(href)",
-        "data-testid=\"lesson-rich-text-safe-preview\"",
-        "data-testid=\"lesson-rich-text-safe-link\"",
-        "const richTextPreview = type === \"rich_text\" || type === \"text\";",
+        "<LessonRichTextView",
+        "documentValue={documentValue}",
+        "fallbackText={fallbackText}",
+        "learnerMode={learnerMode}",
+        "apiUrlBuilder={buildApiUrl}",
+        'const richTextPreview = type === "rich_text" || type === "text";',
         "<LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />",
         "{richTextPreview ? (",
     ]
 
-    missing_safe_rich_text_preview_fragments = [
-        fragment for fragment in safe_rich_text_preview_required_fragments
+    missing_studio_shared_rich_text_fragments = [
+        fragment
+        for fragment in studio_shared_rich_text_required_fragments
         if fragment not in lesson_studio_source
     ]
 
-    if missing_safe_rich_text_preview_fragments:
-        print("Lesson Studio safe rich text preview guard failed:")
-        for fragment in missing_safe_rich_text_preview_fragments:
+    if missing_studio_shared_rich_text_fragments:
+        print("Lesson Studio shared rich text integration is incomplete:")
+        for fragment in missing_studio_shared_rich_text_fragments:
             print(f" - {fragment}")
         raise SystemExit(1)
 
-    if "dangerouslySetInnerHTML" in lesson_studio_source:
-        print("Lesson Studio safe rich text preview uses forbidden dangerouslySetInnerHTML")
+    shared_rich_text_required_fragments = [
+        "export default function LessonRichTextView({",
+        "function isLessonRichTextDocumentEmpty(documentValue)",
+        "function getLessonRichTextPlainText(node)",
+        "export function getSafeLessonRichTextHref(href, apiUrlBuilder)",
+        "const LESSON_RICH_TEXT_ALLOWED_COLORS",
+        "function getSafeLessonRichTextColor(value)",
+        "function getLessonRichTextAlignClass(value)",
+        "function renderLessonRichTextMarks(",
+        "function renderLessonRichTextChildren(nodes, keyPrefix, apiUrlBuilder)",
+        "function renderLessonRichTextNode(node, key, apiUrlBuilder)",
+        'data-testid="lesson-rich-text-safe-preview"',
+        'data-testid="lesson-rich-text-safe-link"',
+        '["http:", "https:", "mailto:", "tel:"]',
+        'value.startsWith("/api/")',
+        'value.startsWith("/")',
+        'value.startsWith("#")',
+        '"bold"',
+        '"italic"',
+        '"code"',
+        '"link"',
+        '"textStyle"',
+        '"paragraph"',
+        '"heading"',
+        '"bulletList"',
+        '"orderedList"',
+        '"listItem"',
+        '"blockquote"',
+        '"codeBlock"',
+    ]
+
+    missing_shared_rich_text_fragments = [
+        fragment
+        for fragment in shared_rich_text_required_fragments
+        if fragment not in lesson_rich_text_view_source
+    ]
+
+    if missing_shared_rich_text_fragments:
+        print("Shared LessonRichTextView contract is incomplete:")
+        for fragment in missing_shared_rich_text_fragments:
+            print(f" - {fragment}")
         raise SystemExit(1)
+
+    forbidden_local_renderer_fragments = [
+        "function isLessonRichTextDocumentEmpty(",
+        "function getLessonRichTextPlainText(",
+        "function getSafeLessonRichTextHref(",
+        "const LESSON_RICH_TEXT_ALLOWED_COLORS",
+        "function getSafeLessonRichTextColor(",
+        "function getLessonRichTextAlignClass(",
+        "function renderLessonRichTextMarks(",
+        "function renderLessonRichTextChildren(",
+        "function renderLessonRichTextNode(",
+    ]
+
+    present_local_renderer_fragments = [
+        fragment
+        for fragment in forbidden_local_renderer_fragments
+        if fragment in lesson_studio_source
+    ]
+
+    if present_local_renderer_fragments:
+        print("Lesson Studio still contains duplicated rich text presentation logic:")
+        for fragment in present_local_renderer_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    if (
+        "dangerouslySetInnerHTML" in lesson_studio_source
+        or "dangerouslySetInnerHTML" in lesson_rich_text_view_source
+    ):
+        print("Safe rich text rendering uses forbidden dangerouslySetInnerHTML")
+        raise SystemExit(1)
+
 
     # stage83_3_7_10_single_lesson_preview_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    lesson_rich_text_view_source = read_text(
+        "frontend/src/components/lesson/LessonRichTextView.jsx"
+    )
 
     single_lesson_preview_required_fragments = [
         'data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}',
         'const richTextPreview = type === "rich_text" || type === "text";',
-        'data-testid="lesson-rich-text-safe-preview"',
         "function LessonRichTextSafePreview({ block, preview, learnerMode = false })",
-        "learnerMode = false",
-        "learnerMode ? \"mt-2\"",
-        "? \"py-1 text-base leading-8 text-slate-800\"",
+        "<LessonRichTextView",
+        '? "mt-2"',
+        '? "py-1 text-base leading-8 text-slate-800"',
         "<LessonRichTextSafePreview block={block} preview={previewValue} learnerMode={learnerMode} />",
         "<LessonCanvasTypePreview block={block} preview={preview} learnerMode={previewMode} />",
-        "data-testid={previewMode ? \"lesson-studio-learner-document\" : \"lesson-studio-editor-block-list\"}",
         "mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12",
         "border-b border-slate-100 pb-5 last:border-b-0 last:pb-0",
     ]
 
     missing_single_lesson_preview_fragments = [
-        fragment for fragment in single_lesson_preview_required_fragments
+        fragment
+        for fragment in single_lesson_preview_required_fragments
         if fragment not in lesson_studio_source
     ]
 
@@ -1090,12 +1206,32 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+    shared_single_lesson_preview_required_fragments = [
+        'data-testid="lesson-rich-text-safe-preview"',
+        'learnerMode',
+        '"space-y-4 break-words text-slate-800"',
+        '"space-y-3 break-words"',
+    ]
+
+    missing_shared_single_lesson_preview_fragments = [
+        fragment
+        for fragment in shared_single_lesson_preview_required_fragments
+        if fragment not in lesson_rich_text_view_source
+    ]
+
+    if missing_shared_single_lesson_preview_fragments:
+        print("Shared LessonRichTextView learner-preview contract failed:")
+        for fragment in missing_shared_single_lesson_preview_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
     forbidden_single_lesson_preview_fragments = [
-        
+
     ]
 
     present_forbidden_single_lesson_preview_fragments = [
-        fragment for fragment in forbidden_single_lesson_preview_fragments
+        fragment
+        for fragment in forbidden_single_lesson_preview_fragments
         if fragment in lesson_studio_source
     ]
 
@@ -1105,10 +1241,11 @@ def main() -> None:
             print(f" - {fragment}")
         raise SystemExit(1)
 
+
     # stage83_3_7_11_clean_preview_layout_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
 
-    clean_preview_layout_required_fragments = ['viewMode !== "preview" ? (', '? "grid gap-5"', '"grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]"', '"min-w-0 rounded-[2rem] bg-slate-50/70 p-4 sm:p-6"', 'data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}']
+    clean_preview_layout_required_fragments = ['viewMode !== "preview" ? (', '? "grid gap-5"', '"mx-auto w-full max-w-6xl space-y-5 rounded-[1.75rem] bg-white px-7 py-6 shadow-sm ring-1 ring-slate-100 sm:px-9 lg:px-12"', '"border-b border-slate-100 pb-5 last:border-b-0 last:pb-0"', 'data-testid={previewMode ? "lesson-studio-learner-document" : "lesson-studio-editor-block-list"}']
 
     missing_clean_preview_layout_fragments = [
         fragment for fragment in clean_preview_layout_required_fragments
@@ -1159,19 +1296,17 @@ def main() -> None:
 
     # stage83_3_7_13_learner_preview_polish_guard
     lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+    lesson_rich_text_view_source = read_text(
+        "frontend/src/components/lesson/LessonRichTextView.jsx"
+    )
 
     learner_preview_polish_required_fragments = [
-        'learnerMode ? "space-y-4 break-words text-slate-800" : "space-y-3 break-words"',
         '? "py-1 text-base leading-8 text-slate-800"',
-        'mt-5 overflow-hidden rounded-3xl bg-slate-950 p-4 text-white shadow-sm ring-1 ring-slate-900/10',
-        'mt-5 rounded-3xl border-l-4 border-amber-300 bg-amber-50 p-5 ring-1 ring-amber-100',
-        'mt-5 rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-200',
-        'mt-5 rounded-3xl bg-blue-50 p-5 ring-1 ring-blue-100',
-        'text-base leading-8 text-slate-700',
     ]
 
     missing_learner_preview_polish_fragments = [
-        fragment for fragment in learner_preview_polish_required_fragments
+        fragment
+        for fragment in learner_preview_polish_required_fragments
         if fragment not in lesson_studio_source
     ]
 
@@ -1179,6 +1314,417 @@ def main() -> None:
         print("Lesson Studio learner preview polish guard failed:")
         for fragment in missing_learner_preview_polish_fragments:
             print(f" - {fragment}")
+        raise SystemExit(1)
+
+    shared_rich_text_polish_required_fragments = [
+        '"space-y-4 break-words text-slate-800"',
+        '"space-y-3 break-words"',
+        'className={`text-base leading-8 text-slate-700 ${alignClass}`}',
+        "ml-6 list-disc space-y-2 text-base leading-8 text-slate-700",
+        "ml-6 list-decimal space-y-2 text-base leading-8 text-slate-700",
+        "rounded-2xl border-l-4 border-blue-300 bg-blue-50 px-5 py-4 text-base italic leading-8 text-slate-700",
+    ]
+
+    missing_shared_rich_text_polish_fragments = [
+        fragment
+        for fragment in shared_rich_text_polish_required_fragments
+        if fragment not in lesson_rich_text_view_source
+    ]
+
+    if missing_shared_rich_text_polish_fragments:
+        print("Shared LessonRichTextView typography guard failed:")
+        for fragment in missing_shared_rich_text_polish_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+
+    # stage_quiz_q1b_shared_learner_preview_guard
+    lesson_studio_source = read_text("frontend/src/pages/LessonStudioPage.jsx")
+
+    quiz_shared_import = (
+        'import LessonQuizQuestionView '
+        'from "../components/lesson/LessonQuizQuestionView";'
+    )
+
+    quiz_shared_presentation_import = (
+        'import { LessonQuizQuestionCard, LessonQuizShell } '
+        'from "../components/lesson/LessonQuizQuestionView";'
+    )
+
+    if quiz_shared_import not in lesson_studio_source:
+        print("Lesson Studio Quiz shared learner-preview import is missing")
+        raise SystemExit(1)
+
+    if quiz_shared_presentation_import not in lesson_studio_source:
+        print("Lesson Studio Quiz shared presentation import is missing")
+        raise SystemExit(1)
+
+    quiz_preview_start = lesson_studio_source.index(
+        "function LessonQuizCanvasPreview("
+    )
+
+    quiz_preview_end = lesson_studio_source.index(
+        "\n\nfunction ",
+        quiz_preview_start + 1,
+    )
+
+    quiz_preview_source = lesson_studio_source[
+        quiz_preview_start:quiz_preview_end
+    ]
+
+    quiz_learner_branch_start = quiz_preview_source.index(
+        "  if (learnerMode) {"
+    )
+
+    quiz_editor_return_anchor = (
+        '  return (\n'
+        '    <div\n'
+        '      data-testid="lesson-studio-quiz-preview"'
+    )
+
+    if (
+        quiz_preview_source.count(
+            quiz_editor_return_anchor
+        )
+        != 1
+    ):
+        print("Lesson Studio Quiz editor return anchor count is not exactly one")
+        raise SystemExit(1)
+
+    quiz_editor_return_start = quiz_preview_source.index(
+        quiz_editor_return_anchor,
+        quiz_learner_branch_start,
+    )
+
+    quiz_learner_branch = quiz_preview_source[
+        quiz_learner_branch_start:quiz_editor_return_start
+    ]
+
+    quiz_editor_preview = quiz_preview_source[
+        quiz_editor_return_start:
+    ]
+
+    quiz_shared_required_fragments = [
+        "if (learnerMode)",
+        "<LessonQuizShell",
+        'testId="lesson-studio-quiz-preview"',
+        'presentationView="lesson-quiz-preview"',
+        "title={quiz.title || previewValue",
+        "description={quiz.description}",
+        "required={block?.is_required}",
+        "{questions.map((question, index) => {",
+        "<LessonQuizQuestionCard",
+        'testId="lesson-studio-quiz-question-preview"',
+        "showPoints={quiz.ui?.show_question_points !== false}",
+        "<LessonQuizQuestionView",
+        "value={undefined}",
+        "disabled",
+        "onChange={() => undefined}",
+    ]
+
+    missing_quiz_shared_fragments = [
+        fragment
+        for fragment in quiz_shared_required_fragments
+        if fragment not in quiz_learner_branch
+    ]
+
+    if missing_quiz_shared_fragments:
+        print("Lesson Studio Quiz learner preview shared-view fragments are missing:")
+        for fragment in missing_quiz_shared_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    quiz_learner_forbidden_fragments = [
+        "getQuizQuestionPreviewText",
+        "correct_value",
+        "accepted_answers",
+        "correct_number",
+        "correct_answer",
+        "getAccountCourseLessonQuizAttempts",
+        "submitAccountCourseLessonQuizAttempt",
+        'className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"',
+        "bg-amber",
+        "ring-amber",
+        "questionCount",
+        "totalPoints",
+        "passScore",
+        "attemptsLabel",
+        "visibleQuestions",
+        r"\u0415\u0449\u0451 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432:",
+    ]
+
+    present_quiz_learner_forbidden_fragments = [
+        fragment
+        for fragment in quiz_learner_forbidden_fragments
+        if fragment in quiz_learner_branch
+    ]
+
+    if present_quiz_learner_forbidden_fragments:
+        print("Lesson Studio Quiz learner preview exposes forbidden author/learner behavior:")
+        for fragment in present_quiz_learner_forbidden_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    if (
+        quiz_editor_preview.count(
+            "getQuizQuestionPreviewText(question)"
+        )
+        != 1
+    ):
+        print("Lesson Studio Quiz editor author preview helper was not preserved exactly once")
+        raise SystemExit(1)
+
+    lesson_quiz_question_view_source = read_text(
+        "frontend/src/components/lesson/LessonQuizQuestionView.jsx"
+    )
+
+    quiz_shared_view_required_fragments = [
+        "export default function LessonQuizQuestionView(",
+        "export function LessonQuizQuestionCard(",
+        "export function LessonQuizShell(",
+        'className="rounded-3xl bg-blue-50/70 p-5 ring-1 ring-blue-100"',
+        'className="text-xs font-black uppercase tracking-[0.14em] text-blue-700"',
+        'className="mt-1 text-lg font-black text-slate-950"',
+        'className="rounded-full bg-white px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"',
+        'className="rounded-2xl bg-white p-5 ring-1 ring-slate-200"',
+        'className="flex flex-wrap items-start justify-between gap-3"',
+        'className="text-xs font-black uppercase tracking-[0.12em] text-slate-400"',
+        'className="mt-1 text-base font-black leading-6 text-slate-950"',
+        'if (type === "single_choice")',
+        'if (type === "multiple_choice")',
+        'if (type === "true_false")',
+        'if (type === "short_text")',
+        'if (type === "number")',
+        "stableShuffle(",
+        "stableHash(",
+    ]
+
+    missing_quiz_shared_view_fragments = [
+        fragment
+        for fragment in quiz_shared_view_required_fragments
+        if fragment not in lesson_quiz_question_view_source
+    ]
+
+    if missing_quiz_shared_view_fragments:
+        print("Shared LessonQuizQuestionView contract is incomplete:")
+        for fragment in missing_quiz_shared_view_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+    quiz_shared_view_forbidden_fragments = [
+        "useState(",
+        "useEffect(",
+        "useMemo(",
+        "getAccountCourseLessonQuizAttempts",
+        "submitAccountCourseLessonQuizAttempt",
+        "correct_value",
+        "accepted_answers",
+        "correct_number",
+        "answer_key",
+        "result?.correct_answer",
+    ]
+
+    present_quiz_shared_view_forbidden_fragments = [
+        fragment
+        for fragment in quiz_shared_view_forbidden_fragments
+        if fragment in lesson_quiz_question_view_source
+    ]
+
+    if present_quiz_shared_view_forbidden_fragments:
+        print("Shared LessonQuizQuestionView contains forbidden behavior/security fragments:")
+        for fragment in present_quiz_shared_view_forbidden_fragments:
+            print(f" - {fragment}")
+        raise SystemExit(1)
+
+
+    # ASSIGNMENT A5 SHARED VIEW GUARD
+    assignment_shared_import = (
+        'import { LessonAssignmentView } '
+        'from "../components/lesson/LessonAssignmentView";'
+    )
+
+    if assignment_shared_import not in lesson_studio_source:
+        print("Lesson Studio Assignment shared view import is missing")
+        raise SystemExit(1)
+
+    assignment_preview_start = lesson_studio_source.find(
+        "function LessonAssignmentCanvasPreview("
+    )
+
+    if assignment_preview_start < 0:
+        print("Lesson Studio Assignment preview function is missing")
+        raise SystemExit(1)
+
+    assignment_preview_end = lesson_studio_source.find(
+        "\n\nfunction ",
+        assignment_preview_start + 1,
+    )
+
+    if assignment_preview_end < 0:
+        print("Lesson Studio Assignment preview boundary is missing")
+        raise SystemExit(1)
+
+    assignment_preview_source = lesson_studio_source[
+        assignment_preview_start:assignment_preview_end
+    ]
+
+    assignment_learner_start = assignment_preview_source.find(
+        "  if (learnerMode) {"
+    )
+
+    if assignment_learner_start < 0:
+        print("Lesson Studio Assignment learnerMode branch is missing")
+        raise SystemExit(1)
+
+    assignment_editor_start = assignment_preview_source.find(
+        "\n  return (",
+        assignment_learner_start + 1,
+    )
+
+    if assignment_editor_start < 0:
+        print("Lesson Studio Assignment editor branch is missing")
+        raise SystemExit(1)
+
+    assignment_learner_source = assignment_preview_source[
+        assignment_learner_start:assignment_editor_start
+    ]
+
+    assignment_editor_source = assignment_preview_source[
+        assignment_editor_start:
+    ]
+
+    assignment_learner_required = [
+        "<LessonAssignmentView",
+        "block={block}",
+        'statusLabel={"\\u041d\\u0435 \\u043d\\u0430\\u0447\\u0430\\u0442\\u043e"}',
+        'statusTone="bg-slate-50 text-slate-700 ring-slate-200"',
+        'testId="lesson-studio-assignment-preview"',
+    ]
+
+    assignment_learner_missing = [
+        fragment
+        for fragment in assignment_learner_required
+        if fragment not in assignment_learner_source
+    ]
+
+    if assignment_learner_missing:
+        print(
+            "Lesson Studio Assignment learner shared-view "
+            f"fragments are missing: {assignment_learner_missing}"
+        )
+        raise SystemExit(1)
+
+    assignment_learner_forbidden = [
+        "getAccountCourseLessonAssignmentSubmission",
+        "submitAccountCourseLessonAssignmentAnswer",
+        "completeAccountCourseLessonAssignment",
+        "useState(",
+        "useEffect(",
+        "submission?.",
+        "handleSubmitAnswer",
+        "handleCompleteAssignment",
+        "rounded-3xl bg-red-50/80",
+        "detailItems.map",
+        "expectedResult",
+        "submissionFormat",
+        "criteria",
+        "estimatedMinutes",
+    ]
+
+    assignment_learner_bad = [
+        fragment
+        for fragment in assignment_learner_forbidden
+        if fragment in assignment_learner_source
+    ]
+
+    if assignment_learner_bad:
+        print(
+            "Lesson Studio Assignment learner branch "
+            f"contains forbidden fragments: {assignment_learner_bad}"
+        )
+        raise SystemExit(1)
+
+    assignment_editor_required = [
+        'data-testid="lesson-studio-assignment-preview"',
+        'className="mt-3 rounded-2xl bg-white/90 p-4 ring-1 ring-black/5"',
+        "onClick={(event) => event.stopPropagation()}",
+        "{reviewModeLabel}",
+        "detailItems.map",
+    ]
+
+    assignment_editor_missing = [
+        fragment
+        for fragment in assignment_editor_required
+        if fragment not in assignment_editor_source
+    ]
+
+    if assignment_editor_missing:
+        print(
+            "Lesson Studio Assignment editor preview "
+            f"fragments are missing: {assignment_editor_missing}"
+        )
+        raise SystemExit(1)
+
+    assignment_shared_source = read_text(
+        "frontend/src/components/lesson/LessonAssignmentView.jsx"
+    )
+
+    assignment_shared_required = [
+        "export function LessonAssignmentView(",
+        'className="rounded-2xl bg-red-50/70 p-5 ring-1 ring-red-200"',
+        'data-testid="learner-assignment-material-link"',
+        "content.description",
+        "content.text",
+        "content.body",
+        "content.due",
+        "content.deadline",
+        "content.expected_result",
+        "content.submission_format",
+        "content.criteria",
+        "content.estimated_minutes",
+        "content.url",
+        "content.file_url",
+        "content.material_url",
+    ]
+
+    assignment_shared_missing = [
+        fragment
+        for fragment in assignment_shared_required
+        if fragment not in assignment_shared_source
+    ]
+
+    if assignment_shared_missing:
+        print(
+            "Lesson Assignment shared view "
+            f"fragments are missing: {assignment_shared_missing}"
+        )
+        raise SystemExit(1)
+
+    assignment_shared_forbidden = [
+        "getAccountCourseLessonAssignmentSubmission",
+        "submitAccountCourseLessonAssignmentAnswer",
+        "completeAccountCourseLessonAssignment",
+        "useState(",
+        "useEffect(",
+        "useMemo(",
+        "submission?.",
+        "review_comment",
+        "reviewed_at",
+        "handleSubmitAnswer",
+        "handleCompleteAssignment",
+    ]
+
+    assignment_shared_bad = [
+        fragment
+        for fragment in assignment_shared_forbidden
+        if fragment in assignment_shared_source
+    ]
+
+    if assignment_shared_bad:
+        print(
+            "Lesson Assignment shared view "
+            f"contains forbidden fragments: {assignment_shared_bad}"
+        )
         raise SystemExit(1)
 
     print("Lesson Studio page smoke passed")

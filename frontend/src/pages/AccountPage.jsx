@@ -215,6 +215,70 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
     );
   }
 
+  function getFirstIncompleteLearningLesson(detail) {
+    if (!detail?.modules?.length) {
+      return null;
+    }
+
+    return (
+      detail.modules
+        .flatMap((module) => module.lessons || [])
+        .find((lesson) => !lesson.is_completed) || null
+    );
+  }
+
+  async function handleResumeLearningCourse(
+    course,
+    lessonIdHint = ""
+  ) {
+    const enrollmentId = course?.enrollment_id;
+
+    if (!enrollmentId) {
+      return;
+    }
+
+    if (course.status !== "active") {
+      handleOpenLearningCourse(course);
+      return;
+    }
+
+    if (lessonIdHint) {
+      handleOpenLearningCourse(
+        course,
+        lessonIdHint
+      );
+      return;
+    }
+
+    const cachedDetail =
+      overviewCourseDetail?.enrollment_id === enrollmentId
+        ? overviewCourseDetail
+        : selectedCourseDetail?.enrollment_id === enrollmentId
+          ? selectedCourseDetail
+          : null;
+
+    try {
+      const detail =
+        cachedDetail ||
+        await getAccountCourseDetail(enrollmentId);
+
+      const nextLesson =
+        getFirstIncompleteLearningLesson(detail);
+
+      if (nextLesson?.id) {
+        handleOpenLearningCourse(
+          course,
+          nextLesson.id
+        );
+        return;
+      }
+    } catch {
+      // The course overview remains the safe fallback.
+    }
+
+    handleOpenLearningCourse(course);
+  }
+
   async function handleLoadLearningCourseDetail(course) {
     const enrollmentId = course?.enrollment_id;
 
@@ -353,6 +417,7 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
           errorMessage={error}
           onSectionChange={handleAccountSectionChange}
           onOpenLearningCourse={handleOpenLearningCourse}
+          onResumeLearningCourse={handleResumeLearningCourse}
         />
       </div>
 
@@ -377,7 +442,7 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
           }
           onStatusChange={setLearningStatusFilter}
           onLoadCourseDetail={handleLoadLearningCourseDetail}
-          onOpenLearningCourse={handleOpenLearningCourse}
+          onResumeLearningCourse={handleResumeLearningCourse}
           onOpenCourse={onOpenCourse}
           onOpenCatalog={() => onPageChange("catalog")}
         />

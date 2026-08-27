@@ -70,6 +70,7 @@ class AccountCourseItemResponse(BaseModel):
     hours: int | None = None
     format: str | None = None
     document_type: str | None = None
+    cover_image_url: str | None = None
     status: str
     organization_id: str | None = None
     organization_name: str | None = None

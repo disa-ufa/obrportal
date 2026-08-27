@@ -8,7 +8,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { getAccountCourses, getPublicCourses } from "../api/client";
+import { buildApiUrl, getAccountCourses, getPublicCourses } from "../api/client";
 
 function getEnrollmentStatusLabel(status) {
   switch (status) {
@@ -179,28 +179,49 @@ function CourseCard({
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.10)]">
-      <div className="relative flex min-h-[160px] items-end overflow-hidden bg-gradient-to-br from-[#102856] via-[#1e58a8] to-[#5b8fe6] p-5 text-white">
+      {course.cover_image_url ? (
         <div
-          aria-hidden="true"
-          className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-16 left-12 h-40 w-40 rounded-full bg-sky-300/15"
-        />
-
-        <div className="relative flex w-full items-end justify-between gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/95 text-blue-700 shadow-lg">
-            <BookOpen className="h-7 w-7" aria-hidden="true" />
-          </span>
+          data-testid="catalog-course-cover"
+          className="relative overflow-hidden bg-slate-100"
+          style={{ aspectRatio: "2 / 1" }}
+        >
+          <img
+            src={buildApiUrl(course.cover_image_url)}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
 
           {formatLabel ? (
-            <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-blue-700 shadow-sm">
+            <span className="absolute bottom-5 right-5 z-10 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-blue-700 shadow-sm">
               {formatLabel}
             </span>
           ) : null}
         </div>
-      </div>
+      ) : (
+        <div className="relative flex min-h-[160px] items-end overflow-hidden bg-gradient-to-br from-[#102856] via-[#1e58a8] to-[#5b8fe6] p-5 text-white">
+          <div
+            aria-hidden="true"
+            className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute -bottom-16 left-12 h-40 w-40 rounded-full bg-sky-300/15"
+          />
+
+          <div className="relative flex w-full items-end justify-between gap-4">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/95 text-blue-700 shadow-lg">
+              <BookOpen className="h-7 w-7" aria-hidden="true" />
+            </span>
+
+            {formatLabel ? (
+              <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-blue-700 shadow-sm">
+                {formatLabel}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <h2 className="text-xl font-black leading-7 text-[#111936]">

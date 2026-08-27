@@ -81,7 +81,9 @@ export function PublicRoutes({
         ? "/ministry"
         : "/account";
 
-  const learnerCourseElement = user ? (
+  const learnerCourseElement = initializingAuth ? (
+    <PublicRouteLoadingFallback />
+  ) : user ? (
     isAdmin ? (
       <Navigate to={getAdminPathForPage("dashboard")} replace />
     ) : isOrgRepresentative ? (

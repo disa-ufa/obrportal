@@ -1,7 +1,7 @@
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen, BriefcaseBusiness, CheckCircle2, ChevronRight, CircleUserRound, FileText, GraduationCap, MonitorPlay, Palette, Search, Sparkles, UsersRound } from "lucide-react";
-import { getPublicCourses } from "../api/client";
+import { buildApiUrl, getPublicCourses } from "../api/client";
 import homeLearningVideoPreview from "../assets/home-learning-video-preview.webp";
 
 const POPULAR_QUERIES = [
@@ -115,13 +115,34 @@ function ProgramCard({ course, index, onOpenCourse }) {
 
   return (
     <article className="group flex h-full min-h-[360px] flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(17,25,54,0.05)] transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_55px_rgba(15,91,232,0.12)]">
-      <div className={getCourseVisualClass(course, index)}>
-        {course.format ? (
-          <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-blue-700 shadow-sm ring-1 ring-blue-100">
-            {course.format}
-          </span>
-        ) : null}
-      </div>
+      {course.cover_image_url ? (
+        <div
+          data-testid="home-course-cover"
+          className="relative overflow-hidden bg-slate-100"
+          style={{ aspectRatio: "2 / 1" }}
+        >
+          <img
+            src={buildApiUrl(course.cover_image_url)}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+
+          {course.format ? (
+            <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-blue-700 shadow-sm ring-1 ring-blue-100">
+              {course.format}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <div className={getCourseVisualClass(course, index)}>
+          {course.format ? (
+            <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-blue-700 shadow-sm ring-1 ring-blue-100">
+              {course.format}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col p-5">
         <h3 className="line-clamp-2 text-xl font-black leading-7 text-[#111936]">

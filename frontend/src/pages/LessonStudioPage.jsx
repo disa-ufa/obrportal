@@ -15,6 +15,18 @@ import {
   uploadAdminLessonImageAsset,
 } from "../api/client";
 import LessonRichTextEditor from "../components/admin/lesson-studio/LessonRichTextEditor";
+import LessonCalloutView from "../components/lesson/LessonCalloutView";
+import LessonAudioView from "../components/lesson/LessonAudioView";
+import LessonImageView from "../components/lesson/LessonImageView";
+import LessonPresentationView from "../components/lesson/LessonPresentationView";
+import LessonVideoView from "../components/lesson/LessonVideoView";
+import LessonFileLinkView from "../components/lesson/LessonFileLinkView";
+import LessonQuizQuestionView from "../components/lesson/LessonQuizQuestionView";
+import { LessonAssignmentView } from "../components/lesson/LessonAssignmentView";
+import { LessonQuizQuestionCard, LessonQuizShell } from "../components/lesson/LessonQuizQuestionView";
+import LessonRichTextView, {
+  getSafeLessonRichTextHref,
+} from "../components/lesson/LessonRichTextView";
 import QuizBlockEditor from "../components/admin/lesson-studio/quiz/QuizBlockEditor";
 import { createDefaultQuiz, normalizeQuizContent } from "../components/admin/lesson-studio/quiz/quizSchema";
 import { validateQuizContent } from "../components/admin/lesson-studio/quiz/quizValidation";
@@ -424,279 +436,6 @@ function getBlockPreviewMeta(block) {
   return metaByType[type] || metaByType.rich_text;
 }
 
-function isLessonRichTextDocumentEmpty(documentValue) {
-  const nodes = Array.isArray(documentValue?.content) ? documentValue.content : [];
-
-  if (!nodes.length) {
-    return true;
-  }
-
-  return !nodes.some((node) => getLessonRichTextPlainText(node).trim());
-}
-
-function getLessonRichTextPlainText(node) {
-  if (!node || typeof node !== "object") {
-    return "";
-  }
-
-  if (node.type === "text") {
-    return `${node.text || ""}`;
-  }
-
-  if (node.type === "hardBreak") {
-    return "\n";
-  }
-
-  if (!Array.isArray(node.content)) {
-    return "";
-  }
-
-  return node.content.map((child) => getLessonRichTextPlainText(child)).join("");
-}
-
-function getSafeLessonRichTextHref(href) {
-  const value = `${href || ""}`.trim();
-
-  if (!value) {
-    return "";
-  }
-
-  if (value.startsWith("#")) {
-    return value;
-  }
-
-  if (value.startsWith("/api/")) {
-    return buildApiUrl(value);
-  }
-
-  if (value.startsWith("/")) {
-    return value;
-  }
-
-  try {
-    const url = new URL(value);
-    const allowedProtocols = ["http:", "https:", "mailto:", "tel:"];
-
-    if (!allowedProtocols.includes(url.protocol)) {
-      return "";
-    }
-
-    if (
-      typeof window !== "undefined" &&
-      window.location?.host &&
-      url.host === window.location.host &&
-      (url.protocol === "http:" || url.protocol === "https:")
-    ) {
-      return `${url.pathname}${url.search}${url.hash}`;
-    }
-
-    return value;
-  } catch {
-    return "";
-  }
-}
-
-const LESSON_RICH_TEXT_ALLOWED_COLORS = new Set([
-  "#dc2626",
-  "#d97706",
-  "#16a34a",
-  "#2563eb",
-]);
-
-function getSafeLessonRichTextColor(value) {
-  const color = `${value || ""}`.trim().toLowerCase();
-
-  return LESSON_RICH_TEXT_ALLOWED_COLORS.has(color) ? color : "";
-}
-
-function getLessonRichTextAlignClass(value) {
-  const align = `${value || ""}`.trim().toLowerCase();
-
-  if (align === "center") return "text-center";
-  if (align === "right") return "text-right";
-  if (align === "justify") return "text-justify";
-
-  return "text-left";
-}
-
-function renderLessonRichTextMarks(children, marks = [], keyPrefix = "mark") {
-  return marks.reduce((currentChildren, mark, index) => {
-    const markKey = `${keyPrefix}-${mark.type || "mark"}-${index}`;
-
-    if (mark.type === "bold") {
-      return (
-        <strong key={markKey} className="font-black text-slate-950">
-          {currentChildren}
-        </strong>
-      );
-    }
-
-    if (mark.type === "italic") {
-      return (
-        <em key={markKey} className="italic">
-          {currentChildren}
-        </em>
-      );
-    }
-
-    if (mark.type === "code") {
-      return (
-        <code
-          key={markKey}
-          className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-900 ring-1 ring-slate-200"
-        >
-          {currentChildren}
-        </code>
-      );
-    }
-
-    if (mark.type === "link") {
-      const safeHref = getSafeLessonRichTextHref(mark.attrs?.href);
-
-      if (!safeHref) {
-        return currentChildren;
-      }
-
-      return (
-        <a
-          key={markKey}
-          data-testid="lesson-rich-text-safe-link"
-          href={safeHref}
-          target={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "_blank"}
-          rel={safeHref.startsWith("/") || safeHref.startsWith("#") ? undefined : "noreferrer"}
-          className="font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 transition hover:text-blue-900"
-        >
-          {currentChildren}
-        </a>
-      );
-    }
-
-    if (mark.type === "textStyle") {
-      const safeColor = getSafeLessonRichTextColor(mark.attrs?.color);
-
-      if (!safeColor) {
-        return currentChildren;
-      }
-
-      return (
-        <span key={markKey} style={{ color: safeColor }}>
-          {currentChildren}
-        </span>
-      );
-    }
-
-    return currentChildren;
-  }, children);
-}
-
-function renderLessonRichTextChildren(nodes, keyPrefix) {
-  if (!Array.isArray(nodes)) {
-    return null;
-  }
-
-  return nodes
-    .map((node, index) => renderLessonRichTextNode(node, `${keyPrefix}-${index}`))
-    .filter(Boolean);
-}
-
-function renderLessonRichTextNode(node, key) {
-  if (!node || typeof node !== "object") {
-    return null;
-  }
-
-  if (node.type === "text") {
-    return renderLessonRichTextMarks(`${node.text || ""}`, node.marks, key);
-  }
-
-  if (node.type === "hardBreak") {
-    return <br key={key} />;
-  }
-
-  const children = renderLessonRichTextChildren(node.content, key);
-
-  if (node.type === "paragraph") {
-    const alignClass = getLessonRichTextAlignClass(node.attrs?.textAlign);
-
-    return (
-      <p key={key} className={`text-base leading-8 text-slate-700 ${alignClass}`}>
-        {children?.length ? children : <br />}
-      </p>
-    );
-  }
-
-  if (node.type === "heading") {
-    const level = Number(node.attrs?.level || 2);
-    const HeadingTag = level >= 3 ? "h3" : "h2";
-    const alignClass = getLessonRichTextAlignClass(node.attrs?.textAlign);
-    const className =
-      level >= 3
-        ? `mt-5 text-lg font-black leading-8 text-slate-950 first:mt-0 ${alignClass}`
-        : `mt-6 text-2xl font-black leading-9 text-slate-950 first:mt-0 ${alignClass}`;
-
-    return (
-      <HeadingTag key={key} className={className}>
-        {children}
-      </HeadingTag>
-    );
-  }
-
-  if (node.type === "bulletList") {
-    return (
-      <ul key={key} className="ml-6 list-disc space-y-2 text-base leading-8 text-slate-700">
-        {children}
-      </ul>
-    );
-  }
-
-  if (node.type === "orderedList") {
-    return (
-      <ol key={key} className="ml-6 list-decimal space-y-2 text-base leading-8 text-slate-700">
-        {children}
-      </ol>
-    );
-  }
-
-  if (node.type === "listItem") {
-    return (
-      <li key={key} className="pl-1">
-        {children}
-      </li>
-    );
-  }
-
-  if (node.type === "blockquote") {
-    return (
-      <blockquote
-        key={key}
-        className="rounded-2xl border-l-4 border-blue-300 bg-blue-50 px-5 py-4 text-base italic leading-8 text-slate-700"
-      >
-        {children}
-      </blockquote>
-    );
-  }
-
-  if (node.type === "codeBlock") {
-    return (
-      <pre
-        key={key}
-        className="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-50 shadow-inner"
-      >
-        <code>{getLessonRichTextPlainText(node)}</code>
-      </pre>
-    );
-  }
-
-  if (children?.length) {
-    return (
-      <div key={key} className="text-base leading-8 text-slate-700">
-        {children}
-      </div>
-    );
-  }
-
-  return null;
-}
-
 function getLessonRichTextPreviewDocument(block, preview) {
   const content = safeParseJson(block?.content_json);
 
@@ -712,31 +451,25 @@ function getLessonRichTextPreviewDocument(block, preview) {
 function LessonRichTextSafePreview({ block, preview, learnerMode = false }) {
   const documentValue = getLessonRichTextPreviewDocument(block, preview);
   const fallbackText = `${preview || ""}`.trim();
-  const empty = isLessonRichTextDocumentEmpty(documentValue);
-  const nodes = Array.isArray(documentValue?.content) ? documentValue.content : [];
 
   return (
     <div
       data-testid="lesson-studio-text-preview"
-      className={learnerMode ? "mt-2" : "mt-4 rounded-2xl bg-white/90 p-5 ring-1 ring-black/5"}
+      className={
+        learnerMode
+          ? "mt-2"
+          : "mt-4 rounded-2xl bg-white/90 p-5 ring-1 ring-black/5"
+      }
     >
-      <div
-        data-testid="lesson-rich-text-safe-preview"
-        className={learnerMode ? "space-y-4 break-words text-slate-800" : "space-y-3 break-words"}
-      >
-        {empty ? (
-          <p className="text-base leading-8 text-slate-500">
-            {fallbackText || "Учебный текст пока не заполнен."}
-          </p>
-        ) : (
-          nodes.map((node, index) => renderLessonRichTextNode(node, `rich-text-preview-${index}`))
-        )}
-      </div>
+      <LessonRichTextView
+        documentValue={documentValue}
+        fallbackText={fallbackText}
+        learnerMode={learnerMode}
+        apiUrlBuilder={buildApiUrl}
+      />
     </div>
   );
 }
-
-
 
 
 function isLessonCalloutBlock(block) {
@@ -763,26 +496,11 @@ function LessonCalloutCanvasPreview({ block, previewValue, learnerMode = false }
 
   if (learnerMode) {
     return (
-      <section
-        data-testid="lesson-studio-callout-preview"
-        className="mt-5"
-      >
-        {title ? (
-          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
-            {title}
-          </div>
-        ) : null}
-
-        <div className="rounded-3xl bg-indigo-50/80 p-5 text-base font-semibold leading-8 text-slate-800 ring-1 ring-indigo-100">
-          {ready ? (
-            <div className="whitespace-pre-wrap break-words">{textValue}</div>
-          ) : (
-            <div className="text-slate-400">
-              {"\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b \u0432\u0440\u0435\u0437\u043a\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d."}
-            </div>
-          )}
-        </div>
-      </section>
+      <LessonCalloutView
+        title={block?.title}
+        text={textValue}
+        toneName={content.tone}
+      />
     );
   }
 
@@ -862,6 +580,18 @@ function getImageBlockUrl(block) {
   return `${content.image_url || content.image_src || content.src || content.url || content.content_url || ""}`.trim();
 }
 
+function getImageBlockDownloadUrl(block) {
+  const content = getImageBlockContent(block);
+
+  return `${
+    content.original_url
+    || content.download_url
+    || getImageBlockUrl(block)
+    || ""
+  }`.trim();
+}
+
+
 function getImageBlockCaption(block) {
   const content = getImageBlockContent(block);
 
@@ -890,7 +620,7 @@ function getImageHostLabel(value) {
 
 function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) {
   const sourceValue = getImageBlockUrl(block) || `${previewValue || ""}`.trim();
-  const safeSrc = getSafeLessonRichTextHref(sourceValue);
+  const safeSrc = getSafeLessonRichTextHref(sourceValue, buildApiUrl);
   const ready = Boolean(safeSrc);
   const title = `${block?.title || "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435"}`.trim() || "\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435";
   const caption = getImageBlockCaption(block);
@@ -899,6 +629,11 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
   const content = getImageBlockContent(block);
   const openFullSize = content.open_full_size !== false;
   const fullWidth = content.full_width !== false;
+  const safeDownload = getSafeLessonRichTextHref(
+    getImageBlockDownloadUrl(block),
+    buildApiUrl
+  );
+  const showDownload = content.show_download !== false;
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
@@ -907,37 +642,17 @@ function LessonImageCanvasPreview({ block, previewValue, learnerMode = false }) 
 
   if (learnerMode) {
     return (
-      <figure
-        data-testid="lesson-studio-image-preview"
-        className="mt-5"
-      >
-        {title ? (
-          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
-            {title}
-          </div>
-        ) : null}
-
-        {ready && !imageFailed ? (
-          <div className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 ${fullWidth ? "w-full" : "mx-auto max-w-3xl"}`}>
-            <img
-              src={safeSrc}
-              alt={altText}
-              onError={() => setImageFailed(true)}
-              className="max-h-[620px] w-full object-contain"
-            />
-          </div>
-        ) : (
-          <div className="rounded-3xl bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500 ring-1 ring-slate-200">
-            {"\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e."}
-          </div>
-        )}
-
-        {caption ? (
-          <figcaption className="mt-3 text-center text-sm leading-6 text-slate-500">
-            {caption}
-          </figcaption>
-        ) : null}
-      </figure>
+      <LessonImageView
+        title={title}
+        sourceUrl={safeSrc}
+        rawSource={sourceValue}
+        altText={altText}
+        caption={caption}
+        fullWidth={fullWidth}
+        openFullSize={openFullSize}
+        downloadUrl={safeDownload}
+        showDownload={showDownload}
+      />
     );
   }
 
@@ -1174,15 +889,29 @@ function getFileLinkKindToneClass(tone) {
 function LessonPresentationCanvasPreview({ block, previewValue, learnerMode = false }) {
   const content = getPresentationBlockContent(block);
   const sourceValue = getPresentationBlockUrl(block) || `${previewValue || ""}`.trim();
-  const safeHref = getSafeLessonRichTextHref(sourceValue);
+  const safeHref = getSafeLessonRichTextHref(sourceValue, buildApiUrl);
   const originalUrl = getPresentationOriginalUrl(block);
-  const safeOriginalHref = getSafeLessonRichTextHref(originalUrl);
+  const safeOriginalHref = getSafeLessonRichTextHref(originalUrl, buildApiUrl);
   const ready = Boolean(safeHref);
   const title = `${block?.title || content.title || content.original_filename || "Презентация"}`.trim() || "Презентация";
   const filename = `${content.original_filename || ""}`.trim();
   const hostLabel = getFileLinkHostLabel(sourceValue);
   const showDownload = content.show_download !== false;
   const frameHeightClass = learnerMode ? "h-[760px]" : "h-[620px]";
+
+  if (learnerMode) {
+    return (
+      <LessonPresentationView
+        title={title}
+        filename={filename}
+        sourceUrl={safeHref}
+        rawSource={sourceValue}
+        downloadUrl={safeOriginalHref}
+        showDownload={showDownload}
+        conversionStatus={`${content.conversion_status || ""}`.trim()}
+      />
+    );
+  }
 
   return (
     <div
@@ -1274,11 +1003,54 @@ function LessonPresentationCanvasPreview({ block, previewValue, learnerMode = fa
 
 function LessonFileLinkCanvasPreview({ block, previewValue, learnerMode = false }) {
   const sourceValue = getFileLinkBlockUrl(block) || `${previewValue || ""}`.trim();
-  const safeHref = getSafeLessonRichTextHref(sourceValue);
+  const safeHref = getSafeLessonRichTextHref(sourceValue, buildApiUrl);
   const ready = Boolean(safeHref);
   const title = `${block?.title || "Файл или ссылка"}`.trim() || "Файл или ссылка";
   const kind = getFileLinkKindMeta(sourceValue);
   const hostLabel = getFileLinkHostLabel(sourceValue);
+
+  const content =
+    getFileLinkBlockContent(block);
+
+  const fileName = `${
+    content.file_name
+    || content.filename
+    || content.name
+    || ""
+  }`.trim();
+
+  const learnerTitle =
+    `${
+      block?.title
+      || fileName
+      || "Файл или ссылка"
+    }`.trim()
+    || "Файл или ссылка";
+
+  const learnerDescription = `${
+    content.description
+    || content.text
+    || content.content_text
+    || content.body
+    || ""
+  }`.trim();
+
+  if (learnerMode) {
+    const openInNewTab = !(
+      safeHref.startsWith("/")
+      || safeHref.startsWith("#")
+    );
+
+    return (
+      <LessonFileLinkView
+        title={learnerTitle}
+        description={learnerDescription}
+        openUrl={safeHref}
+        rawSource={sourceValue}
+        openInNewTab={openInNewTab}
+      />
+    );
+  }
 
   return (
     <div
@@ -1373,45 +1145,39 @@ function LessonVideoCanvasPreview({ block, previewValue, learnerMode = false }) 
   const videoHost = getVideoHostLabel(sourceValue || previewEmbedUrl);
   const insertTypeLabel = getVideoBlockSourceType(block) === "embed" ? "\u041a\u043e\u0434 \u0432\u0441\u0442\u0430\u0432\u043a\u0438" : "\u0421\u0441\u044b\u043b\u043a\u0430";
 
+  const learnerOpenUrl =
+    getVideoBlockUrl(block)
+    || previewEmbedUrl;
+
+  const learnerSafeOpenUrl =
+    getSafeLessonRichTextHref(
+      learnerOpenUrl,
+      buildApiUrl,
+    );
+
+  const learnerDescription = `${
+    block?.text
+    || content.text
+    || content.caption
+    || content.description
+    || ""
+  }`.trim();
+
+  const learnerVideoTitle = `${
+    block?.title
+    || "Видеоматериал"
+  }`.trim() || "Видеоматериал";
+
   if (learnerMode) {
     return (
-      <div
-        data-testid="lesson-studio-video-preview"
-        className="mt-5"
-      >
-        {videoTitle ? (
-          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
-            {videoTitle}
-          </div>
-        ) : null}
-
-        <div className="overflow-hidden rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <div className="overflow-hidden rounded-2xl bg-slate-950 shadow-sm ring-1 ring-slate-900/10">
-          <div className="relative aspect-[16/9] min-h-[260px] bg-slate-950">
-            {previewReady ? (
-              <iframe
-                title={videoTitle}
-                src={previewEmbedUrl}
-                className="absolute inset-0 h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen={allowFullscreen}
-              />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-xl text-blue-700 shadow-xl">
-                  {"\u25b6"}
-                </div>
-
-                <div className="mt-4 text-sm font-semibold text-white/90">
-                  {"\u0412\u0438\u0434\u0435\u043e \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e"}
-                </div>
-              </div>
-            )}
-          </div>
-          </div>
-        </div>
-      </div>
+      <LessonVideoView
+        title={learnerVideoTitle}
+        embedUrl={previewEmbedUrl}
+        allowFullscreen={allowFullscreen}
+        description={learnerDescription}
+        openUrl={learnerSafeOpenUrl}
+        rawSource={sourceValue}
+      />
     );
   }
 
@@ -1558,6 +1324,58 @@ function LessonQuizCanvasPreview({ block, previewValue, learnerMode = false }) {
     ? `${quiz.behavior?.max_attempts || 1} \u043f\u043e\u043f\u044b\u0442\u043a.`
     : "1 \u043f\u043e\u043f\u044b\u0442\u043a\u0430";
   const visibleQuestions = questions.slice(0, learnerMode ? 5 : 3);
+
+
+  if (learnerMode) {
+    return (
+      <div className="mt-5">
+        <LessonQuizShell
+          testId="lesson-studio-quiz-preview"
+          presentationView="lesson-quiz-preview"
+          title={quiz.title || previewValue || "\u0422\u0435\u0441\u0442"}
+          description={quiz.description}
+          required={block?.is_required}
+        >
+          {questions.length ? (
+            <div className="mt-5 space-y-4">
+              {questions.map((question, index) => {
+                const questionId = `${
+                  block?.id ||
+                  "studio-preview"
+                }:${
+                  question?.id ||
+                  `q_${index + 1}`
+                }`;
+
+                return (
+                  <LessonQuizQuestionCard
+                    key={questionId}
+                    question={question}
+                    index={index}
+                    showPoints={quiz.ui?.show_question_points !== false}
+                    testId="lesson-studio-quiz-question-preview"
+                  >
+                    <LessonQuizQuestionView
+                      question={question}
+                      questionId={questionId}
+                      value={undefined}
+                      disabled
+                      seed={`studio-preview:${block?.id || ""}`}
+                      onChange={() => undefined}
+                    />
+                  </LessonQuizQuestionCard>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-2xl bg-white px-4 py-4 text-sm font-semibold text-slate-500 ring-1 ring-slate-200">
+              {"\u0412 \u0442\u0435\u0441\u0442\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432."}
+            </div>
+          )}
+        </LessonQuizShell>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1706,36 +1524,22 @@ function getAudioBlockFilename(block) {
 
 function LessonAudioCanvasPreview({ block, previewValue, learnerMode = false }) {
   const sourceValue = getAudioBlockUrl(block) || `${previewValue || ""}`.trim();
-  const safeSrc = getSafeLessonRichTextHref(sourceValue);
-  const downloadUrl = getSafeLessonRichTextHref(getAudioBlockDownloadUrl(block));
+  const safeSrc = getSafeLessonRichTextHref(sourceValue, buildApiUrl);
+  const downloadUrl = getSafeLessonRichTextHref(getAudioBlockDownloadUrl(block), buildApiUrl);
   const ready = Boolean(safeSrc);
   const title = `${block?.title || "\u0410\u0443\u0434\u0438\u043e"}`.trim() || "\u0410\u0443\u0434\u0438\u043e";
   const filename = getAudioBlockFilename(block);
 
   if (learnerMode) {
     return (
-      <section
-        data-testid="lesson-studio-audio-preview"
-        className="mt-5"
-      >
-        {title ? (
-          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
-            {title}
-          </div>
-        ) : null}
-
-        <div className="rounded-3xl bg-green-50 p-5 ring-1 ring-green-100">
-          {ready ? (
-            <audio controls preload="metadata" src={safeSrc} className="w-full">
-              {"\u0412\u0430\u0448 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0430\u0443\u0434\u0438\u043e\u043f\u043b\u0435\u0435\u0440."}
-            </audio>
-          ) : (
-            <div className="rounded-2xl bg-white/70 px-4 py-6 text-center text-sm font-semibold text-slate-500 ring-1 ring-green-100">
-              {"\u0410\u0443\u0434\u0438\u043e \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e."}
-            </div>
-          )}
-        </div>
-      </section>
+      <LessonAudioView
+        title={block?.title}
+        filename={filename}
+        sourceUrl={safeSrc}
+        rawSource={sourceValue}
+        downloadUrl={downloadUrl}
+        showDownload={getAudioBlockContent(block).show_download !== false}
+      />
     );
   }
 
@@ -1875,50 +1679,14 @@ function LessonAssignmentCanvasPreview({ block, previewValue, learnerMode = fals
 
   if (learnerMode) {
     return (
-      <section
-        data-testid="lesson-studio-assignment-preview"
-        className="mt-5"
-      >
-        {title ? (
-          <div className="mb-3 text-xl font-black leading-tight text-slate-950">
-            {title}
-          </div>
-        ) : null}
-
-        <div className="rounded-3xl bg-red-50/80 p-5 ring-1 ring-red-100">
-          <div className="text-sm font-black uppercase tracking-[0.14em] text-red-700">
-            {"\u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u0435"}
-          </div>
-
-          <div className="mt-3 rounded-2xl bg-white/80 p-4 text-base font-semibold leading-8 text-slate-800 ring-1 ring-red-100">
-            {ready ? (
-              <div className="whitespace-pre-wrap break-words">{description}</div>
-            ) : (
-              <div className="text-slate-400">
-                {"\u0417\u0430\u0434\u0430\u043d\u0438\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e."}
-              </div>
-            )}
-          </div>
-
-          {detailItems.length ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {detailItems.map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-2xl bg-white/70 p-4 ring-1 ring-red-100"
-                >
-                  <div className="text-xs font-black uppercase tracking-[0.12em] text-red-700">
-                    {label}
-                  </div>
-                  <div className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-700">
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </section>
+      <div className="mt-5">
+        <LessonAssignmentView
+          block={block}
+          statusLabel={"\u041d\u0435 \u043d\u0430\u0447\u0430\u0442\u043e"}
+          statusTone="bg-slate-50 text-slate-700 ring-slate-200"
+          testId="lesson-studio-assignment-preview"
+        />
+      </div>
     );
   }
 
@@ -4195,7 +3963,7 @@ function LessonStudioAudioBlockEditor({ lesson, form, saving, onFieldChange }) {
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
   const audioUrl = `${form.content_text || ""}`.trim();
-  const safeAudioUrl = getSafeLessonRichTextHref(audioUrl);
+  const safeAudioUrl = getSafeLessonRichTextHref(audioUrl, buildApiUrl);
   const uploadedAsset = form.audio_asset && typeof form.audio_asset === "object" ? form.audio_asset : {};
   const filename = `${uploadedAsset.original_filename || ""}`.trim();
   const ready = Boolean(safeAudioUrl);
@@ -4872,7 +4640,7 @@ function LessonStudioImageBlockEditor({ lesson, form, saving, onFieldChange }) {
     is_required: form.is_required,
     is_active: form.is_active,
   };
-  const ready = Boolean(getSafeLessonRichTextHref(imageUrl));
+  const ready = Boolean(getSafeLessonRichTextHref(imageUrl, buildApiUrl));
 
   const handleImageUrlChange = (value) => {
     onFieldChange("image_url", value);
@@ -5014,7 +4782,7 @@ function LessonStudioImageBlockEditor({ lesson, form, saving, onFieldChange }) {
 
             {ready ? (
               <a
-                href={getSafeLessonRichTextHref(imageUrl)}
+                href={getSafeLessonRichTextHref(imageUrl, buildApiUrl)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800"
@@ -5274,7 +5042,7 @@ function LessonStudioPresentationBlockEditor({ lesson, form, saving, onFieldChan
     is_active: form.is_active,
   };
 
-  const safeHref = getSafeLessonRichTextHref(presentationViewerUrl);
+  const safeHref = getSafeLessonRichTextHref(presentationViewerUrl, buildApiUrl);
   const ready = Boolean(safeHref);
   const lessonIdFromUrl =
     typeof window !== "undefined"
@@ -5543,7 +5311,7 @@ function LessonStudioFileLinkBlockEditor({ form, saving, onFieldChange }) {
     is_required: form.is_required,
     is_active: form.is_active,
   };
-  const safeHref = getSafeLessonRichTextHref(materialUrl);
+  const safeHref = getSafeLessonRichTextHref(materialUrl, buildApiUrl);
   const ready = Boolean(safeHref);
   const kind = getFileLinkKindMeta(materialUrl);
 
