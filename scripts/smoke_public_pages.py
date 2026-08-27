@@ -545,6 +545,31 @@ def main() -> None:
     )
 
     require_contains(
+        "frontend/src/components/routing/PublicRouteScrollTop.jsx",
+        [
+            'import { useLayoutEffect } from "react";',
+            'import { useLocation } from "react-router-dom";',
+            "export function PublicRouteScrollTop()",
+            "const { pathname } = useLocation();",
+            "useLayoutEffect(() => {",
+            "window.scrollTo({",
+            "top: 0,",
+            "left: 0,",
+            'behavior: "auto",',
+            "}, [pathname]);",
+            "return null;",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/App.jsx",
+        [
+            'import { PublicRouteScrollTop } from "./components/routing/PublicRouteScrollTop";',
+            "<PublicRouteScrollTop />",
+        ],
+    )
+
+    require_contains(
         "frontend/src/routes/PublicRoutes.jsx",
         [
             'import { Navigate, Route, Routes } from "react-router-dom";',
