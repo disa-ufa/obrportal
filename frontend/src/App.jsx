@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicShell } from "./components/layout/PublicShell";
+import { PublicRouteScrollTop } from "./components/routing/PublicRouteScrollTop";
 import {
   EMPTY_ADMIN_DATA,
   getNowLabel,
@@ -404,6 +405,7 @@ export default function App() {
       onLogout={handleLogout}
       publicRegistrationEnabled={publicRegistrationEnabled}
     >
+      <PublicRouteScrollTop />
       <PublicRoutes
         email={email}
         password={password}

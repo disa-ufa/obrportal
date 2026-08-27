@@ -1159,14 +1159,7 @@ export function LearnerCoursePage() {
                   >
                     Урок завершён
                   </span>
-                ) : (
-                  <span
-                    data-testid="learner-course-lesson-status-badge"
-                    className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200"
-                  >
-                    Текущий урок
-                  </span>
-                )}
+                ) : null}
               </div>
 
               <div
@@ -1176,16 +1169,10 @@ export function LearnerCoursePage() {
                 <span>
                   Урок {selectedLessonNumber} из {allLessons.length}
                 </span>
-
-                {selectedLesson.is_required ? (
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 ring-1 ring-slate-200">
-                    Обязательный урок
-                  </span>
-                ) : null}
               </div>
 
               {selectedLesson.description ? (
-                <p className="mt-3 text-sm leading-6 text-slate-600">
+                <p className="mt-4 max-w-4xl text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
                   {selectedLesson.description}
                 </p>
               ) : null}
@@ -1199,7 +1186,7 @@ export function LearnerCoursePage() {
                     Материал урока
                   </div>
 
-                  <div className="max-w-3xl whitespace-pre-wrap text-base leading-7 text-slate-700">
+                  <div className="max-w-4xl whitespace-pre-wrap text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
                     {selectedLesson.content_text}
                   </div>
                 </div>
@@ -1239,7 +1226,7 @@ export function LearnerCoursePage() {
                     Материалы и задания
                   </div>
 
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-5">
                     {selectedLesson.blocks.map((block) =>
                       block.block_type === "quiz" ? (
                         <LearnerQuizBlock

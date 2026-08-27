@@ -259,6 +259,7 @@ export function LearnerAccountDashboard({
   errorMessage = "",
   onSectionChange,
   onOpenLearningCourse,
+  onResumeLearningCourse,
 }) {
   const currentCourse = getLearnerDashboardCurrentCourse(courses);
   const detail = getMatchingCourseDetail(
@@ -542,8 +543,9 @@ export function LearnerAccountDashboard({
                     <button
                       type="button"
                       onClick={() =>
-                        onOpenLearningCourse?.(
-                          currentCourse
+                        onResumeLearningCourse?.(
+                          currentCourse,
+                          nextLesson?.id || ""
                         )
                       }
                       className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
