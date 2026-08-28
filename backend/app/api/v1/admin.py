@@ -5261,12 +5261,11 @@ def build_lesson_audio_public_urls(
     lesson_id: str,
     asset_id: str,
 ) -> dict[str, str]:
-    base_url = str(request.base_url).rstrip("/")
     public_path = f"/api/v1/public/lesson-audio/{lesson_id}/{asset_id}"
 
     return {
-        "stream_url": f"{base_url}{public_path}/stream",
-        "download_url": f"{base_url}{public_path}/download",
+        "stream_url": f"{public_path}/stream",
+        "download_url": f"{public_path}/download",
     }
 
 
@@ -5480,12 +5479,11 @@ def build_lesson_presentation_public_urls(
     lesson_id: str,
     asset_id: str,
 ) -> dict[str, str]:
-    base_url = str(request.base_url).rstrip("/")
     public_path = f"/api/v1/public/lesson-presentations/{lesson_id}/{asset_id}"
 
     return {
-        "viewer_url": f"{base_url}{public_path}/view",
-        "download_url": f"{base_url}{public_path}/download",
+        "viewer_url": f"{public_path}/view",
+        "download_url": f"{public_path}/download",
     }
 
 
