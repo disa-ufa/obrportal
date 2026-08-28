@@ -38,7 +38,7 @@ def test_public_audio_stream_and_download_handlers_exist() -> None:
 
 def test_admin_audio_public_url_contract() -> None:
     class Request:
-        base_url = "https://portal.example.test/"
+        base_url = "http://portal.example.test/"
 
     urls = admin.build_lesson_audio_public_urls(
         request=Request(),
@@ -47,6 +47,6 @@ def test_admin_audio_public_url_contract() -> None:
     )
 
     assert urls == {
-        "stream_url": "https://portal.example.test/api/v1/public/lesson-audio/lesson-1/asset-1/stream",
-        "download_url": "https://portal.example.test/api/v1/public/lesson-audio/lesson-1/asset-1/download",
+        "stream_url": "/api/v1/public/lesson-audio/lesson-1/asset-1/stream",
+        "download_url": "/api/v1/public/lesson-audio/lesson-1/asset-1/download",
     }

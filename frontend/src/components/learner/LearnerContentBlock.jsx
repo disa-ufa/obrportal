@@ -1,5 +1,7 @@
 import { buildApiUrl } from "../../api/client";
-import LessonRichTextView from "../lesson/LessonRichTextView";
+import LessonRichTextView, {
+  getSafeLessonRichTextHref,
+} from "../lesson/LessonRichTextView";
 import LessonCalloutView from "../lesson/LessonCalloutView";
 import LessonAudioView from "../lesson/LessonAudioView";
 import LessonImageView from "../lesson/LessonImageView";
@@ -124,35 +126,11 @@ function getUrl(block) {
 
 
 function getSafeHref(value) {
-  const raw = `${value || ""}`.trim();
-
-  if (!raw) {
-    return "";
-  }
-
-  if (
-    raw.startsWith("/")
-    && !raw.startsWith("//")
-  ) {
-    return raw;
-  }
-
-  try {
-    const parsed = new URL(raw);
-
-    if (
-      parsed.protocol !== "http:"
-      && parsed.protocol !== "https:"
-    ) {
-      return "";
-    }
-
-    return parsed.toString();
-  } catch {
-    return "";
-  }
+  return getSafeLessonRichTextHref(
+    value,
+    buildApiUrl,
+  );
 }
-
 
 function getVideoEmbedSrc(value) {
   const code = `${value || ""}`;

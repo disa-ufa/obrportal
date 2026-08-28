@@ -1149,11 +1149,9 @@ def test_learner_rich_text_uses_shared_safe_renderer() -> None:
         / "frontend/src/components/lesson/LessonRichTextView.jsx"
     )
 
-    assert (
-        'import LessonRichTextView '
-        'from "../lesson/LessonRichTextView";'
-        in content
-    )
+    assert 'import LessonRichTextView, {' in content
+    assert "getSafeLessonRichTextHref," in content
+    assert '} from "../lesson/LessonRichTextView";' in content
     assert (
         'import { buildApiUrl } from "../../api/client";'
         in content
@@ -1198,11 +1196,13 @@ def test_learner_content_block_is_text_and_url_safe() -> None:
     )
 
     assert "dangerouslySetInnerHTML" not in content
-    assert "new URL(raw)" in content
-    assert 'parsed.protocol !== "http:"' in content
-    assert 'parsed.protocol !== "https:"' in content
-    assert 'raw.startsWith("/")' in content
-    assert '!raw.startsWith("//")' in content
+    assert "function getSafeHref(value)" in content
+    assert "getSafeLessonRichTextHref(" in content
+    assert "    value," in content
+    assert "    buildApiUrl," in content
+    assert "new URL(raw)" not in content
+    assert 'parsed.protocol !== "http:"' not in content
+    assert 'parsed.protocol !== "https:"' not in content
 
     assert "extractStructuredText" in content
 
@@ -1350,12 +1350,19 @@ def test_learner_audio_renderer_is_url_safe_and_read_only() -> None:
 
     assert "getSafeHref(rawSource)" in content
     assert "getSafeHref(rawDownload)" in content
-    assert "new URL(raw)" in content
+    assert "getSafeLessonRichTextHref(" in content
+    assert "new URL(raw)" not in content
 
-    assert 'parsed.protocol !== "http:"' in content
-    assert 'parsed.protocol !== "https:"' in content
-    assert 'raw.startsWith("/")' in content
-    assert '!raw.startsWith("//")' in content
+    shared = read(
+        ROOT
+        / "frontend/src/components/lesson/LessonRichTextView.jsx"
+    )
+
+    assert "url.host === window.location.host" in shared
+    assert (
+        "return `${url.pathname}${url.search}${url.hash}`;"
+        in shared
+    )
 
     assert "uploadAdminLessonAudioAsset" not in content
     assert (
