@@ -2193,6 +2193,7 @@ async def complete_account_course_lesson(
         enrollment_id=enrollment_id,
         current_user=current_user,
         session=session,
+        for_update=True,
     )
 
     await ensure_account_learning_mutation_allowed(
@@ -2279,6 +2280,32 @@ async def complete_account_course_lesson(
         if progress.completed_at is None:
             progress.completed_at = now
 
+    await session.flush()
+
+    completion_modules = await load_account_course_modules(
+        session,
+        str(enrollment.course_id),
+        enrollment_id=str(enrollment.id),
+    )
+    completion_progress = calculate_account_course_progress(
+        completion_modules
+    )
+
+    if (
+        completion_progress["required_lessons_total"] > 0
+        and completion_progress["required_lessons_completed"]
+        >= completion_progress["required_lessons_total"]
+    ):
+        enrollment.status = "completed"
+
+        if enrollment.completed_at is None:
+            enrollment.completed_at = now
+
+        await ensure_completion_document_for_enrollment(
+            enrollment,
+            session,
+        )
+
     try:
         await session.commit()
     except IntegrityError:
@@ -2344,13 +2371,18 @@ async def get_account_enrollment_entity_or_404(
     enrollment_id: str,
     current_user: User,
     session: AsyncSession,
+    *,
+    for_update: bool = False,
 ) -> Enrollment:
-    result = await session.execute(
-        select(Enrollment).where(
-            Enrollment.id == enrollment_id.strip(),
-            Enrollment.user_id == current_user.id,
-        )
+    statement = select(Enrollment).where(
+        Enrollment.id == enrollment_id.strip(),
+        Enrollment.user_id == current_user.id,
     )
+
+    if for_update:
+        statement = statement.with_for_update()
+
+    result = await session.execute(statement)
     enrollment = result.scalar_one_or_none()
 
     if enrollment is None:
@@ -2458,6 +2490,7 @@ async def complete_account_course_learning(
         enrollment_id=enrollment_id,
         current_user=current_user,
         session=session,
+        for_update=True,
     )
 
     await ensure_account_learning_mutation_allowed(

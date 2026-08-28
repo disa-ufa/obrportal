@@ -1726,40 +1726,51 @@ def test_media_renderers_preserve_open_download_and_fallback_contracts() -> None
 
 
 # STEP_7H_B2_B4_COURSE_COMPLETE
-def test_course_completion_uses_existing_account_api_active_only() -> None:
+def test_course_completion_uses_authoritative_lesson_response() -> None:
     page = read(PAGE)
 
-    assert "completeAccountCourse," in page
+    assert "completeAccountCourse," not in page
 
     assert (
         "async function handleCompleteCourse()"
-        in page
+        not in page
     )
 
     assert (
         "await completeAccountCourse("
-        in page
-    )
-
-    assert (
-        'detail?.status !== "active"'
-        in page
-    )
-
-    assert (
-        'isOverviewRoute && detail.status === "active" ? ('
-        in page
+        not in page
     )
 
     assert (
         'data-testid="learner-course-complete-course-button"'
+        not in page
+    )
+
+    assert (
+        'isOverviewRoute && detail.status === "active" ? ('
+        not in page
+    )
+
+    assert (
+        'if (response?.status === "completed") {'
+        in page
+    )
+
+    assert "setDetail(response);" in page
+
+    assert (
+        'data-testid="learner-course-course-completed"'
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-open-documents-button"'
         in page
     )
 
     assert "getPublicCourseDetail" not in page
 
-
-def test_course_completion_eligibility_uses_server_required_progress() -> None:
+def test_course_progress_keeps_server_required_counters_without_manual_gate() -> None:
     page = read(PAGE)
 
     assert (
@@ -1772,83 +1783,91 @@ def test_course_completion_eligibility_uses_server_required_progress() -> None:
         in page
     )
 
-    assert (
-        "requiredLessonsCompleted"
-        in page
-    )
+    assert "requiredLessonsCompleted" in page
+    assert "requiredLessonsTotal" in page
+    assert "remainingRequiredLessons" in page
 
-    assert (
-        "requiredLessonsTotal"
-        in page
-    )
-
-    assert (
-        "courseCompletionEligible"
-        in page
-    )
-
-    assert (
-        "requiredLessonsCompleted"
-        "\n      >= requiredLessonsTotal"
-        in page
-    )
+    assert "courseCompletionEligible" not in page
 
     assert (
         'data-testid="learner-course-course-completion-eligible"'
-        in page
+        not in page
     )
 
     assert (
         'data-testid="learner-course-course-completion-blocked"'
+        not in page
+    )
+
+    assert (
+        'detail.status !== "completed" && nextIncompleteLesson ? ('
         in page
     )
 
+    assert "completeAccountCourseLesson" in page
+    assert "setDetail(response);" in page
 
-def test_course_completion_refreshes_detail_and_maps_backend_gate() -> None:
+def test_course_completion_uses_lesson_response_without_manual_refresh_gate() -> None:
     page = read(PAGE)
 
     assert (
-        '"Complete required lessons before completing course"'
-        in page
+        "function getCourseCompletionErrorMessage(err)"
+        not in page
     )
 
     assert (
-        "function getCourseCompletionErrorMessage(err)"
-        in page
+        '"Complete required lessons before completing course"'
+        not in page
     )
 
     assert (
         "const completedCourse ="
-        in page
-    )
-
-    assert (
-        "await getAccountCourseDetail("
-        in page
+        not in page
     )
 
     assert (
         "setDetail(refreshedDetail);"
-        in page
+        not in page
     )
 
     assert (
         'data-testid="learner-course-course-completion-error"'
-        in page
+        not in page
     )
 
     assert (
         'data-testid="learner-course-course-completion-success"'
+        not in page
+    )
+
+    assert (
+        "await completeAccountCourseLesson("
         in page
     )
 
+    assert "setDetail(response);" in page
 
-def test_course_completion_has_terminal_completed_state_without_action() -> None:
+    assert (
+        'if (response?.status === "completed") {'
+        in page
+    )
+
+    assert (
+        'detail.status !== "completed" && nextIncompleteLesson ? ('
+        in page
+    )
+
+def test_course_completion_has_terminal_completed_state_without_manual_action() -> None:
     page = read(PAGE)
 
     assert (
         'data-testid="learner-course-course-completion"'
-        in page
+        not in page
+    )
+
+    assert (
+        'data-testid="learner-course-complete-course-button"'
+        not in page
     )
 
     assert (
@@ -1871,8 +1890,11 @@ def test_course_completion_has_terminal_completed_state_without_action() -> None
         in page
     )
 
+    assert (
+        'data-testid="learner-course-open-documents-button"'
+        in page
+    )
 
-# STEP_7H_B2_B5_POST_COMPLETION_DOCUMENT_ACTION
 def test_completed_course_offers_account_documents_action() -> None:
     page = read(PAGE)
 
