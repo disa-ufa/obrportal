@@ -162,6 +162,8 @@ def main() -> None:
             "async function handleRegenerateCompletionDocument(documentItem)",
             "regenerateAdminDocument(documentItem.id)",
             "setRegenerateSavingId(documentItem.id);",
+            "successRegeneratedDraft:",
+            "updated.status === \"draft\" ? T.successRegeneratedDraft : T.successUpdated",
             "document-regenerate-pdf-action",
             "Пересобрать PDF",
             "async function handleDelete(documentItem)",

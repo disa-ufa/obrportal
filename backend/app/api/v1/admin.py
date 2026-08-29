@@ -2748,6 +2748,32 @@ def ensure_revocation_reason_allowed(
         )
 
 
+def ensure_document_file_available_for_publication(
+    *,
+    document_status: str,
+    storage_path: str | None,
+) -> None:
+    if document_status != "available":
+        return
+
+    if not storage_path:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document file is required for publication",
+        )
+
+    resolved_path = resolve_private_storage_path(storage_path)
+
+    if (
+        resolved_path is None
+        or not resolved_path.exists()
+        or not resolved_path.is_file()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document file is required for publication",
+        )
+
 def apply_document_status_metadata(
     document: DocumentRecord,
     document_status: str,
@@ -3124,6 +3150,10 @@ async def create_admin_document(
             document.storage_path = await save_admin_document_file(str(document.id), file)
             await session.flush()
 
+        ensure_document_file_available_for_publication(
+            document_status=document.status,
+            storage_path=document.storage_path,
+        )
         await create_admin_audit_event(
             session,
             actor_user=current_user,
@@ -3511,6 +3541,10 @@ async def update_admin_document(
                 new_storage_path_to_cleanup = new_storage_path
                 old_storage_path_to_delete = old_storage_path
 
+        ensure_document_file_available_for_publication(
+            document_status=document.status,
+            storage_path=document.storage_path,
+        )
         await session.flush()
 
         after = document_record_snapshot(document)
@@ -3713,6 +3747,12 @@ async def regenerate_admin_completion_document(
         source="admin_regenerate",
     )
 
+    if document.status == "available":
+        apply_document_status_metadata(
+            document,
+            "draft",
+            current_user,
+        )
     await session.flush()
 
     await create_admin_audit_event(

@@ -2001,7 +2001,22 @@ def test_post_completion_document_action_reuses_existing_document_api() -> None:
 
     assert (
         "getAccountDocuments"
-        not in page
+        in page
+    )
+
+    assert (
+        "await getAccountDocuments({"
+        in page
+    )
+
+    assert (
+        "enrollment_id: enrollmentId"
+        in page
+    )
+
+    assert (
+        "completionDocument"
+        in page
     )
 
     assert (
@@ -2012,6 +2027,65 @@ def test_post_completion_document_action_reuses_existing_document_api() -> None:
     assert (
         'const readOnly = detail?.status !== "active";'
         in page
+    )
+
+
+def test_completed_course_shows_completion_document_lifecycle_status() -> None:
+    page = read(PAGE)
+
+    assert (
+        "function getCompletionDocumentMessage(documentItem)"
+        in page
+    )
+
+    assert (
+        'documentItem?.status === "draft"'
+        in page
+    )
+
+    assert (
+        'documentItem?.status === "available"'
+        in page
+    )
+
+    assert (
+        'documentItem?.status === "revoked"'
+        in page
+    )
+
+    assert (
+        r"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0438 \u043e\u0436\u0438\u0434\u0430\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438."
+        in page
+    )
+
+    assert (
+        r"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d \u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0434\u043b\u044f \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044f."
+        in page
+    )
+
+    assert (
+        r"\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d."
+        in page
+    )
+
+    assert (
+        r"\u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043e\u0431 \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0435 \u043e\u0431\u043d\u043e\u0432\u043b\u044f\u044e\u0442\u0441\u044f."
+        in page
+    )
+
+    assert (
+        'data-testid="learner-course-completion-document-status"'
+        in page
+    )
+
+    assert (
+        "getCompletionDocumentMessage(completionDocument)"
+        in page
+    )
+
+    assert (
+        r"\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432."
+        not in page
     )
 
 
@@ -2035,8 +2109,8 @@ def run_smoke_suite() -> None:
         + str(len(tests))
     )
 
-    assert len(tests) == 43, (
-        "Expected exactly 43 workspace smoke tests, "
+    assert len(tests) == 44, (
+        "Expected exactly 44 workspace smoke tests, "
         f"found {len(tests)}"
     )
 
@@ -2057,7 +2131,7 @@ def run_smoke_suite() -> None:
         )
 
     print(
-        "WORKSPACE_SMOKE_43=PASS"
+        "WORKSPACE_SMOKE_44=PASS"
     )
 
 

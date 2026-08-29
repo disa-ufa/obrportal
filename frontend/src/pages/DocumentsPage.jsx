@@ -351,6 +351,7 @@ const T = {
   successSaved: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0441\\u043e\\u0445\\u0440\\u0430\\u043d\\u0435\\u043d."),
   successDeleted: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u0443\\u0434\\u0430\\u043b\\u0435\\u043d."),
   successUpdated: U("\\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u043e\\u0431\\u043d\\u043e\\u0432\\u043b\\u0435\\u043d."),
+  successRegeneratedDraft: U("\\u041f\\u0414\\u0424 \\u043f\\u0435\\u0440\\u0435\\u0441\\u043e\\u0431\\u0440\\u0430\\u043d. \\u0414\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442 \\u043f\\u0435\\u0440\\u0435\\u0432\\u0435\\u0434\\u0435\\u043d \\u0432 \\u0447\\u0435\\u0440\\u043d\\u043e\\u0432\\u0438\\u043a \\u0438 \\u0442\\u0440\\u0435\\u0431\\u0443\\u0435\\u0442 \\u043f\\u043e\\u0432\\u0442\\u043e\\u0440\\u043d\\u043e\\u0439 \\u043f\\u0443\\u0431\\u043b\\u0438\\u043a\\u0430\\u0446\\u0438\\u0438."),
   deleteConfirm: U("\\u0423\\u0434\\u0430\\u043b\\u0438\\u0442\\u044c \\u044d\\u0442\\u043e\\u0442 \\u0434\\u043e\\u043a\\u0443\\u043c\\u0435\\u043d\\u0442?"),
   revokeReasonPrompt: U("\\u0423\\u043a\\u0430\\u0436\\u0438\\u0442\\u0435 \\u043f\\u0440\\u0438\\u0447\\u0438\\u043d\\u0443 \\u043e\\u0442\\u0437\\u044b\\u0432\\u0430"),
   revokeReasonDefault: U("\\u041e\\u0442\\u043e\\u0437\\u0432\\u0430\\u043d\\u043e \\u0430\\u0434\\u043c\\u0438\\u043d\\u0438\\u0441\\u0442\\u0440\\u0430\\u0442\\u043e\\u0440\\u043e\\u043c"),
@@ -1278,7 +1279,9 @@ export function DocumentsPage() {
     try {
       const updated = await regenerateAdminDocument(doc.id);
       updateDocumentInState(updated);
-      setSuccess(T.successUpdated);
+      setSuccess(
+        updated.status === "draft" ? T.successRegeneratedDraft : T.successUpdated
+      );
     } catch (err) {
       setError(err?.message || String(err));
     } finally {

@@ -3957,7 +3957,7 @@ def test_admin_create_document_duplicate_number_returns_409() -> None:
             "title": "Duplicate document first",
             "document_type": "Сертификат",
             "document_number": document_number,
-            "status": "available",
+            "status": "draft",
         },
     )
     assert first_response.status_code == 201
@@ -3969,7 +3969,7 @@ def test_admin_create_document_duplicate_number_returns_409() -> None:
             "title": "Duplicate document second",
             "document_type": "Сертификат",
             "document_number": document_number,
-            "status": "available",
+            "status": "draft",
         },
     )
     assert second_response.status_code == 409
@@ -4022,6 +4022,71 @@ def patch_multipart_admin_document(
         timeout=20.0,
     )
 
+
+def test_admin_cannot_create_available_document_without_file() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json(
+        "GET",
+        "/api/v1/auth/me",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    response = post_multipart_admin_document(
+        token=token,
+        fields={
+            "user_id": user_id,
+            "title": "Available document without file",
+            "document_type": "Сертификат",
+            "status": "available",
+        },
+    )
+
+    assert response.status_code == 409
+    payload = response.json()
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Document file is required for publication"
+
+
+def test_admin_cannot_publish_document_without_file() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    status, me_payload = request_json(
+        "GET",
+        "/api/v1/auth/me",
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(me_payload, dict)
+    user_id = str(me_payload["id"])
+
+    document = create_test_document_record_in_db(
+        user_id=user_id,
+        title="Draft document without file",
+        document_type="Сертификат",
+        status="draft",
+    )
+
+    assert document["status"] == "draft"
+    assert document["file_available"] is False
+
+    response = patch_multipart_admin_document(
+        token=token,
+        document_id=document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+
+    assert response.status_code == 409
+    payload = response.json()
+    assert isinstance(payload, dict)
+    assert payload["detail"] == "Document file is required for publication"
 
 def test_admin_can_update_document_status_and_replace_file() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -4403,6 +4468,30 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert first_generation_event["storage_path"].endswith(".pdf")
     assert first_generation_event["generated_by_user_id"] is None
 
+    response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+
+    assert response.status_code == 200
+    published_before_regeneration = response.json()
+    assert isinstance(published_before_regeneration, dict)
+    assert published_before_regeneration["status"] == "available"
+    assert published_before_regeneration["file_available"] is True
+
+    verify_before_regeneration_status, verify_before_regeneration = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert verify_before_regeneration_status == 200
+    assert isinstance(verify_before_regeneration, dict)
+    assert verify_before_regeneration["document_number"] == document["document_number"]
+    assert verify_before_regeneration["verification_code"] == document["verification_code"]
+    assert verify_before_regeneration["registry_status"] == "available"
     status, regenerated = request_json(
         "POST",
         f'/api/v1/admin/documents/{document["id"]}/regenerate',
@@ -4413,12 +4502,47 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert isinstance(regenerated, dict)
     assert regenerated["id"] == document["id"]
     assert regenerated["document_number"] == document["document_number"]
+    assert regenerated["status"] == "draft"
     assert regenerated["file_available"] is True
     assert regenerated["generated_at"] is not None
     assert regenerated["generated_by_user_id"] is not None
     assert regenerated["generated_by_user_email"] == ADMIN_EMAIL
     assert regenerated["generation_source"] == "admin_regenerate"
     assert regenerated["generation_template_version"] == "completion_pdf_v1"
+
+    verify_after_regeneration_status, verify_after_regeneration = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert verify_after_regeneration_status == 404
+    assert isinstance(verify_after_regeneration, dict)
+
+    republish_after_regeneration_response = patch_multipart_admin_document(
+        token=admin_token,
+        document_id=document["id"],
+        fields={
+            "status": "available",
+        },
+    )
+
+    assert republish_after_regeneration_response.status_code == 200
+    republished_after_regeneration = republish_after_regeneration_response.json()
+    assert isinstance(republished_after_regeneration, dict)
+    assert republished_after_regeneration["id"] == document["id"]
+    assert republished_after_regeneration["status"] == "available"
+    assert republished_after_regeneration["file_available"] is True
+
+    verify_after_republish_status, verify_after_republish = request_json(
+        "GET",
+        f'/api/v1/public/documents/verify?number={document["document_number"]}',
+    )
+
+    assert verify_after_republish_status == 200
+    assert isinstance(verify_after_republish, dict)
+    assert verify_after_republish["document_number"] == document["document_number"]
+    assert verify_after_republish["verification_code"] == document["verification_code"]
+    assert verify_after_republish["registry_status"] == "available"
 
     status, generation_events_after = request_json(
         "GET",

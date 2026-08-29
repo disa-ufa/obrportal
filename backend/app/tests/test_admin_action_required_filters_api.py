@@ -240,14 +240,6 @@ def test_admin_documents_action_required_filter() -> None:
             create_document(
                 token,
                 user_id=user_id,
-                title=f"{prefix} available without file",
-                status="available",
-            )
-        )
-        created_documents.append(
-            create_document(
-                token,
-                user_id=user_id,
                 title=f"{prefix} draft",
                 status="draft",
             )
@@ -279,7 +271,7 @@ def test_admin_documents_action_required_filter() -> None:
 
         assert status == 200
         assert isinstance(all_documents, list)
-        assert len(all_documents) == 4
+        assert len(all_documents) == 3
 
         required_query = urlencode({"q": prefix, "action_required": "true", "limit": 50})
         status, required_documents = request_json(
@@ -293,7 +285,6 @@ def test_admin_documents_action_required_filter() -> None:
 
         required_titles = {item["title"] for item in required_documents}
         assert required_titles == {
-            f"{prefix} available without file",
             f"{prefix} draft",
             f"{prefix} revoked",
         }
