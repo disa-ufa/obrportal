@@ -127,7 +127,7 @@ REQUIRED_MARKERS = {
     ],
     "test_lesson_progress": [
         "test_learner_can_complete_lesson_and_detail_returns_progress",
-        "test_lesson_complete_is_idempotent",
+        "test_lesson_auto_completion_rejects_repeat_mutation",
         "test_lesson_complete_rejects_foreign_enrollment_foreign_lesson_and_guest",
         "test_course_completion_requires_required_lessons",
         "test_lesson_complete_rejects_completed_course",

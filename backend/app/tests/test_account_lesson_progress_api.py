@@ -152,9 +152,9 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         assert status == 200
         assert isinstance(detail_after, dict)
         assert detail_after["enrollment_id"] == enrollment_id
-        assert detail_after["status"] == "active"
+        assert detail_after["status"] == "completed"
         assert detail_after["started_at"] is not None
-        assert detail_after["completed_at"] is None
+        assert detail_after["completed_at"] is not None
         assert detail_after["lessons_total"] == 1
         assert detail_after["lessons_completed"] == 1
         assert detail_after["required_lessons_total"] == 1
@@ -173,6 +173,8 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         )
 
         assert status == 200
+        assert detail_after_get["status"] == "completed"
+        assert detail_after_get["completed_at"] == detail_after["completed_at"]
         assert detail_after_get["lessons_total"] == 1
         assert detail_after_get["lessons_completed"] == 1
         assert detail_after_get["required_lessons_total"] == 1
@@ -185,11 +187,12 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         assert lesson_after_get["completed_at"] == lesson_after["completed_at"]
     finally:
         if enrollment_id is not None:
+            delete_admin_documents_for_enrollment(admin_token, enrollment_id)
             delete_admin_enrollment(admin_token, enrollment_id)
         delete_admin_course(admin_token, course_id)
 
 
-def test_lesson_complete_is_idempotent() -> None:
+def test_lesson_auto_completion_rejects_repeat_mutation() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner = register_learner(prefix="lesson-progress-repeat")
     learner_token = login(learner["email"], learner["password"])
@@ -217,18 +220,28 @@ def test_lesson_complete_is_idempotent() -> None:
         assert first_lesson["is_completed"] is True
         assert first_completed_at is not None
 
-        status, second_detail = request_json(
+        status, payload = request_json(
             "POST",
             f"/api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete",
             token=learner_token,
         )
-        assert status == 200
+        assert status == 400
+        assert payload["detail"] == "Completed course cannot be changed"
 
-        second_lesson = find_lesson(second_detail, lesson_id)
+        status, detail_after_get = request_json(
+            "GET",
+            f"/api/v1/account/courses/{enrollment_id}",
+            token=learner_token,
+        )
+        assert status == 200
+        assert detail_after_get["status"] == "completed"
+
+        second_lesson = find_lesson(detail_after_get, lesson_id)
         assert second_lesson["is_completed"] is True
         assert second_lesson["completed_at"] == first_completed_at
     finally:
         if enrollment_id is not None:
+            delete_admin_documents_for_enrollment(admin_token, enrollment_id)
             delete_admin_enrollment(admin_token, enrollment_id)
         delete_admin_course(admin_token, course_id)
 
@@ -346,14 +359,8 @@ def test_lesson_complete_rejects_completed_course() -> None:
         )
         assert status == 200
         assert detail_after_lesson["required_lessons_completed"] == 1
-
-        status, completed = request_json(
-            "POST",
-            f"/api/v1/account/courses/{enrollment_id}/complete",
-            token=learner_token,
-        )
-        assert status == 200
-        assert completed["status"] == "completed"
+        assert detail_after_lesson["status"] == "completed"
+        assert detail_after_lesson["completed_at"] is not None
 
         status, payload = request_json(
             "POST",
@@ -475,6 +482,8 @@ def test_course_completion_falls_back_to_all_active_lessons_when_none_are_requir
         assert detail["required_lessons_completed"] == 1
         assert detail["progress_percent"] == 50
         assert detail["required_progress_percent"] == 50
+        assert detail["status"] == "active"
+        assert detail["completed_at"] is None
 
         status, payload = request_json(
             "POST",
@@ -502,16 +511,186 @@ def test_course_completion_falls_back_to_all_active_lessons_when_none_are_requir
         assert detail["required_lessons_completed"] == 2
         assert detail["progress_percent"] == 100
         assert detail["required_progress_percent"] == 100
+        assert detail["status"] == "completed"
+        assert detail["completed_at"] is not None
+
+    finally:
+        if enrollment_id is not None:
+            delete_admin_documents_for_enrollment(
+                admin_token,
+                enrollment_id,
+            )
+
+            delete_admin_enrollment(
+                admin_token,
+                enrollment_id,
+            )
+
+        delete_admin_course(
+            admin_token,
+            course_id,
+        )
+
+def test_course_auto_completion_ignores_incomplete_optional_lesson() -> None:
+    admin_token = login(
+        ADMIN_EMAIL,
+        ADMIN_PASSWORD,
+    )
+    learner = register_learner(
+        prefix="lesson-progress-required-optional"
+    )
+    learner_token = login(
+        learner["email"],
+        learner["password"],
+    )
+
+    course = create_admin_course(admin_token)
+    course_id = str(course["id"])
+    enrollment_id: str | None = None
+
+    try:
+        module = create_course_module(
+            admin_token,
+            course_id,
+            title="Required optional completion module",
+            position=1,
+            is_active=True,
+        )
+
+        required_lesson = create_course_lesson(
+            admin_token,
+            str(module["id"]),
+            title="Required completion lesson",
+            position=1,
+            content_type="text",
+            is_required=True,
+            is_active=True,
+        )
+
+        optional_lesson = create_course_lesson(
+            admin_token,
+            str(module["id"]),
+            title="Optional completion lesson",
+            position=2,
+            content_type="text",
+            is_required=False,
+            is_active=True,
+        )
+
+        required_lesson_id = str(
+            required_lesson["id"]
+        )
+        optional_lesson_id = str(
+            optional_lesson["id"]
+        )
+
+        enrollment = enroll_learner_to_course(
+            learner_token,
+            course_id,
+        )
+
+        enrollment_id = str(
+            enrollment["enrollment_id"]
+        )
+
+        start_learner_course(
+            learner_token,
+            enrollment_id,
+        )
+
+        status, before = request_json(
+            "GET",
+            f"/api/v1/account/courses/{enrollment_id}",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert before["status"] == "active"
+        assert before["completed_at"] is None
+        assert before["lessons_total"] == 2
+        assert before["lessons_completed"] == 0
+        assert before["required_lessons_total"] == 1
+        assert before["required_lessons_completed"] == 0
+        assert before["progress_percent"] == 0
+        assert before["required_progress_percent"] == 0
 
         status, completed = request_json(
             "POST",
-            f"/api/v1/account/courses/{enrollment_id}/complete",
+            (
+                f"/api/v1/account/courses/{enrollment_id}"
+                f"/lessons/{required_lesson_id}/complete"
+            ),
             token=learner_token,
         )
 
         assert status == 200
         assert completed["status"] == "completed"
         assert completed["completed_at"] is not None
+
+        assert completed["lessons_total"] == 2
+        assert completed["lessons_completed"] == 1
+        assert completed["progress_percent"] == 50
+
+        assert completed["required_lessons_total"] == 1
+        assert completed["required_lessons_completed"] == 1
+        assert completed["required_progress_percent"] == 100
+
+        required_after = find_lesson(
+            completed,
+            required_lesson_id,
+        )
+        optional_after = find_lesson(
+            completed,
+            optional_lesson_id,
+        )
+
+        assert required_after["is_required"] is True
+        assert required_after["is_completed"] is True
+        assert required_after["completed_at"] is not None
+
+        assert optional_after["is_required"] is False
+        assert optional_after["is_completed"] is False
+        assert optional_after["completed_at"] is None
+
+        completed_at = completed["completed_at"]
+
+        status, after_get = request_json(
+            "GET",
+            f"/api/v1/account/courses/{enrollment_id}",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert after_get["status"] == "completed"
+        assert after_get["completed_at"] == completed_at
+        assert after_get["lessons_total"] == 2
+        assert after_get["lessons_completed"] == 1
+        assert after_get["progress_percent"] == 50
+        assert after_get["required_lessons_total"] == 1
+        assert after_get["required_lessons_completed"] == 1
+        assert after_get["required_progress_percent"] == 100
+
+        optional_after_get = find_lesson(
+            after_get,
+            optional_lesson_id,
+        )
+
+        assert optional_after_get["is_completed"] is False
+        assert optional_after_get["completed_at"] is None
+
+        status, payload = request_json(
+            "POST",
+            (
+                f"/api/v1/account/courses/{enrollment_id}"
+                f"/lessons/{optional_lesson_id}/complete"
+            ),
+            token=learner_token,
+        )
+
+        assert status == 400
+        assert payload["detail"] == (
+            "Completed course cannot be changed"
+        )
 
     finally:
         if enrollment_id is not None:

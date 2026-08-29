@@ -43,21 +43,15 @@ def complete_course_and_get_document() -> tuple[str, str, str, dict, dict]:
     assert started["enrollment_id"] == enrollment_id
     assert started["status"] == "active"
 
-    status, _ = request_json(
+    status, completed = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/lessons/{lesson_id}/complete",
         token=learner_token,
     )
     assert status == 200
-
-    status, completed = request_json(
-        "POST",
-        f"/api/v1/account/courses/{enrollment_id}/complete",
-        token=learner_token,
-    )
-    assert status == 200
     assert isinstance(completed, dict)
     assert completed["status"] == "completed"
+    assert completed["completed_at"] is not None
 
     status, documents = request_json(
         "GET",
