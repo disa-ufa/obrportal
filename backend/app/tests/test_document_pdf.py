@@ -112,11 +112,25 @@ def test_render_completion_document_pdf_uses_clean_russian_text_constants() -> N
     def collect_string_constants(code: CodeType) -> list[str]:
         values: list[str] = []
 
+        def collect_constant(value: object) -> None:
+            if isinstance(value, str):
+                values.append(value)
+                return
+
+            if isinstance(value, CodeType):
+                for nested in value.co_consts:
+                    collect_constant(nested)
+                return
+
+            if isinstance(
+                value,
+                (tuple, list, set, frozenset),
+            ):
+                for nested in value:
+                    collect_constant(nested)
+
         for constant in code.co_consts:
-            if isinstance(constant, str):
-                values.append(constant)
-            elif isinstance(constant, CodeType):
-                values.extend(collect_string_constants(constant))
+            collect_constant(constant)
 
         return values
 
@@ -134,7 +148,6 @@ def test_render_completion_document_pdf_uses_clean_russian_text_constants() -> N
         "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f",
         "\u0430\u043a. \u0447.",
         "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
-        "\u0421\u0442\u0430\u0442\u0443\u0441",
         "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
         "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u0438:",
     ]
@@ -270,3 +283,181 @@ def test_render_completion_document_pdf_draws_expected_visible_metadata(monkeypa
 
     missing = [value for value in expected if value not in combined]
     assert missing == []
+
+
+def test_render_completion_document_pdf_keeps_verification_panel_content_within_bounds(
+    monkeypatch,
+) -> None:
+    draw_calls: list[dict[str, object]] = []
+
+    class FakeCanvas:
+        def __init__(self, buffer, pagesize):
+            self.buffer = buffer
+            self.font_name = ""
+            self.font_size = 0.0
+
+        def setTitle(self, *args, **kwargs): pass
+        def setAuthor(self, *args, **kwargs): pass
+        def setSubject(self, *args, **kwargs): pass
+        def setStrokeColor(self, *args, **kwargs): pass
+        def setLineWidth(self, *args, **kwargs): pass
+        def setFillColor(self, *args, **kwargs): pass
+        def rect(self, *args, **kwargs): pass
+        def line(self, *args, **kwargs): pass
+        def showPage(self, *args, **kwargs): pass
+
+        def setFont(self, font_name, font_size):
+            self.font_name = font_name
+            self.font_size = float(font_size)
+
+        def _remember(self, x, y, value):
+            draw_calls.append(
+                {
+                    "x": float(x),
+                    "y": float(y),
+                    "text": str(value),
+                    "font_name": self.font_name,
+                    "font_size": self.font_size,
+                }
+            )
+
+        def drawCentredString(self, x, y, value):
+            self._remember(x, y, value)
+
+        def drawString(self, x, y, value):
+            self._remember(x, y, value)
+
+        def drawRightString(self, x, y, value):
+            self._remember(x, y, value)
+
+        def save(self):
+            self.buffer.write(
+                b"%PDF-fake\n%%EOF"
+            )
+
+    monkeypatch.setattr(
+        document_pdf.canvas,
+        "Canvas",
+        FakeCanvas,
+    )
+
+    monkeypatch.setattr(
+        document_pdf,
+        "draw_verification_qr",
+        lambda *args, **kwargs: True,
+    )
+
+    verification_code = (
+        "DOCV-"
+        "516BB46725D94C409BD63747"
+    )
+
+    verification_url = (
+        "https://obrportal.example.ru/"
+        "verify/"
+        + verification_code
+    )
+
+    pdf_bytes = (
+        document_pdf
+        .render_completion_document_pdf(
+            CompletionDocumentTemplateContext(
+                learner_full_name=(
+                    "\u0418\u0432\u0430\u043d\u043e\u0432 "
+                    "\u0418\u0432\u0430\u043d "
+                    "\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447"
+                ),
+                course_title=(
+                    "\u041e\u043a\u0430\u0437\u0430\u043d\u0438\u0435 "
+                    "\u043f\u0435\u0440\u0432\u043e\u0439 "
+                    "\u043f\u043e\u043c\u043e\u0449\u0438 "
+                    "\u043f\u043e\u0441\u0442\u0440\u0430\u0434\u0430\u0432\u0448\u0438\u043c"
+                ),
+                document_type=(
+                    "\u0421\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0442"
+                ),
+                document_number=(
+                    "AUTO-5052F671AB404B56"
+                ),
+                verification_code=verification_code,
+                completed_at=datetime(
+                    2026,
+                    8,
+                    29,
+                    12,
+                    0,
+                    tzinfo=timezone.utc,
+                ),
+                course_hours=14,
+                verification_url=verification_url,
+            )
+        )
+    )
+
+    assert pdf_bytes.startswith(
+        b"%PDF-"
+    )
+
+    code_call = next(
+        item
+        for item in draw_calls
+        if item["text"] == verification_code
+    )
+
+    url_call = next(
+        item
+        for item in draw_calls
+        if item["text"] == verification_url
+    )
+
+    footer_call = next(
+        item
+        for item in draw_calls
+        if item["text"]
+        == "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal"
+    )
+
+    panel_x = 24 * document_pdf.mm
+    panel_width = (
+        document_pdf.A4[0]
+        - 48 * document_pdf.mm
+    )
+    qr_size = 25 * document_pdf.mm
+
+    qr_x = (
+        panel_x
+        + panel_width
+        - qr_size
+        - 6 * document_pdf.mm
+    )
+
+    text_right = (
+        qr_x
+        - 7 * document_pdf.mm
+    )
+
+    for item in (
+        code_call,
+        url_call,
+    ):
+        width = (
+            document_pdf
+            .pdfmetrics
+            .stringWidth(
+                str(item["text"]),
+                str(item["font_name"]),
+                float(item["font_size"]),
+            )
+        )
+
+        assert (
+            float(item["x"])
+            + width
+            <= text_right
+        )
+
+    assert (
+        float(code_call["y"])
+        > float(footer_call["y"])
+        + 20 * document_pdf.mm
+    )

@@ -157,6 +157,7 @@ def main() -> None:
             "updateAdminDocument(documentId, payload)",
             "async function handleQuickStatusUpdate(documentItem, nextStatus, revocationReasonOverride = null)",
             "updateAdminDocument(documentItem.id, payload)",
+            "payload.set(\"status\", nextStatus);",
             "async function handleAdminDownload(documentItem)",
             "downloadAdminDocument(documentItem.id)",
             "async function handleRegenerateCompletionDocument(documentItem)",

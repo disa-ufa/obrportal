@@ -129,6 +129,33 @@ def _draw_centered_wrapped_text(
 
 
 
+def fit_text_font_size(
+    text: str,
+    *,
+    font_name: str,
+    preferred_size: float,
+    min_size: float,
+    max_width: float,
+) -> float:
+    candidate = float(preferred_size)
+    minimum = float(min_size)
+
+    while candidate > minimum:
+        if pdfmetrics.stringWidth(
+            text,
+            font_name,
+            candidate,
+        ) <= max_width:
+            return candidate
+
+        candidate = max(
+            minimum,
+            candidate - 0.5,
+        )
+
+    return minimum
+
+
 def build_verification_qr_drawing(value: str | None, size: float) -> Drawing | None:
     normalized_value = normalize_document_text(value, fallback="").strip()
 
@@ -179,13 +206,17 @@ def draw_verification_qr(
     renderPDF.draw(drawing, pdf, x, y)
     return True
 
-
 def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -> bytes:
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
 
     width, height = A4
-    margin = 22 * mm
+
+    outer_margin = 12 * mm
+    inner_margin = 16 * mm
+    content_left = 24 * mm
+    content_right = width - 24 * mm
+    content_width = content_right - content_left
 
     regular_font = register_pdf_fonts()
     bold_font = get_pdf_bold_font_name()
@@ -258,215 +289,553 @@ def render_completion_document_pdf(context: CompletionDocumentTemplateContext) -
     organization_identity = " \u00b7 ".join(
         item
         for item in (
-            f"\u0418\u041d\u041d {organization_inn}" if organization_inn else "",
-            f"\u041a\u041f\u041f {organization_kpp}" if organization_kpp else "",
-            f"\u041e\u0413\u0420\u041d {organization_ogrn}" if organization_ogrn else "",
-        )
-        if item
-    )
-    organization_meta = " \u00b7 ".join(
-        item
-        for item in (
-            organization_identity,
-            organization_license,
-            document_basis,
-            organization_address,
+            f"\u0418\u041d\u041d {organization_inn}"
+            if organization_inn
+            else "",
+            f"\u041a\u041f\u041f {organization_kpp}"
+            if organization_kpp
+            else "",
+            f"\u041e\u0413\u0420\u041d {organization_ogrn}"
+            if organization_ogrn
+            else "",
         )
         if item
     )
 
-    completed_date = format_document_date(context.completed_at)
+    metadata_candidates = (
+        organization_identity,
+        organization_license,
+        document_basis,
+        organization_address,
+    )
+
+    metadata_parts: list[str] = []
+    metadata_seen: set[str] = set()
+
+    for item in metadata_candidates:
+        normalized_item = item.strip()
+
+        if not normalized_item:
+            continue
+
+        dedupe_key = normalized_item.casefold()
+
+        if dedupe_key in metadata_seen:
+            continue
+
+        metadata_seen.add(dedupe_key)
+        metadata_parts.append(normalized_item)
+
+    organization_meta = " \u00b7 ".join(
+        metadata_parts
+    )
+
+    completed_date = format_document_date(
+        context.completed_at
+    )
 
     if context.course_hours is None:
         course_hours = "-"
     else:
-        course_hours = str(max(0, int(context.course_hours)))
+        course_hours = str(
+            max(
+                0,
+                int(context.course_hours),
+            )
+        )
 
-    pdf.setTitle(f"{document_type} {document_number}")
+    pdf.setTitle(
+        f"{document_type} {document_number}"
+    )
     pdf.setAuthor("ObrPortal")
-    pdf.setSubject("Completion document")
-
-    pdf.setStrokeColor(colors.HexColor("#d1d5db"))
-    pdf.setLineWidth(3)
-    pdf.rect(margin, margin, width - 2 * margin, height - 2 * margin)
-
-    pdf.setStrokeColor(colors.HexColor("#1d4ed8"))
-    pdf.setLineWidth(1.2)
-    pdf.rect(
-        margin + 6 * mm,
-        margin + 6 * mm,
-        width - 2 * (margin + 6 * mm),
-        height - 2 * (margin + 6 * mm),
+    pdf.setSubject(
+        "Completion document"
     )
 
-    y = height - 32 * mm
+    blue = colors.HexColor("#1D4ED8")
+    navy = colors.HexColor("#172554")
+    text = colors.HexColor("#111827")
+    muted = colors.HexColor("#64748B")
+    border = colors.HexColor("#CBD5E1")
+    soft_blue = colors.HexColor("#EFF6FF")
+    soft_gray = colors.HexColor("#F8FAFC")
+    divider = colors.HexColor("#E2E8F0")
 
-    pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.setFont(bold_font, 9)
-    y = _draw_centered_wrapped_text(
-        pdf,
-        text=organization_name,
-        y=y,
-        max_width=width - 70 * mm,
+    # Outer certificate frame.
+    pdf.setStrokeColor(border)
+    pdf.setLineWidth(2.2)
+    pdf.rect(
+        outer_margin,
+        outer_margin,
+        width - 2 * outer_margin,
+        height - 2 * outer_margin,
+    )
+
+    pdf.setStrokeColor(blue)
+    pdf.setLineWidth(0.9)
+    pdf.rect(
+        inner_margin,
+        inner_margin,
+        width - 2 * inner_margin,
+        height - 2 * inner_margin,
+    )
+
+    # Restrained ObrPortal accent.
+    pdf.setFillColor(blue)
+    pdf.rect(
+        inner_margin,
+        height - 23 * mm,
+        width - 2 * inner_margin,
+        2.4 * mm,
+        fill=1,
+        stroke=0,
+    )
+
+    # Header.
+    y = height - 31 * mm
+
+    pdf.setFillColor(navy)
+    organization_font_size = fit_text_font_size(
+        organization_name,
         font_name=bold_font,
-        font_size=9,
-        leading=11,
-        max_lines=2,
+        preferred_size=11,
+        min_size=8,
+        max_width=content_width,
+    )
+    pdf.setFont(
+        bold_font,
+        organization_font_size,
+    )
+    pdf.drawCentredString(
+        width / 2,
+        y,
+        organization_name,
     )
 
     if organization_meta:
-        y -= 1 * mm
-        pdf.setFillColor(colors.HexColor("#4b5563"))
-        pdf.setFont(regular_font, 7)
-        y = _draw_centered_wrapped_text(
-            pdf,
-            text=organization_meta,
-            y=y,
-            max_width=width - 70 * mm,
-            font_name=regular_font,
-            font_size=7,
-            leading=9,
-            max_lines=2,
-        )
+        y -= 6 * mm
 
-    y -= 7 * mm
+        pdf.setFillColor(muted)
+        pdf.setFont(regular_font, 6.8)
 
-    pdf.setFillColor(colors.HexColor("#1d4ed8"))
-    pdf.setFont(bold_font, 28)
-    y = _draw_centered_wrapped_text(
-        pdf,
-        text=document_type.upper(),
-        y=y,
-        max_width=width - 70 * mm,
-        font_name=bold_font,
-        font_size=28,
-        leading=32,
-        max_lines=2,
+        meta_lines = simpleSplit(
+            organization_meta,
+            regular_font,
+            6.8,
+            content_width,
+        )[:3]
+
+        for line in meta_lines:
+            pdf.drawCentredString(
+                width / 2,
+                y,
+                line,
+            )
+            y -= 3.4 * mm
+
+    y -= 2.5 * mm
+
+    pdf.setStrokeColor(divider)
+    pdf.setLineWidth(0.8)
+    pdf.line(
+        content_left,
+        y,
+        content_right,
+        y,
     )
 
-    y -= 3 * mm
-    pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 11)
-    pdf.drawCentredString(width / 2, y, f"\u2116 {document_number}")
+    # Document title.
+    title_y = y - 15 * mm
 
-    y -= 38 * mm
+    pdf.setFillColor(blue)
 
-    pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 14)
+    title_size = fit_text_font_size(
+        document_type.upper(),
+        font_name=bold_font,
+        preferred_size=30,
+        min_size=20,
+        max_width=content_width,
+    )
+
+    pdf.setFont(
+        bold_font,
+        title_size,
+    )
     pdf.drawCentredString(
         width / 2,
-        y,
+        title_y,
+        document_type.upper(),
+    )
+
+    pdf.setFillColor(muted)
+    pdf.setFont(regular_font, 9)
+    pdf.drawCentredString(
+        width / 2,
+        title_y - 9 * mm,
+        f"\u2116 {document_number}",
+    )
+
+    # Main recognition block.
+    main_y = title_y - 30 * mm
+
+    pdf.setFillColor(muted)
+    pdf.setFont(regular_font, 11.5)
+    pdf.drawCentredString(
+        width / 2,
+        main_y,
         "\u041d\u0430\u0441\u0442\u043e\u044f\u0449\u0438\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442, \u0447\u0442\u043e",
     )
 
-    y -= 15 * mm
-    pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.setFont(bold_font, 22)
-    y = _draw_centered_wrapped_text(
+    main_y -= 12 * mm
+
+    pdf.setFillColor(text)
+    learner_size = fit_text_font_size(
+        learner_full_name,
+        font_name=bold_font,
+        preferred_size=22,
+        min_size=14,
+        max_width=content_width - 8 * mm,
+    )
+    pdf.setFont(
+        bold_font,
+        learner_size,
+    )
+
+    main_y = _draw_centered_wrapped_text(
         pdf,
         text=learner_full_name,
-        y=y,
-        max_width=width - 65 * mm,
+        y=main_y,
+        max_width=content_width - 8 * mm,
         font_name=bold_font,
-        font_size=22,
-        leading=26,
+        font_size=int(learner_size),
+        leading=max(
+            18,
+            int(learner_size + 4),
+        ),
         max_lines=2,
     )
 
-    y -= 7 * mm
-    pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 14)
+    main_y -= 4 * mm
+
+    pdf.setFillColor(muted)
+    pdf.setFont(regular_font, 11.5)
     pdf.drawCentredString(
         width / 2,
-        y,
+        main_y,
         "\u0443\u0441\u043f\u0435\u0448\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b(\u0430) \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435",
     )
 
-    y -= 16 * mm
-    pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.setFont(bold_font, 17)
-    y = _draw_centered_wrapped_text(
+    main_y -= 11 * mm
+
+    pdf.setFillColor(navy)
+    course_size = fit_text_font_size(
+        course_title,
+        font_name=bold_font,
+        preferred_size=17,
+        min_size=12,
+        max_width=content_width - 6 * mm,
+    )
+    pdf.setFont(
+        bold_font,
+        course_size,
+    )
+
+    main_y = _draw_centered_wrapped_text(
         pdf,
         text=course_title,
-        y=y,
-        max_width=width - 55 * mm,
+        y=main_y,
+        max_width=content_width - 6 * mm,
         font_name=bold_font,
-        font_size=17,
-        leading=22,
+        font_size=int(course_size),
+        leading=max(
+            16,
+            int(course_size + 5),
+        ),
         max_lines=3,
     )
 
-    y -= 16 * mm
-
-    left_x = margin + 22 * mm
-    right_x = width / 2 + 8 * mm
-    row_y = y
-
-    pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 10)
-    pdf.drawString(left_x, row_y, "\u041e\u0431\u044a\u0451\u043c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b")
-    pdf.drawString(right_x, row_y, "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f")
-
-    pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.setFont(bold_font, 13)
-    pdf.drawString(left_x, row_y - 7 * mm, f"{course_hours} \u0430\u043a. \u0447.")
-    pdf.drawString(right_x, row_y - 7 * mm, completed_date)
-
-    row_y -= 22 * mm
-
-    pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 10)
-    pdf.drawString(left_x, row_y, "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438")
-    pdf.drawString(right_x, row_y, "\u041c\u0435\u0441\u0442\u043e \u0432\u044b\u0434\u0430\u0447\u0438" if document_place else "\u0421\u0442\u0430\u0442\u0443\u0441")
-
-    pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.setFont(bold_font, 13)
-    pdf.drawString(left_x, row_y - 7 * mm, verification_code)
-    pdf.drawString(
-        right_x,
-        row_y - 7 * mm,
-        document_place or "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
+    # Three-column details band.
+    details_top = min(
+        main_y - 7 * mm,
+        123 * mm,
     )
 
-    footer_y = margin + 34 * mm
+    details_bottom = details_top - 27 * mm
 
-    pdf.setStrokeColor(colors.HexColor("#111827"))
-    pdf.setLineWidth(0.8)
-    pdf.line(margin + 18 * mm, footer_y, margin + 75 * mm, footer_y)
+    pdf.setFillColor(soft_gray)
+    pdf.setStrokeColor(divider)
+    pdf.setLineWidth(0.7)
+    pdf.rect(
+        content_left,
+        details_bottom,
+        content_width,
+        27 * mm,
+        fill=1,
+        stroke=1,
+    )
 
-    signature_center_x = margin + 46.5 * mm
+    column_gap = 4 * mm
+    column_width = (
+        content_width
+        - 2 * column_gap
+    ) / 3
 
-    pdf.setFillColor(colors.HexColor("#4b5563"))
-    pdf.setFont(regular_font, 8)
-    pdf.drawCentredString(signature_center_x, footer_y - 6 * mm, signer_position)
+    column_x = [
+        content_left,
+        content_left
+        + column_width
+        + column_gap,
+        content_left
+        + 2 * (
+            column_width
+            + column_gap
+        ),
+    ]
 
-    if signer_full_name:
-        pdf.setFillColor(colors.HexColor("#111827"))
-        pdf.setFont(bold_font, 8)
-        pdf.drawCentredString(signature_center_x, footer_y - 11 * mm, signer_full_name)
+    detail_labels = [
+        "\u041e\u0431\u044a\u0451\u043c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b",
+        "\u0414\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f",
+        "\u041d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430",
+    ]
 
-    pdf.setFont(regular_font, 8)
-    pdf.drawRightString(
-        width - margin - 18 * mm,
-        footer_y + 4 * mm,
+    detail_values = [
+        f"{course_hours} \u0430\u043a. \u0447.",
+        completed_date,
+        document_number,
+    ]
+
+    for index in range(3):
+        x = column_x[index]
+
+        if index > 0:
+            separator_x = (
+                x
+                - column_gap / 2
+            )
+
+            pdf.setStrokeColor(divider)
+            pdf.setLineWidth(0.7)
+            pdf.line(
+                separator_x,
+                details_bottom + 5 * mm,
+                separator_x,
+                details_top - 5 * mm,
+            )
+
+        pdf.setFillColor(muted)
+        pdf.setFont(regular_font, 7.5)
+        pdf.drawString(
+            x + 4 * mm,
+            details_top - 8 * mm,
+            detail_labels[index],
+        )
+
+        value_size = fit_text_font_size(
+            detail_values[index],
+            font_name=bold_font,
+            preferred_size=12.5,
+            min_size=7,
+            max_width=column_width - 8 * mm,
+        )
+
+        pdf.setFillColor(text)
+        pdf.setFont(
+            bold_font,
+            value_size,
+        )
+        pdf.drawString(
+            x + 4 * mm,
+            details_top - 17 * mm,
+            detail_values[index],
+        )
+
+    # Verification panel.
+    panel_x = content_left
+    panel_y = 48 * mm
+    panel_width = content_width
+    panel_height = 35 * mm
+
+    pdf.setFillColor(soft_blue)
+    pdf.setStrokeColor(
+        colors.HexColor("#BFDBFE")
+    )
+    pdf.setLineWidth(0.9)
+    pdf.rect(
+        panel_x,
+        panel_y,
+        panel_width,
+        panel_height,
+        fill=1,
+        stroke=1,
+    )
+
+    qr_size = 25 * mm
+    qr_x = (
+        panel_x
+        + panel_width
+        - qr_size
+        - 6 * mm
+    )
+    qr_y = (
+        panel_y
+        + (
+            panel_height
+            - qr_size
+        ) / 2
+    )
+
+    verification_text_x = (
+        panel_x + 6 * mm
+    )
+    verification_text_right = (
+        qr_x - 7 * mm
+    )
+    verification_text_width = (
+        verification_text_right
+        - verification_text_x
+    )
+
+    pdf.setFillColor(blue)
+    pdf.setFont(bold_font, 10)
+    pdf.drawString(
+        verification_text_x,
+        panel_y + panel_height - 8 * mm,
         "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u0434\u043b\u0438\u043d\u043d\u043e\u0441\u0442\u0438:",
     )
-    pdf.drawRightString(width - margin - 18 * mm, footer_y - 2 * mm, verification_url)
 
-    qr_size = 24 * mm
-    qr_x = width - margin - 18 * mm - qr_size
-    qr_y = margin + 8 * mm
+    pdf.setFillColor(muted)
+    pdf.setFont(regular_font, 7.2)
+    pdf.drawString(
+        verification_text_x,
+        panel_y + panel_height - 14 * mm,
+        "\u041a\u043e\u0434 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438",
+    )
 
-    if draw_verification_qr(
+    code_size = fit_text_font_size(
+        verification_code,
+        font_name=bold_font,
+        preferred_size=9.5,
+        min_size=6,
+        max_width=verification_text_width,
+    )
+
+    pdf.setFillColor(text)
+    pdf.setFont(
+        bold_font,
+        code_size,
+    )
+    pdf.drawString(
+        verification_text_x,
+        panel_y + panel_height - 20 * mm,
+        verification_code,
+    )
+
+    verification_value = (
+        verification_url
+        if verification_url != "-"
+        else verification_code
+    )
+
+    pdf.setFillColor(muted)
+
+    verification_url_size = fit_text_font_size(
+        verification_value,
+        font_name=regular_font,
+        preferred_size=6.5,
+        min_size=4.8,
+        max_width=verification_text_width,
+    )
+
+    pdf.setFont(
+        regular_font,
+        verification_url_size,
+    )
+    pdf.drawString(
+        verification_text_x,
+        panel_y + 7 * mm,
+        verification_value,
+    )
+
+    draw_verification_qr(
         pdf,
-        value=verification_url if verification_url != "-" else verification_code,
+        value=verification_value,
         x=qr_x,
         y=qr_y,
         size=qr_size,
-    ):
-        pdf.setFillColor(colors.HexColor("#4b5563"))
-        pdf.setFont(regular_font, 7)
-        pdf.drawCentredString(qr_x + qr_size / 2, qr_y - 3 * mm, "QR")
+    )
+
+    # Signature block.
+    signature_line_y = 34 * mm
+    signature_left = content_left + 4 * mm
+    signature_right = content_left + 67 * mm
+
+    pdf.setStrokeColor(
+        colors.HexColor("#94A3B8")
+    )
+    pdf.setLineWidth(0.8)
+    pdf.line(
+        signature_left,
+        signature_line_y,
+        signature_right,
+        signature_line_y,
+    )
+
+    signature_center_x = (
+        signature_left
+        + signature_right
+    ) / 2
+
+    pdf.setFillColor(muted)
+    pdf.setFont(regular_font, 7.5)
+    pdf.drawCentredString(
+        signature_center_x,
+        signature_line_y - 5 * mm,
+        signer_position,
+    )
+
+    if signer_full_name:
+        signer_size = fit_text_font_size(
+            signer_full_name,
+            font_name=bold_font,
+            preferred_size=8.5,
+            min_size=6,
+            max_width=(
+                signature_right
+                - signature_left
+            ),
+        )
+
+        pdf.setFillColor(text)
+        pdf.setFont(
+            bold_font,
+            signer_size,
+        )
+        pdf.drawCentredString(
+            signature_center_x,
+            signature_line_y - 10 * mm,
+            signer_full_name,
+        )
+
+    if document_place:
+        pdf.setFillColor(muted)
+        pdf.setFont(regular_font, 7.5)
+        pdf.drawRightString(
+            content_right,
+            signature_line_y - 5 * mm,
+            document_place,
+        )
+
+    # Small service footer, intentionally separated
+    # from the verification code.
+    pdf.setFillColor(
+        colors.HexColor("#94A3B8")
+    )
+    pdf.setFont(regular_font, 6.5)
+    pdf.drawCentredString(
+        width / 2,
+        18 * mm,
+        "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0432 ObrPortal",
+    )
 
     pdf.showPage()
     pdf.save()
