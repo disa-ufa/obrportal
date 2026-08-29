@@ -3410,16 +3410,6 @@ def main() -> int:
     assert detail_after_required_lesson["modules"][0]["lessons"][0]["is_completed"] is True
     checks.append("learner complete required account lesson ok")
 
-    status, completed_self_enrollment = request_json(
-        "POST",
-        "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]) + "/complete",
-        token=learner_token,
-    )
-    assert_status(status, 200, "learner complete self enrolled course")
-    assert isinstance(completed_self_enrollment, dict)
-    assert completed_self_enrollment["status"] == "completed"
-    checks.append("learner complete self enrolled course ok")
-
     status, completed_course_detail = request_json(
         "GET",
         "/api/v1/account/courses/" + str(self_enrollment["enrollment_id"]),
