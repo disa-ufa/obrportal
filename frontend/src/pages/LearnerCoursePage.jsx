@@ -17,6 +17,7 @@ import {
   buildApiUrl,
   completeAccountCourseLesson,
   getAccountCourseDetail,
+  getAccountDocuments,
   startAccountCourse,
 } from "../api/client";
 import { LearnerAssignmentBlock } from "../components/learner/LearnerAssignmentBlock";
@@ -172,6 +173,46 @@ function getPreviousLesson(
 
 
 
+function getCompletionDocumentMessage(documentItem) {
+  if (documentItem?.status === "draft") {
+    return "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d \u0438 \u043e\u0436\u0438\u0434\u0430\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.";
+  }
+
+  if (documentItem?.status === "available") {
+    return "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d \u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0434\u043b\u044f \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044f.";
+  }
+
+  if (documentItem?.status === "revoked") {
+    return "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043e\u0437\u0432\u0430\u043d.";
+  }
+
+  return "\u0421\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u043e\u0431 \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u043c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0435 \u043e\u0431\u043d\u043e\u0432\u043b\u044f\u044e\u0442\u0441\u044f.";
+}
+
+
+async function loadCompletionDocumentForEnrollment(enrollmentId) {
+  const response = await getAccountDocuments({
+    enrollment_id: enrollmentId,
+  });
+
+  const items = Array.isArray(response?.items)
+    ? response.items
+    : Array.isArray(response)
+      ? response
+      : [];
+
+  return (
+    items.find(
+      (documentItem) =>
+        `${documentItem?.enrollment_id || ""}` ===
+        `${enrollmentId || ""}`
+    ) ||
+    items[0] ||
+    null
+  );
+}
+
+
 export function LearnerCoursePage() {
   const {
     enrollmentId,
@@ -181,6 +222,7 @@ export function LearnerCoursePage() {
   const navigate = useNavigate();
 
   const [detail, setDetail] = useState(null);
+  const [completionDocument, setCompletionDocument] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [lessonCompletionLoading, setLessonCompletionLoading] = useState(false);
@@ -209,8 +251,23 @@ export function LearnerCoursePage() {
           enrollmentId
         );
 
+        let documentItem = null;
+
+        if (response?.status === "completed") {
+
+          try {
+            documentItem =
+              await loadCompletionDocumentForEnrollment(
+                enrollmentId
+              );
+          } catch {
+            documentItem = null;
+          }
+        }
+
         if (!cancelled) {
           setDetail(response);
+          setCompletionDocument(documentItem);
         }
       } catch (err) {
         if (!cancelled) {
@@ -462,8 +519,20 @@ export function LearnerCoursePage() {
       setDetail(response);
 
       if (response?.status === "completed") {
+        let documentItem = null;
+
+        try {
+          documentItem =
+            await loadCompletionDocumentForEnrollment(
+              enrollmentId
+            );
+        } catch {
+          documentItem = null;
+        }
+
+        setCompletionDocument(documentItem);
         setLessonCompletionSuccess(
-          "\u0423\u0440\u043e\u043a \u0438\u0437\u0443\u0447\u0435\u043d. \u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430. \u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432."
+          "\u0423\u0440\u043e\u043a \u0438\u0437\u0443\u0447\u0435\u043d. \u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430."
         );
       } else if (nextIncompleteLesson) {
         setLessonCompletionSuccess(
@@ -746,6 +815,7 @@ export function LearnerCoursePage() {
       {detail.status === "completed" ? (
         <div
           data-testid="learner-course-course-completed"
+          data-document-status={completionDocument?.status || "unknown"}
           className="mt-4 flex gap-3 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-100"
         >
           <CheckCircle2 className="h-5 w-5 shrink-0" />
@@ -756,6 +826,12 @@ export function LearnerCoursePage() {
             </div>
             <div className="mt-1">
               Материалы доступны для просмотра. Изменение прогресса отключено.
+            </div>
+            <div
+              data-testid="learner-course-completion-document-status"
+              className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-sm font-semibold text-blue-900 ring-1 ring-blue-200"
+            >
+              {getCompletionDocumentMessage(completionDocument)}
             </div>
             <button
               data-testid="learner-course-open-documents-button"

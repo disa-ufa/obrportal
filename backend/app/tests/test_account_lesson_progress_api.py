@@ -13,6 +13,10 @@ from test_course_lessons_admin_api import (
     login,
     request_json,
 )
+from test_auth_rbac_admin_api import (
+    get_account_document_download_response,
+    patch_multipart_admin_document,
+)
 from test_public_course_outline import create_course_lesson, create_course_module
 
 
@@ -185,6 +189,81 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         lesson_after_get = find_lesson(detail_after_get, lesson_id)
         assert lesson_after_get["is_completed"] is True
         assert lesson_after_get["completed_at"] == lesson_after["completed_at"]
+
+        status, documents = request_json(
+            "GET",
+            "/api/v1/account/documents",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert isinstance(documents, dict)
+
+        matched_documents = [
+            item
+            for item in documents["items"]
+            if item["enrollment_id"] == enrollment_id
+        ]
+
+        assert len(matched_documents) == 1
+
+        draft_document = matched_documents[0]
+        assert draft_document["course_id"] == course_id
+        assert draft_document["status"] == "draft"
+        assert draft_document["file_available"] is True
+        assert draft_document["download_available"] is False
+
+        status, draft_download = request_json(
+            "GET",
+            f'/api/v1/account/documents/{draft_document["id"]}/download',
+            token=learner_token,
+        )
+
+        assert status == 409
+        assert isinstance(draft_download, dict)
+
+        publish_response = patch_multipart_admin_document(
+            token=admin_token,
+            document_id=draft_document["id"],
+            fields={
+                "status": "available",
+            },
+        )
+
+        assert publish_response.status_code == 200
+        published_payload = publish_response.json()
+        assert isinstance(published_payload, dict)
+        assert published_payload["id"] == draft_document["id"]
+        assert published_payload["status"] == "available"
+        assert published_payload["file_available"] is True
+
+        status, documents_after_publish = request_json(
+            "GET",
+            "/api/v1/account/documents",
+            token=learner_token,
+        )
+
+        assert status == 200
+        assert isinstance(documents_after_publish, dict)
+
+        published_document = next(
+            item
+            for item in documents_after_publish["items"]
+            if item["id"] == draft_document["id"]
+        )
+
+        assert published_document["status"] == "available"
+        assert published_document["file_available"] is True
+        assert published_document["download_available"] is True
+
+        download_response = get_account_document_download_response(
+            token=learner_token,
+            document_id=draft_document["id"],
+        )
+
+        assert download_response.status_code == 200
+        assert download_response.content.startswith(b"%PDF")
+        assert len(download_response.content) > 100
     finally:
         if enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
