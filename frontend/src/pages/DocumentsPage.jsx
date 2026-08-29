@@ -1301,7 +1301,7 @@ export function DocumentsPage() {
     }
 
     const payload = new FormData();
-    payload.set("doc_status", nextStatus);
+    payload.set("status", nextStatus);
 
     if (reason) {
       payload.set("revocation_reason", reason);
