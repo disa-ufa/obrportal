@@ -41,6 +41,12 @@ from app.services.document_storage import (
     resolve_private_storage_path,
     write_private_storage_file,
 )
+from app.services.compliance_registry_contract import (
+    PROGRAM_TYPE_UNSPECIFIED,
+    REGULATORY_PROGRAM_TYPES,
+    REQUIREMENT_MODE_AUTO,
+    REQUIREMENT_MODES,
+)
 from app.services.completion_documents import (
     add_completion_document_generation_event,
     ensure_completion_document_for_enrollment,
@@ -3791,6 +3797,34 @@ def normalize_course_slug(value: str) -> str:
     return normalized
 
 
+def normalize_course_regulatory_program_type(
+    value: str,
+) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in REGULATORY_PROGRAM_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported regulatory program type",
+        )
+
+    return normalized
+
+
+def normalize_course_registry_requirement_mode(
+    value: str,
+) -> str:
+    normalized = value.strip().lower()
+
+    if normalized not in REQUIREMENT_MODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unsupported registry requirement mode",
+        )
+
+    return normalized
+
+
 def normalize_course_create_data(data: dict) -> dict:
     normalized = dict(data)
     normalized["slug"] = normalize_course_slug(normalized["slug"])
@@ -3799,6 +3833,24 @@ def normalize_course_create_data(data: dict) -> dict:
     normalized["format"] = normalize_optional_text(normalized.get("format"))
     normalized["document_type"] = normalize_optional_text(normalized.get("document_type"))
     normalized["direction"] = normalize_optional_text(normalized.get("direction"))
+    normalized["regulatory_program_type"] = (
+        normalize_course_regulatory_program_type(
+            normalized.get("regulatory_program_type")
+            or PROGRAM_TYPE_UNSPECIFIED
+        )
+    )
+    normalized["frdo_requirement_mode"] = (
+        normalize_course_registry_requirement_mode(
+            normalized.get("frdo_requirement_mode")
+            or REQUIREMENT_MODE_AUTO
+        )
+    )
+    normalized["mintrud_requirement_mode"] = (
+        normalize_course_registry_requirement_mode(
+            normalized.get("mintrud_requirement_mode")
+            or REQUIREMENT_MODE_AUTO
+        )
+    )
 
     if not normalized["title"]:
         raise HTTPException(
@@ -3835,6 +3887,45 @@ def normalize_course_update_data(data: dict) -> dict:
     if "direction" in normalized:
         normalized["direction"] = normalize_optional_text(normalized["direction"])
 
+    if "regulatory_program_type" in normalized:
+        if normalized["regulatory_program_type"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Regulatory program type is required",
+            )
+
+        normalized["regulatory_program_type"] = (
+            normalize_course_regulatory_program_type(
+                normalized["regulatory_program_type"]
+            )
+        )
+
+    if "frdo_requirement_mode" in normalized:
+        if normalized["frdo_requirement_mode"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="FRDO requirement mode is required",
+            )
+
+        normalized["frdo_requirement_mode"] = (
+            normalize_course_registry_requirement_mode(
+                normalized["frdo_requirement_mode"]
+            )
+        )
+
+    if "mintrud_requirement_mode" in normalized:
+        if normalized["mintrud_requirement_mode"] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Mintrud requirement mode is required",
+            )
+
+        normalized["mintrud_requirement_mode"] = (
+            normalize_course_registry_requirement_mode(
+                normalized["mintrud_requirement_mode"]
+            )
+        )
+
     return normalized
 
 
@@ -3848,6 +3939,9 @@ def build_admin_course_item(course: Course) -> AdminCourseItem:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        regulatory_program_type=course.regulatory_program_type,
+        frdo_requirement_mode=course.frdo_requirement_mode,
+        mintrud_requirement_mode=course.mintrud_requirement_mode,
         cover_image_url=build_course_cover_public_url(course),
         is_public=course.is_public,
         is_active=course.is_active,
@@ -3864,6 +3958,9 @@ def build_admin_course_detail(course: Course) -> AdminCourseDetail:
         format=course.format,
         document_type=course.document_type,
         direction=course.direction,
+        regulatory_program_type=course.regulatory_program_type,
+        frdo_requirement_mode=course.frdo_requirement_mode,
+        mintrud_requirement_mode=course.mintrud_requirement_mode,
         cover_image_url=build_course_cover_public_url(course),
         is_public=course.is_public,
         is_active=course.is_active,
@@ -3882,6 +3979,9 @@ def course_snapshot(course: Course) -> dict:
         "format": course.format,
         "document_type": course.document_type,
         "direction": course.direction,
+        "regulatory_program_type": course.regulatory_program_type,
+        "frdo_requirement_mode": course.frdo_requirement_mode,
+        "mintrud_requirement_mode": course.mintrud_requirement_mode,
         "cover_image_path": course.cover_image_path,
         "is_public": course.is_public,
         "is_active": course.is_active,

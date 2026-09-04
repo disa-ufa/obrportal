@@ -285,6 +285,9 @@ class AdminCourseItem(BaseModel):
     format: str | None = None
     document_type: str | None = None
     direction: str | None = None
+    regulatory_program_type: str
+    frdo_requirement_mode: str
+    mintrud_requirement_mode: str
     cover_image_url: str | None = None
     is_public: bool
     is_active: bool
@@ -431,6 +434,21 @@ class AdminCourseCreate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     direction: str | None = Field(default=None, max_length=128)
+    regulatory_program_type: str = Field(
+        default="unspecified",
+        min_length=1,
+        max_length=64,
+    )
+    frdo_requirement_mode: str = Field(
+        default="auto",
+        min_length=1,
+        max_length=32,
+    )
+    mintrud_requirement_mode: str = Field(
+        default="auto",
+        min_length=1,
+        max_length=32,
+    )
     is_public: bool = False
     is_active: bool = True
 
@@ -443,6 +461,21 @@ class AdminCourseUpdate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     direction: str | None = Field(default=None, max_length=128)
+    regulatory_program_type: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=64,
+    )
+    frdo_requirement_mode: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=32,
+    )
+    mintrud_requirement_mode: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=32,
+    )
     is_public: bool | None = None
     is_active: bool | None = None
 
