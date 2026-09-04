@@ -49,11 +49,11 @@ from app.services.compliance_registry_contract import (
 )
 from app.services.completion_documents import (
     add_completion_document_generation_event,
-    ensure_completion_document_for_enrollment,
     load_completion_document_context,
     mark_completion_document_generation_metadata,
     write_completion_document_pdf_to_storage,
 )
+from app.services.enrollment_completion import ensure_enrollment_completed
 from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
     normalize_lesson_block_type,
@@ -6839,6 +6839,13 @@ async def create_admin_enrollment(
         await session.flush()
         enrollment_id = str(enrollment.id)
 
+        if normalized_status == "completed":
+            await ensure_enrollment_completed(
+                enrollment=enrollment,
+                session=session,
+                completed_at=payload.completed_at,
+            )
+
         await create_admin_audit_event(
             session,
             actor_user=current_user,
@@ -6963,6 +6970,14 @@ async def create_admin_group_enrollments(
             str(enrollment.id)
             for enrollment in created_enrollments
         ]
+
+        if normalized_status == "completed":
+            for enrollment in created_enrollments:
+                await ensure_enrollment_completed(
+                    enrollment=enrollment,
+                    session=session,
+                    completed_at=payload.completed_at,
+                )
 
         await create_admin_audit_event(
             session,
@@ -7234,17 +7249,11 @@ async def update_admin_enrollment(
     if "started_at" in data:
         enrollment.started_at = data["started_at"]
 
-    if "completed_at" in data:
+    if (
+        "completed_at" in data
+        and enrollment.completed_at is None
+    ):
         enrollment.completed_at = data["completed_at"]
-
-    if enrollment.status == "completed":
-        now = datetime.now(timezone.utc)
-
-        if enrollment.started_at is None:
-            enrollment.started_at = now
-
-        if enrollment.completed_at is None:
-            enrollment.completed_at = now
 
     await ensure_learning_group_assignment_is_valid(
         user_id=str(enrollment.user_id),
@@ -7254,7 +7263,15 @@ async def update_admin_enrollment(
     )
 
     if enrollment.status == "completed":
-        await ensure_completion_document_for_enrollment(enrollment, session)
+        await ensure_enrollment_completed(
+            enrollment=enrollment,
+            session=session,
+            completed_at=(
+                data.get("completed_at")
+                if "completed_at" in data
+                else None
+            ),
+        )
 
     await session.flush()
 
