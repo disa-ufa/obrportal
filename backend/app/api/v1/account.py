@@ -254,6 +254,12 @@ def build_account_learner_profile_response(
         first_name=profile.first_name if profile is not None else None,
         middle_name=profile.middle_name if profile is not None else None,
         birth_date=profile.birth_date if profile is not None else None,
+        sex=profile.sex if profile is not None else None,
+        citizenship_country_code=(
+            profile.citizenship_country_code
+            if profile is not None
+            else None
+        ),
         snils=profile.snils if profile is not None else None,
         phone=profile.phone if profile is not None else None,
         email=profile.email if profile is not None else None,

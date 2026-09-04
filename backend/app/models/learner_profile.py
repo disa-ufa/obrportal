@@ -29,6 +29,11 @@ class LearnerProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     first_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     middle_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    sex: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    citizenship_country_code: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
 
     snils: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)

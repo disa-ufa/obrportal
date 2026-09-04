@@ -23,6 +23,8 @@ class AccountLearnerProfileResponse(BaseModel):
     first_name: str | None = None
     middle_name: str | None = None
     birth_date: date | None = None
+    sex: str | None = None
+    citizenship_country_code: str | None = None
     snils: str | None = None
     phone: str | None = None
     email: str | None = None
@@ -47,6 +49,15 @@ class AccountLearnerProfileUpdateRequest(BaseModel):
     first_name: str | None = Field(default=None, max_length=128)
     middle_name: str | None = Field(default=None, max_length=128)
     birth_date: date | None = None
+    sex: str | None = Field(
+        default=None,
+        pattern=r"^(male|female)$",
+    )
+    citizenship_country_code: str | None = Field(
+        default=None,
+        pattern=r"^\d{3}$",
+        max_length=3,
+    )
     snils: str | None = Field(default=None, max_length=32)
     phone: str | None = Field(default=None, max_length=32)
     email: str | None = Field(default=None, max_length=320)
