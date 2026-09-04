@@ -11,6 +11,10 @@ from app.models.learner_profile import LearnerProfile
 from app.models.lesson_progress import LessonProgress
 from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
+from app.models.registry_obligation import (
+    RegistryObligation,
+    RegistrySubmissionAttempt,
+)
 from app.models.quiz_attempt import QuizAttempt
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
@@ -32,6 +36,8 @@ __all__ = [
     "LessonProgress",
     "LessonBlock",
     "Organization",
+    "RegistryObligation",
+    "RegistrySubmissionAttempt",
     "QuizAttempt",
     "Permission",
     "Role",

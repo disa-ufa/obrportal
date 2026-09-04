@@ -1,0 +1,95 @@
+"""Stable domain vocabulary for government registry compliance.
+
+This module intentionally contains no transport or legal-rule logic.
+It defines internal application states and classification codes only.
+"""
+
+REGISTRY_FRDO = "frdo"
+REGISTRY_MINTRUD = "mintrud"
+
+REGISTRY_CODES = frozenset(
+    {
+        REGISTRY_FRDO,
+        REGISTRY_MINTRUD,
+    }
+)
+
+REQUIREMENT_MODE_AUTO = "auto"
+REQUIREMENT_MODE_REQUIRED = "required"
+REQUIREMENT_MODE_NOT_REQUIRED = "not_required"
+
+REQUIREMENT_MODES = frozenset(
+    {
+        REQUIREMENT_MODE_AUTO,
+        REQUIREMENT_MODE_REQUIRED,
+        REQUIREMENT_MODE_NOT_REQUIRED,
+    }
+)
+
+PROGRAM_TYPE_UNSPECIFIED = "unspecified"
+PROGRAM_TYPE_GENERAL_EDUCATION = "general_education"
+PROGRAM_TYPE_ADDITIONAL_GENERAL_EDUCATION = (
+    "additional_general_education"
+)
+PROGRAM_TYPE_DPO_ADVANCED_TRAINING = (
+    "dpo_advanced_training"
+)
+PROGRAM_TYPE_DPO_PROFESSIONAL_RETRAINING = (
+    "dpo_professional_retraining"
+)
+PROGRAM_TYPE_VOCATIONAL_TRAINING = "vocational_training"
+PROGRAM_TYPE_OCCUPATIONAL_SAFETY = (
+    "occupational_safety_training"
+)
+PROGRAM_TYPE_OTHER = "other"
+
+REGULATORY_PROGRAM_TYPES = frozenset(
+    {
+        PROGRAM_TYPE_UNSPECIFIED,
+        PROGRAM_TYPE_GENERAL_EDUCATION,
+        PROGRAM_TYPE_ADDITIONAL_GENERAL_EDUCATION,
+        PROGRAM_TYPE_DPO_ADVANCED_TRAINING,
+        PROGRAM_TYPE_DPO_PROFESSIONAL_RETRAINING,
+        PROGRAM_TYPE_VOCATIONAL_TRAINING,
+        PROGRAM_TYPE_OCCUPATIONAL_SAFETY,
+        PROGRAM_TYPE_OTHER,
+    }
+)
+
+OBLIGATION_STATUS_NOT_REQUIRED = "not_required"
+OBLIGATION_STATUS_PENDING_DATA = "pending_data"
+OBLIGATION_STATUS_READY = "ready"
+OBLIGATION_STATUS_NEEDS_APPROVAL = "needs_approval"
+OBLIGATION_STATUS_APPROVED = "approved"
+OBLIGATION_STATUS_EXPORTED = "exported"
+OBLIGATION_STATUS_SUBMITTED = "submitted"
+OBLIGATION_STATUS_ACCEPTED = "accepted"
+OBLIGATION_STATUS_REJECTED = "rejected"
+OBLIGATION_STATUS_CORRECTION_REQUIRED = (
+    "correction_required"
+)
+
+OBLIGATION_STATUSES = frozenset(
+    {
+        OBLIGATION_STATUS_NOT_REQUIRED,
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+        OBLIGATION_STATUS_APPROVED,
+        OBLIGATION_STATUS_EXPORTED,
+        OBLIGATION_STATUS_SUBMITTED,
+        OBLIGATION_STATUS_ACCEPTED,
+        OBLIGATION_STATUS_REJECTED,
+        OBLIGATION_STATUS_CORRECTION_REQUIRED,
+    }
+)
+
+ATTEMPT_TRANSPORT_FILE = "file"
+ATTEMPT_TRANSPORT_API = "api"
+
+ATTEMPT_TRANSPORTS = frozenset(
+    {
+        ATTEMPT_TRANSPORT_FILE,
+        ATTEMPT_TRANSPORT_API,
+    }
+)

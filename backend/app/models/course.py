@@ -14,6 +14,24 @@ class Course(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     format: Mapped[str | None] = mapped_column(String(64), nullable=True)
     document_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     direction: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    regulatory_program_type: Mapped[str] = mapped_column(
+        String(64),
+        default="unspecified",
+        server_default="unspecified",
+        nullable=False,
+    )
+    frdo_requirement_mode: Mapped[str] = mapped_column(
+        String(32),
+        default="auto",
+        server_default="auto",
+        nullable=False,
+    )
+    mintrud_requirement_mode: Mapped[str] = mapped_column(
+        String(32),
+        default="auto",
+        server_default="auto",
+        nullable=False,
+    )
     cover_image_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_public: Mapped[bool] = mapped_column(
         Boolean,
