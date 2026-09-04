@@ -28,7 +28,7 @@ from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
-from app.services.completion_documents import ensure_completion_document_for_enrollment
+from app.services.enrollment_completion import ensure_enrollment_completed
 from app.services.learner_profile_fields import (
     is_valid_learner_email,
     is_valid_learner_phone,
@@ -2296,14 +2296,10 @@ async def complete_account_course_lesson(
         and completion_progress["required_lessons_completed"]
         >= completion_progress["required_lessons_total"]
     ):
-        enrollment.status = "completed"
-
-        if enrollment.completed_at is None:
-            enrollment.completed_at = now
-
-        await ensure_completion_document_for_enrollment(
-            enrollment,
-            session,
+        await ensure_enrollment_completed(
+            enrollment=enrollment,
+            session=session,
+            completed_at=now,
         )
 
     try:
@@ -2514,13 +2510,10 @@ async def complete_account_course_learning(
             detail="Complete required lessons before completing course",
         )
 
-    if enrollment.started_at is None:
-        enrollment.started_at = datetime.now(timezone.utc)
-
-    enrollment.status = "completed"
-    enrollment.completed_at = datetime.now(timezone.utc)
-
-    await ensure_completion_document_for_enrollment(enrollment, session)
+    await ensure_enrollment_completed(
+        enrollment=enrollment,
+        session=session,
+    )
 
     await session.commit()
 
