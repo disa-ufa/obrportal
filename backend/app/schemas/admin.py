@@ -773,6 +773,38 @@ class AdminRegistryReadinessIssue(BaseModel):
     message: str
 
 
+class AdminRegistrySubmissionAttemptItem(BaseModel):
+    id: str
+    obligation_id: str
+    attempt_no: int
+
+    transport: str
+    schema_version: str | None = None
+
+    snapshot_json: dict[str, Any] = Field(
+        default_factory=dict
+    )
+
+    has_artifact: bool = False
+    artifact_sha256: str | None = None
+
+    generated_by_user_id: str | None = None
+    generated_at: datetime | None = None
+
+    submitted_by_user_id: str | None = None
+    submitted_at: datetime | None = None
+
+    external_reference: str | None = None
+    result_status: str | None = None
+
+    errors_json: list[str] = Field(
+        default_factory=list
+    )
+
+    created_at: datetime
+    updated_at: datetime
+
+
 class AdminFrdoObligationItem(BaseModel):
     id: str
     registry: str

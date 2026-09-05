@@ -32,7 +32,10 @@ from app.models.import_batch import ImportBatch, ImportRow
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
-from app.models.registry_obligation import RegistryObligation
+from app.models.registry_obligation import (
+    RegistryObligation,
+    RegistrySubmissionAttempt,
+)
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
     MINTRUD_REPORTING_SCENARIOS,
@@ -166,6 +169,7 @@ from app.schemas.admin import (
     AdminWorklistDocumentsSummary,
     AdminWorklistEnrollmentsSummary,
     AdminWorklistSummary,
+    AdminRegistrySubmissionAttemptItem,
 )
 
 
@@ -10242,6 +10246,178 @@ async def approve_admin_mintrud_obligation(
     return (
         await get_admin_mintrud_obligation_item_or_404(
             str(obligation.id),
+            session,
+        )
+    )
+
+def build_admin_registry_submission_attempt_item(
+    attempt: RegistrySubmissionAttempt,
+) -> AdminRegistrySubmissionAttemptItem:
+    return AdminRegistrySubmissionAttemptItem(
+        id=str(
+            attempt.id
+        ),
+        obligation_id=str(
+            attempt.obligation_id
+        ),
+        attempt_no=int(
+            attempt.attempt_no
+        ),
+        transport=attempt.transport,
+        schema_version=(
+            attempt.schema_version
+        ),
+        snapshot_json=dict(
+            attempt.snapshot_json
+            or {}
+        ),
+        has_artifact=bool(
+            attempt.artifact_path
+            and attempt.artifact_sha256
+        ),
+        artifact_sha256=(
+            attempt.artifact_sha256
+        ),
+        generated_by_user_id=(
+            str(
+                attempt.generated_by_user_id
+            )
+            if attempt.generated_by_user_id
+            else None
+        ),
+        generated_at=(
+            attempt.generated_at
+        ),
+        submitted_by_user_id=(
+            str(
+                attempt.submitted_by_user_id
+            )
+            if attempt.submitted_by_user_id
+            else None
+        ),
+        submitted_at=(
+            attempt.submitted_at
+        ),
+        external_reference=(
+            attempt.external_reference
+        ),
+        result_status=(
+            attempt.result_status
+        ),
+        errors_json=list(
+            attempt.errors_json
+            or []
+        ),
+        created_at=(
+            attempt.created_at
+        ),
+        updated_at=(
+            attempt.updated_at
+        ),
+    )
+
+
+async def list_admin_registry_submission_attempt_items(
+    obligation_id: str,
+    session: AsyncSession,
+) -> list[
+    AdminRegistrySubmissionAttemptItem
+]:
+    result = await session.execute(
+        select(
+            RegistrySubmissionAttempt
+        )
+        .where(
+            RegistrySubmissionAttempt
+            .obligation_id
+            == obligation_id
+        )
+        .order_by(
+            RegistrySubmissionAttempt
+            .attempt_no
+            .desc()
+        )
+    )
+
+    attempts = (
+        result.scalars().all()
+    )
+
+    return [
+        build_admin_registry_submission_attempt_item(
+            attempt
+        )
+        for attempt in attempts
+    ]
+
+
+@router.get(
+    "/frdo/obligations/{obligation_id}/attempts",
+    response_model=list[
+        AdminRegistrySubmissionAttemptItem
+    ],
+)
+async def list_admin_frdo_submission_attempts(
+    obligation_id: str,
+    _: User = Depends(
+        require_permission(
+            "frdo.read"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[
+    AdminRegistrySubmissionAttemptItem
+]:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    return (
+        await list_admin_registry_submission_attempt_items(
+            str(
+                obligation.id
+            ),
+            session,
+        )
+    )
+
+
+@router.get(
+    "/mintrud/obligations/{obligation_id}/attempts",
+    response_model=list[
+        AdminRegistrySubmissionAttemptItem
+    ],
+)
+async def list_admin_mintrud_submission_attempts(
+    obligation_id: str,
+    _: User = Depends(
+        require_permission(
+            "mintrud.read"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[
+    AdminRegistrySubmissionAttemptItem
+]:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    return (
+        await list_admin_registry_submission_attempt_items(
+            str(
+                obligation.id
+            ),
             session,
         )
     )

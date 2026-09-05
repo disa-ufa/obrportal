@@ -26,6 +26,7 @@ from app.models.mintrud_registry_context import (
 )
 from app.models.registry_obligation import (
     RegistryObligation,
+    RegistrySubmissionAttempt,
 )
 from app.models.user import User
 
@@ -1627,4 +1628,257 @@ def test_mintrud_admin_approval_state_machine() -> None:
     finally:
         cleanup_mintrud_fixtures(
             fixtures
+        )
+
+def create_mintrud_attempt_history(
+    fixture: dict,
+) -> list[str]:
+    async def _create():
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            now = datetime.now(
+                timezone.utc
+            )
+
+            first = (
+                RegistrySubmissionAttempt(
+                    obligation_id=fixture[
+                        "obligation_id"
+                    ],
+                    attempt_no=1,
+                    transport="file",
+                    schema_version=None,
+                    snapshot_json={
+                        "registry": "mintrud",
+                        "version": 1,
+                    },
+                    artifact_path=None,
+                    artifact_sha256=None,
+                    generated_by_user_id=fixture[
+                        "user_id"
+                    ],
+                    generated_at=now,
+                    errors_json=[],
+                )
+            )
+
+            second = (
+                RegistrySubmissionAttempt(
+                    obligation_id=fixture[
+                        "obligation_id"
+                    ],
+                    attempt_no=2,
+                    transport="file",
+                    schema_version="test-v2",
+                    snapshot_json={
+                        "registry": "mintrud",
+                        "version": 2,
+                    },
+                    artifact_path=(
+                        "generated/registry/"
+                        + fixture[
+                            "obligation_id"
+                        ]
+                        + "/fixture.xml"
+                    ),
+                    artifact_sha256=(
+                        "b" * 64
+                    ),
+                    generated_by_user_id=fixture[
+                        "user_id"
+                    ],
+                    generated_at=now,
+                    errors_json=[],
+                )
+            )
+
+            session.add_all(
+                [
+                    first,
+                    second,
+                ]
+            )
+
+            await session.commit()
+
+            result = [
+                str(
+                    first.id
+                ),
+                str(
+                    second.id
+                ),
+            ]
+
+        await engine.dispose()
+
+        return result
+
+    return asyncio.run(
+        _create()
+    )
+
+
+def test_mintrud_admin_submission_attempt_history() -> None:
+    fixture = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    try:
+        attempt_ids = (
+            create_mintrud_attempt_history(
+                fixture
+            )
+        )
+
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + fixture[
+                "obligation_id"
+            ]
+            + "/attempts"
+        )
+
+        status_code, payload = (
+            request_json(
+                "GET",
+                path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert isinstance(
+            payload,
+            list,
+        )
+
+        assert len(
+            payload
+        ) == 2
+
+        assert (
+            payload[0][
+                "id"
+            ]
+            == attempt_ids[1]
+        )
+
+        assert (
+            payload[0][
+                "attempt_no"
+            ]
+            == 2
+        )
+
+        assert (
+            payload[0][
+                "snapshot_json"
+            ][
+                "registry"
+            ]
+            == "mintrud"
+        )
+
+        assert (
+            payload[0][
+                "has_artifact"
+            ]
+            is True
+        )
+
+        assert (
+            payload[0][
+                "artifact_sha256"
+            ]
+            == "b" * 64
+        )
+
+        assert (
+            "artifact_path"
+            not in payload[0]
+        )
+
+        assert (
+            payload[1][
+                "id"
+            ]
+            == attempt_ids[0]
+        )
+
+        assert (
+            payload[1][
+                "attempt_no"
+            ]
+            == 1
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "GET",
+                path,
+                token=learner_token,
+            )
+        )
+
+        assert status_code == 403
+
+        assert isinstance(
+            forbidden,
+            dict,
+        )
+
+        missing_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            "00000000-0000-0000-"
+            "0000-000000000000/"
+            "attempts"
+        )
+
+        status_code, missing = (
+            request_json(
+                "GET",
+                missing_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 404
+
+        assert isinstance(
+            missing,
+            dict,
+        )
+
+    finally:
+        cleanup_mintrud_fixtures(
+            [
+                fixture,
+            ]
         )
