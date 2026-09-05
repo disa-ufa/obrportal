@@ -3,6 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.models.mintrud_registry_context import (
+    MINTRUD_KNOWLEDGE_CHECK_RESULTS,
+    MINTRUD_REPORTING_SCENARIOS,
+    MINTRUD_REPORTING_SCENARIO_EXTERNAL_TRAINING_PROVIDER,
+)
+
 from app.services.compliance_registry_contract import (
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
@@ -380,6 +386,7 @@ def _evaluate_mintrud_readiness(
     course: Any,
     learner: Any,
     learner_profile: Any,
+    mintrud_context: Any,
 ) -> RegistryReadinessResult:
     issues = _evaluate_completion_context(
         enrollment=enrollment,
@@ -425,24 +432,229 @@ def _evaluate_mintrud_readiness(
                 message="Learner first name is missing.",
             )
 
-    # The current domain model intentionally does not
-    # contain employer, job/profession, workplace, or other
-    # employment context. Until the official Mintrud export
-    # contract is modeled explicitly, the system must not
-    # claim that an obligation is data-ready.
-    _append_issue(
-        issues,
-        code="mintrud.employment_context_not_modeled",
-        field=None,
-        message=(
-            "Mintrud employment/training context is not "
-            "modeled yet and requires explicit schema support."
-        ),
+        if not _text_present(
+            getattr(
+                learner_profile,
+                "snils",
+                None,
+            )
+        ):
+            _append_issue(
+                issues,
+                code="learner_profile.snils_missing",
+                field="learner_profile.snils",
+                message=(
+                    "Learner SNILS is required "
+                    "for the Mintrud registry."
+                ),
+            )
+
+    if mintrud_context is None:
+        _append_issue(
+            issues,
+            code="mintrud.context_missing",
+            field="mintrud_context",
+            message=(
+                "Mintrud reporting context is missing."
+            ),
+        )
+
+        return RegistryReadinessResult(
+            registry=REGISTRY_MINTRUD,
+            is_ready=False,
+            issues=tuple(issues),
+        )
+
+    reporting_scenario = getattr(
+        mintrud_context,
+        "reporting_scenario",
+        None,
     )
+
+    if not _text_present(
+        reporting_scenario
+    ):
+        _append_issue(
+            issues,
+            code="mintrud.reporting_scenario_missing",
+            field=(
+                "mintrud_context."
+                "reporting_scenario"
+            ),
+            message=(
+                "Mintrud reporting scenario is missing."
+            ),
+        )
+    elif (
+        str(reporting_scenario)
+        not in MINTRUD_REPORTING_SCENARIOS
+    ):
+        _append_issue(
+            issues,
+            code="mintrud.reporting_scenario_invalid",
+            field=(
+                "mintrud_context."
+                "reporting_scenario"
+            ),
+            message=(
+                "Mintrud reporting scenario "
+                "has an unsupported value."
+            ),
+        )
+
+    if not _text_present(
+        getattr(
+            mintrud_context,
+            "profession_or_position",
+            None,
+        )
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "mintrud."
+                "profession_or_position_missing"
+            ),
+            field=(
+                "mintrud_context."
+                "profession_or_position"
+            ),
+            message=(
+                "Worker profession or position "
+                "is missing."
+            ),
+        )
+
+    knowledge_check_result = getattr(
+        mintrud_context,
+        "knowledge_check_result",
+        None,
+    )
+
+    if not _text_present(
+        knowledge_check_result
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "mintrud."
+                "knowledge_check_result_missing"
+            ),
+            field=(
+                "mintrud_context."
+                "knowledge_check_result"
+            ),
+            message=(
+                "Knowledge check result is missing."
+            ),
+        )
+    elif (
+        str(knowledge_check_result)
+        not in MINTRUD_KNOWLEDGE_CHECK_RESULTS
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "mintrud."
+                "knowledge_check_result_invalid"
+            ),
+            field=(
+                "mintrud_context."
+                "knowledge_check_result"
+            ),
+            message=(
+                "Knowledge check result "
+                "has an unsupported value."
+            ),
+        )
+
+    if getattr(
+        mintrud_context,
+        "knowledge_check_date",
+        None,
+    ) is None:
+        _append_issue(
+            issues,
+            code=(
+                "mintrud."
+                "knowledge_check_date_missing"
+            ),
+            field=(
+                "mintrud_context."
+                "knowledge_check_date"
+            ),
+            message=(
+                "Knowledge check date is missing."
+            ),
+        )
+
+    if not _text_present(
+        getattr(
+            mintrud_context,
+            "protocol_number",
+            None,
+        )
+    ):
+        _append_issue(
+            issues,
+            code="mintrud.protocol_number_missing",
+            field=(
+                "mintrud_context."
+                "protocol_number"
+            ),
+            message=(
+                "Knowledge check protocol "
+                "number is missing."
+            ),
+        )
+
+    if (
+        reporting_scenario
+        == MINTRUD_REPORTING_SCENARIO_EXTERNAL_TRAINING_PROVIDER
+    ):
+        if not _text_present(
+            getattr(
+                mintrud_context,
+                "employer_name",
+                None,
+            )
+        ):
+            _append_issue(
+                issues,
+                code="mintrud.employer_name_missing",
+                field=(
+                    "mintrud_context."
+                    "employer_name"
+                ),
+                message=(
+                    "Sending employer name is required "
+                    "for external training."
+                ),
+            )
+
+        if not _text_present(
+            getattr(
+                mintrud_context,
+                "employer_inn",
+                None,
+            )
+        ):
+            _append_issue(
+                issues,
+                code="mintrud.employer_inn_missing",
+                field=(
+                    "mintrud_context."
+                    "employer_inn"
+                ),
+                message=(
+                    "Sending employer INN is required "
+                    "for external training."
+                ),
+            )
 
     return RegistryReadinessResult(
         registry=REGISTRY_MINTRUD,
-        is_ready=False,
+        is_ready=len(issues) == 0,
         issues=tuple(issues),
     )
 
@@ -456,6 +668,7 @@ def evaluate_registry_readiness(
     learner_profile: Any = None,
     document: Any = None,
     organization: Any = None,
+    mintrud_context: Any = None,
 ) -> RegistryReadinessResult:
     # organization is accepted now because it is part of
     # registry preparation context, but it is deliberately
@@ -479,6 +692,7 @@ def evaluate_registry_readiness(
             course=course,
             learner=learner,
             learner_profile=learner_profile,
+            mintrud_context=mintrud_context,
         )
 
     raise ValueError(

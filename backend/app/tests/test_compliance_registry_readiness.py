@@ -79,6 +79,30 @@ def document(
     )
 
 
+def mintrud_context(**overrides):
+    values = {
+        "reporting_scenario": (
+            "external_training_provider"
+        ),
+        "profession_or_position": "engineer",
+        "employer_name": "Employer LLC",
+        "employer_inn": "0274000000",
+        "knowledge_check_result": "satisfactory",
+        "knowledge_check_date": date(
+            2026,
+            9,
+            5,
+        ),
+        "protocol_number": "OT-2026-001",
+    }
+
+    values.update(overrides)
+
+    return SimpleNamespace(
+        **values
+    )
+
+
 def test_frdo_is_ready_with_minimum_supported_data() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_FRDO,
@@ -290,62 +314,293 @@ def test_incomplete_enrollment_blocks_frdo_readiness() -> None:
     )
 
 
-def test_mintrud_never_claims_ready_without_employment_model() -> None:
+def test_mintrud_external_provider_is_ready_with_complete_data() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
-        learner_profile=profile(),
-        document=None,
-        organization=None,
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(),
+    )
+
+    assert result.is_ready is True
+    assert result.error_codes == ()
+
+
+def test_mintrud_employer_self_training_does_not_require_employer_fields() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(
+            reporting_scenario=(
+                "employer_self_training"
+            ),
+            employer_name=None,
+            employer_inn=None,
+        ),
+    )
+
+    assert result.is_ready is True
+    assert result.error_codes == ()
+
+
+def test_mintrud_missing_context_blocks_readiness() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=None,
     )
 
     assert result.is_ready is False
     assert (
-        "mintrud.employment_context_not_modeled"
+        "mintrud.context_missing"
         in result.error_codes
     )
 
 
-def test_mintrud_reports_profile_gap_and_model_gap() -> None:
+def test_mintrud_missing_profile_is_reported_with_complete_context() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
         learner_profile=None,
+        mintrud_context=mintrud_context(),
     )
 
     assert result.is_ready is False
+
     assert (
         "learner_profile.missing"
         in result.error_codes
     )
+
     assert (
-        "mintrud.employment_context_not_modeled"
-        in result.error_codes
+        "mintrud.context_missing"
+        not in result.error_codes
     )
 
 
-def test_organization_is_not_inferred_as_employer() -> None:
+@pytest.mark.parametrize(
+    ("profile_overrides", "expected_code"),
+    [
+        (
+            {"last_name": None},
+            "learner_profile.last_name_missing",
+        ),
+        (
+            {"first_name": None},
+            "learner_profile.first_name_missing",
+        ),
+        (
+            {"snils": None},
+            "learner_profile.snils_missing",
+        ),
+    ],
+)
+def test_mintrud_identity_gaps_are_explicit(
+    profile_overrides,
+    expected_code,
+) -> None:
+    values = {
+        "snils": "112-233-445 95",
+    }
+
+    values.update(
+        profile_overrides
+    )
+
+    learner_profile = profile(
+        **values
+    )
+
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
-        learner_profile=profile(),
-        organization=SimpleNamespace(
-            name="??????? ???????????",
-            inn="0274000000",
+        learner_profile=learner_profile,
+        mintrud_context=mintrud_context(),
+    )
+
+    assert result.is_ready is False
+
+    assert (
+        expected_code
+        in result.error_codes
+    )
+
+
+@pytest.mark.parametrize(
+    ("context_overrides", "expected_code"),
+    [
+        (
+            {
+                "reporting_scenario": None,
+            },
+            "mintrud.reporting_scenario_missing",
+        ),
+        (
+            {
+                "reporting_scenario": "unknown",
+            },
+            "mintrud.reporting_scenario_invalid",
+        ),
+        (
+            {
+                "profession_or_position": None,
+            },
+            (
+                "mintrud."
+                "profession_or_position_missing"
+            ),
+        ),
+        (
+            {
+                "knowledge_check_result": None,
+            },
+            (
+                "mintrud."
+                "knowledge_check_result_missing"
+            ),
+        ),
+        (
+            {
+                "knowledge_check_result": "passed",
+            },
+            (
+                "mintrud."
+                "knowledge_check_result_invalid"
+            ),
+        ),
+        (
+            {
+                "knowledge_check_date": None,
+            },
+            (
+                "mintrud."
+                "knowledge_check_date_missing"
+            ),
+        ),
+        (
+            {
+                "protocol_number": None,
+            },
+            "mintrud.protocol_number_missing",
+        ),
+    ],
+)
+def test_mintrud_context_gaps_are_explicit(
+    context_overrides,
+    expected_code,
+) -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(
+            **context_overrides
         ),
     )
 
     assert result.is_ready is False
+
     assert (
-        "mintrud.employment_context_not_modeled"
+        expected_code
         in result.error_codes
     )
+
+
+@pytest.mark.parametrize(
+    ("context_overrides", "expected_code"),
+    [
+        (
+            {
+                "employer_name": None,
+            },
+            "mintrud.employer_name_missing",
+        ),
+        (
+            {
+                "employer_inn": None,
+            },
+            "mintrud.employer_inn_missing",
+        ),
+    ],
+)
+def test_mintrud_external_provider_requires_sending_employer(
+    context_overrides,
+    expected_code,
+) -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(
+            **context_overrides
+        ),
+    )
+
+    assert result.is_ready is False
+
+    assert (
+        expected_code
+        in result.error_codes
+    )
+
+
+def test_organization_is_not_inferred_as_mintrud_employer() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        organization=SimpleNamespace(
+            name="Learning organization",
+            inn="0274999999",
+        ),
+        mintrud_context=mintrud_context(
+            employer_name=None,
+            employer_inn=None,
+        ),
+    )
+
+    assert result.is_ready is False
+
+    assert (
+        "mintrud.employer_name_missing"
+        in result.error_codes
+    )
+
+    assert (
+        "mintrud.employer_inn_missing"
+        in result.error_codes
+    )
+
 
 
 def test_unknown_registry_is_rejected() -> None:
