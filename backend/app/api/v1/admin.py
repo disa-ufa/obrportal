@@ -172,6 +172,7 @@ SYSTEM_ROLE_CODES = {
     "finance_operator",
     "edo_operator",
     "frdo_operator",
+    "mintrud_operator",
 }
 
 ROLE_CODE_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,63}$")
