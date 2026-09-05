@@ -22,8 +22,13 @@ from app.models.registry_obligation import (
 from app.models.user import User
 from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
+    attach_registry_submission_artifact,
     create_registry_submission_attempt,
+    delete_registry_artifact_safely,
     freeze_registry_snapshot,
+)
+from app.services.document_storage import (
+    resolve_private_storage_path,
 )
 
 
@@ -725,6 +730,705 @@ def test_create_registry_submission_attempt_validates_inputs() -> None:
         asyncio.run(
             _run()
         )
+
+    finally:
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+def create_persisted_attempt(
+    fixture: dict,
+) -> str:
+    async def _create():
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            attempt = (
+                await create_registry_submission_attempt(
+                    session,
+                    obligation_id=fixture[
+                        "obligation_id"
+                    ],
+                    snapshot={
+                        "registry": "frdo",
+                        "artifact_test": True,
+                    },
+                    generated_by_user_id=fixture[
+                        "user_id"
+                    ],
+                    transport="file",
+                    schema_version=(
+                        "test-artifact-v1"
+                    ),
+                )
+            )
+
+            attempt_id = str(
+                attempt.id
+            )
+
+            await session.commit()
+
+        await engine.dispose()
+
+        return attempt_id
+
+    return asyncio.run(
+        _create()
+    )
+
+
+def test_attach_registry_submission_artifact_persists_hash_and_file(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        attempt_id = (
+            create_persisted_attempt(
+                fixture
+            )
+        )
+
+        content = (
+            b"<registry>"
+            b"immutable"
+            b"</registry>"
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await attach_registry_submission_artifact(
+                        session,
+                        attempt_id=attempt_id,
+                        content=content,
+                        extension="  XML  ",
+                    )
+                )
+
+                saved_path = (
+                    attempt.artifact_path
+                )
+
+                saved_hash = (
+                    attempt.artifact_sha256
+                )
+
+                assert (
+                    saved_path
+                    is not None
+                )
+
+                assert saved_path.startswith(
+                    "generated/registry/"
+                    + fixture[
+                        "obligation_id"
+                    ]
+                    + "/"
+                )
+
+                assert saved_path.endswith(
+                    ".xml"
+                )
+
+                from hashlib import sha256
+
+                assert (
+                    saved_hash
+                    == sha256(
+                        content
+                    ).hexdigest()
+                )
+
+                resolved = (
+                    resolve_private_storage_path(
+                        saved_path
+                    )
+                )
+
+                assert (
+                    resolved
+                    is not None
+                )
+
+                assert resolved.exists()
+
+                assert (
+                    resolved.read_bytes()
+                    == content
+                )
+
+                await session.commit()
+
+            async with session_factory() as session:
+                persisted = (
+                    await session.scalar(
+                        select(
+                            RegistrySubmissionAttempt
+                        ).where(
+                            RegistrySubmissionAttempt.id
+                            == attempt_id
+                        )
+                    )
+                )
+
+                assert (
+                    persisted
+                    is not None
+                )
+
+                assert (
+                    persisted.artifact_path
+                    == saved_path
+                )
+
+                assert (
+                    persisted.artifact_sha256
+                    == saved_hash
+                )
+
+                obligation_status = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation.status
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    obligation_status
+                    == "approved"
+                )
+
+            await engine.dispose()
+
+            return saved_path
+
+        artifact_path = asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            assert (
+                delete_registry_artifact_safely(
+                    artifact_path
+                )
+                is True
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_attach_registry_submission_artifact_is_attach_once(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        attempt_id = (
+            create_persisted_attempt(
+                fixture
+            )
+        )
+
+        first_content = (
+            b"first-artifact"
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                first = (
+                    await attach_registry_submission_artifact(
+                        session,
+                        attempt_id=attempt_id,
+                        content=first_content,
+                        extension=".json",
+                    )
+                )
+
+                saved_path = (
+                    first.artifact_path
+                )
+
+                await session.commit()
+
+            async with session_factory() as session:
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match=(
+                        "already has an artifact"
+                    ),
+                ):
+                    await attach_registry_submission_artifact(
+                        session,
+                        attempt_id=attempt_id,
+                        content=(
+                            b"replacement"
+                        ),
+                        extension=".xml",
+                    )
+
+                await session.rollback()
+
+            resolved = (
+                resolve_private_storage_path(
+                    saved_path
+                )
+            )
+
+            assert (
+                resolved
+                is not None
+            )
+
+            assert (
+                resolved.read_bytes()
+                == first_content
+            )
+
+            await engine.dispose()
+
+            return saved_path
+
+        artifact_path = asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_attach_registry_submission_artifact_caller_rollback_requires_compensation(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        attempt_id = (
+            create_persisted_attempt(
+                fixture
+            )
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await attach_registry_submission_artifact(
+                        session,
+                        attempt_id=attempt_id,
+                        content=(
+                            b"rollback-artifact"
+                        ),
+                        extension=".xml",
+                    )
+                )
+
+                saved_path = (
+                    attempt.artifact_path
+                )
+
+                resolved = (
+                    resolve_private_storage_path(
+                        saved_path
+                    )
+                )
+
+                assert (
+                    resolved
+                    is not None
+                )
+
+                assert resolved.exists()
+
+                await session.rollback()
+
+                # Filesystem writes are not part of the
+                # PostgreSQL transaction. The caller that
+                # owns rollback must compensate explicitly.
+                assert resolved.exists()
+
+                assert (
+                    delete_registry_artifact_safely(
+                        saved_path
+                    )
+                    is True
+                )
+
+                assert (
+                    not resolved.exists()
+                )
+
+            async with session_factory() as session:
+                persisted = (
+                    await session.scalar(
+                        select(
+                            RegistrySubmissionAttempt
+                        ).where(
+                            RegistrySubmissionAttempt.id
+                            == attempt_id
+                        )
+                    )
+                )
+
+                assert (
+                    persisted
+                    is not None
+                )
+
+                assert (
+                    persisted.artifact_path
+                    is None
+                )
+
+                assert (
+                    persisted.artifact_sha256
+                    is None
+                )
+
+            await engine.dispose()
+
+            return saved_path
+
+        artifact_path = asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_attach_registry_submission_artifact_cleans_file_when_flush_fails(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        attempt_id = (
+            create_persisted_attempt(
+                fixture
+            )
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                async def fail_flush(
+                    *args,
+                    **kwargs,
+                ):
+                    raise RuntimeError(
+                        "forced flush failure"
+                    )
+
+                monkeypatch.setattr(
+                    session,
+                    "flush",
+                    fail_flush,
+                )
+
+                with pytest.raises(
+                    RuntimeError,
+                    match=(
+                        "forced flush failure"
+                    ),
+                ):
+                    await attach_registry_submission_artifact(
+                        session,
+                        attempt_id=attempt_id,
+                        content=(
+                            b"must-be-cleaned"
+                        ),
+                        extension=".xml",
+                    )
+
+                registry_root = (
+                    tmp_path
+                    / "generated"
+                    / "registry"
+                )
+
+                files = []
+
+                if registry_root.exists():
+                    files = [
+                        path
+                        for path
+                        in registry_root.rglob(
+                            "*"
+                        )
+                        if path.is_file()
+                    ]
+
+                assert files == []
+
+                await session.rollback()
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_attach_registry_submission_artifact_validates_inputs(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        attempt_id = (
+            create_persisted_attempt(
+                fixture
+            )
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                invalid_cases = [
+                    {
+                        "attempt_id": "",
+                        "content": b"x",
+                        "extension": ".xml",
+                    },
+                    {
+                        "attempt_id": attempt_id,
+                        "content": b"",
+                        "extension": ".xml",
+                    },
+                    {
+                        "attempt_id": attempt_id,
+                        "content": "not-bytes",
+                        "extension": ".xml",
+                    },
+                    {
+                        "attempt_id": attempt_id,
+                        "content": b"x",
+                        "extension": "",
+                    },
+                    {
+                        "attempt_id": attempt_id,
+                        "content": b"x",
+                        "extension": (
+                            "../../evil.xml"
+                        ),
+                    },
+                    {
+                        "attempt_id": attempt_id,
+                        "content": b"x",
+                        "extension": (
+                            ".abcdefghijklmnop"
+                        ),
+                    },
+                    {
+                        "attempt_id": (
+                            "00000000-0000-0000-"
+                            "0000-000000000000"
+                        ),
+                        "content": b"x",
+                        "extension": ".xml",
+                    },
+                ]
+
+                for case in invalid_cases:
+                    with pytest.raises(
+                        RegistrySubmissionAttemptError
+                    ):
+                        await attach_registry_submission_artifact(
+                            session,
+                            **case,
+                        )
+
+                await session.rollback()
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+        registry_root = (
+            tmp_path
+            / "generated"
+            / "registry"
+        )
+
+        files = []
+
+        if registry_root.exists():
+            files = [
+                path
+                for path
+                in registry_root.rglob(
+                    "*"
+                )
+                if path.is_file()
+            ]
+
+        assert files == []
 
     finally:
         cleanup_attempt_fixture(

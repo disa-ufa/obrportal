@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
+from hashlib import sha256
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
@@ -10,6 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
+)
+from app.services.document_storage import (
+    delete_private_storage_file,
+    write_private_storage_file,
 )
 
 
@@ -227,5 +233,195 @@ async def create_registry_submission_attempt(
     )
 
     await session.flush()
+
+    return attempt
+
+def normalize_registry_artifact_extension(
+    extension: str,
+) -> str:
+    normalized = str(
+        extension
+        or ""
+    ).strip().lower()
+
+    if not normalized:
+        raise RegistrySubmissionAttemptError(
+            "Registry artifact extension is required"
+        )
+
+    if not normalized.startswith(
+        "."
+    ):
+        normalized = (
+            "."
+            + normalized
+        )
+
+    if not re.fullmatch(
+        r"\.[a-z0-9]{1,15}",
+        normalized,
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry artifact extension is invalid"
+        )
+
+    return normalized
+
+
+def build_registry_artifact_storage_path(
+    attempt: RegistrySubmissionAttempt,
+    *,
+    extension: str,
+) -> str:
+    normalized_extension = (
+        normalize_registry_artifact_extension(
+            extension
+        )
+    )
+
+    return (
+        "generated/registry/"
+        + str(
+            attempt.obligation_id
+        )
+        + "/"
+        + str(
+            int(
+                attempt.attempt_no
+            )
+        ).zfill(
+            6
+        )
+        + "-"
+        + str(
+            attempt.id
+        )
+        + normalized_extension
+    )
+
+
+def delete_registry_artifact_safely(
+    storage_path: str | None,
+) -> bool:
+    if not storage_path:
+        return False
+
+    try:
+        return (
+            delete_private_storage_file(
+                storage_path
+            )
+        )
+
+    except OSError:
+        return False
+
+
+async def attach_registry_submission_artifact(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+    content: bytes,
+    extension: str,
+) -> RegistrySubmissionAttempt:
+    normalized_attempt_id = str(
+        attempt_id
+        or ""
+    ).strip()
+
+    if not normalized_attempt_id:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt id is required"
+        )
+
+    if not isinstance(
+        content,
+        bytes,
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry artifact content must be bytes"
+        )
+
+    if not content:
+        raise RegistrySubmissionAttemptError(
+            "Registry artifact content must not be empty"
+        )
+
+    normalized_extension = (
+        normalize_registry_artifact_extension(
+            extension
+        )
+    )
+
+    attempt_result = (
+        await session.execute(
+            select(
+                RegistrySubmissionAttempt
+            )
+            .where(
+                RegistrySubmissionAttempt.id
+                == normalized_attempt_id
+            )
+            .with_for_update()
+        )
+    )
+
+    attempt = (
+        attempt_result
+        .scalar_one_or_none()
+    )
+
+    if attempt is None:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt was not found"
+        )
+
+    if (
+        attempt.artifact_path
+        is not None
+        or attempt.artifact_sha256
+        is not None
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt already has an artifact"
+        )
+
+    artifact_path = (
+        build_registry_artifact_storage_path(
+            attempt,
+            extension=(
+                normalized_extension
+            ),
+        )
+    )
+
+    artifact_sha256 = sha256(
+        content
+    ).hexdigest()
+
+    try:
+        saved_path = (
+            write_private_storage_file(
+                artifact_path,
+                content,
+            )
+        )
+
+        attempt.artifact_path = (
+            saved_path
+        )
+
+        attempt.artifact_sha256 = (
+            artifact_sha256
+        )
+
+        await session.flush()
+
+    except Exception:
+        delete_registry_artifact_safely(
+            artifact_path
+        )
+
+        raise
 
     return attempt
