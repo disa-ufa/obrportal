@@ -33,7 +33,11 @@ from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
 from app.models.registry_obligation import RegistryObligation
-from app.models.mintrud_registry_context import MintrudRegistryContext
+from app.models.mintrud_registry_context import (
+    MINTRUD_KNOWLEDGE_CHECK_RESULTS,
+    MINTRUD_REPORTING_SCENARIOS,
+    MintrudRegistryContext,
+)
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.services.document_storage import (
@@ -134,6 +138,7 @@ from app.schemas.admin import (
     AdminMintrudObligationItem,
     AdminMintrudObligationValidationResult,
     AdminMintrudRegistryContext,
+    AdminMintrudRegistryContextUpdate,
     AdminRegistryReadinessIssue,
     AdminDeleteResult,
     AdminOrganizationCreate,
@@ -9392,5 +9397,399 @@ async def validate_admin_mintrud_obligation(
                 in readiness.issues
             ],
             obligation=refreshed,
+        )
+    )
+
+def mintrud_registry_context_snapshot(
+    context: MintrudRegistryContext | None,
+) -> dict | None:
+    if context is None:
+        return None
+
+    return {
+        "id": str(context.id),
+        "obligation_id": str(
+            context.obligation_id
+        ),
+        "reporting_scenario": (
+            context.reporting_scenario
+        ),
+        "profession_or_position": (
+            context.profession_or_position
+        ),
+        "employer_name": (
+            context.employer_name
+        ),
+        "employer_inn": (
+            context.employer_inn
+        ),
+        "knowledge_check_result": (
+            context.knowledge_check_result
+        ),
+        "knowledge_check_date": (
+            context.knowledge_check_date.isoformat()
+            if context.knowledge_check_date
+            else None
+        ),
+        "protocol_number": (
+            context.protocol_number
+        ),
+    }
+
+
+def normalize_optional_mintrud_text(
+    value: str | None,
+) -> str | None:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+
+    return (
+        normalized
+        if normalized
+        else None
+    )
+
+
+@router.patch(
+    "/mintrud/obligations/{obligation_id}/context",
+    response_model=AdminMintrudObligationItem,
+)
+async def update_admin_mintrud_obligation_context(
+    obligation_id: str,
+    payload: AdminMintrudRegistryContextUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.write"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudObligationItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    editable_statuses = {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+    }
+
+    if (
+        obligation.status
+        not in editable_statuses
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Mintrud obligation lifecycle "
+                "does not allow context editing"
+            ),
+        )
+
+    data = model_to_dict(
+        payload,
+        exclude_unset=True,
+    )
+
+    if not data:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
+            detail="No fields to update",
+        )
+
+    if "reporting_scenario" in data:
+        data[
+            "reporting_scenario"
+        ] = normalize_optional_mintrud_text(
+            data[
+                "reporting_scenario"
+            ]
+        )
+
+        reporting_scenario = (
+            data[
+                "reporting_scenario"
+            ]
+        )
+
+        if (
+            reporting_scenario is not None
+            and reporting_scenario
+            not in MINTRUD_REPORTING_SCENARIOS
+        ):
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "Unsupported Mintrud "
+                    "reporting scenario"
+                ),
+            )
+
+    if "knowledge_check_result" in data:
+        data[
+            "knowledge_check_result"
+        ] = normalize_optional_mintrud_text(
+            data[
+                "knowledge_check_result"
+            ]
+        )
+
+        knowledge_check_result = (
+            data[
+                "knowledge_check_result"
+            ]
+        )
+
+        if (
+            knowledge_check_result is not None
+            and knowledge_check_result
+            not in MINTRUD_KNOWLEDGE_CHECK_RESULTS
+        ):
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "Unsupported Mintrud "
+                    "knowledge check result"
+                ),
+            )
+
+    for field in (
+        "profession_or_position",
+        "employer_name",
+        "employer_inn",
+        "protocol_number",
+    ):
+        if field in data:
+            data[field] = (
+                normalize_optional_mintrud_text(
+                    data[field]
+                )
+            )
+
+    mintrud_text_max_lengths = {
+        "reporting_scenario": 32,
+        "profession_or_position": 255,
+        "employer_name": 512,
+        "employer_inn": 12,
+        "knowledge_check_result": 32,
+        "protocol_number": 128,
+    }
+
+    for field, max_length in (
+        mintrud_text_max_lengths.items()
+    ):
+        if (
+            field in data
+            and data[field] is not None
+            and len(data[field]) > max_length
+        ):
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "Mintrud field "
+                    + field
+                    + " exceeds maximum length "
+                    + str(max_length)
+                ),
+            )
+
+    context_result = (
+        await session.execute(
+            select(
+                MintrudRegistryContext
+            )
+            .where(
+                MintrudRegistryContext.obligation_id
+                == obligation.id
+            )
+            .with_for_update()
+        )
+    )
+
+    mintrud_context = (
+        context_result
+        .scalar_one_or_none()
+    )
+
+    before_context = (
+        mintrud_registry_context_snapshot(
+            mintrud_context
+        )
+    )
+
+    if mintrud_context is None:
+        mintrud_context = (
+            MintrudRegistryContext(
+                obligation_id=str(
+                    obligation.id
+                )
+            )
+        )
+
+        session.add(
+            mintrud_context
+        )
+
+    for field, value in data.items():
+        setattr(
+            mintrud_context,
+            field,
+            value,
+        )
+
+    await session.flush()
+
+    enrollment_result = (
+        await session.execute(
+            select(
+                Enrollment
+            ).where(
+                Enrollment.id
+                == obligation.enrollment_id
+            )
+        )
+    )
+
+    enrollment = (
+        enrollment_result
+        .scalar_one_or_none()
+    )
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Mintrud obligation enrollment "
+                "is not available"
+            ),
+        )
+
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = (
+        await load_completion_document_context(
+            enrollment,
+            session,
+        )
+    )
+
+    readiness = (
+        evaluate_registry_readiness(
+            registry=REGISTRY_MINTRUD,
+            enrollment=enrollment,
+            course=course,
+            learner=learner,
+            learner_profile=(
+                learner_profile
+            ),
+            organization=organization,
+            mintrud_context=(
+                mintrud_context
+            ),
+        )
+    )
+
+    before_status = (
+        obligation.status
+    )
+
+    before_errors = list(
+        obligation.readiness_errors
+        or []
+    )
+
+    obligation.readiness_errors = (
+        readiness.as_error_payload()
+    )
+
+    if obligation.status in {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+    }:
+        obligation.status = (
+            OBLIGATION_STATUS_READY
+            if readiness.is_ready
+            else OBLIGATION_STATUS_PENDING_DATA
+        )
+
+    await session.flush()
+
+    after_context = (
+        mintrud_registry_context_snapshot(
+            mintrud_context
+        )
+    )
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.mintrud_context_updated"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_MINTRUD,
+            "before": {
+                "context": before_context,
+                "status": before_status,
+                "readiness_errors": (
+                    before_errors
+                ),
+            },
+            "after": {
+                "context": after_context,
+                "status": (
+                    obligation.status
+                ),
+                "readiness_errors": (
+                    obligation
+                    .readiness_errors
+                ),
+            },
+            "changed_fields": sorted(
+                data.keys()
+            ),
+            "is_ready": (
+                readiness.is_ready
+            ),
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_mintrud_obligation_item_or_404(
+            str(obligation.id),
+            session,
         )
     )

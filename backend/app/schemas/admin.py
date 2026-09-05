@@ -842,6 +842,19 @@ class AdminMintrudRegistryContext(BaseModel):
     updated_at: datetime
 
 
+class AdminMintrudRegistryContextUpdate(BaseModel):
+    reporting_scenario: str | None = None
+    profession_or_position: str | None = None
+
+    employer_name: str | None = None
+    employer_inn: str | None = None
+
+    knowledge_check_result: str | None = None
+    knowledge_check_date: date | None = None
+
+    protocol_number: str | None = None
+
+
 class AdminMintrudObligationItem(
     AdminFrdoObligationItem
 ):

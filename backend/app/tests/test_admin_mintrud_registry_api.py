@@ -957,3 +957,457 @@ def test_mintrud_admin_list_validate_and_permissions() -> None:
         cleanup_mintrud_fixtures(
             fixtures
         )
+
+def test_mintrud_admin_context_write_api() -> None:
+    editable = create_mintrud_fixture(
+        with_context=False,
+    )
+
+    approved = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    fixtures = [
+        editable,
+        approved,
+    ]
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        context_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + editable[
+                "obligation_id"
+            ]
+            + "/context"
+        )
+
+        complete_payload = {
+            "reporting_scenario": (
+                "external_training_provider"
+            ),
+            "profession_or_position": (
+                "  safety engineer  "
+            ),
+            "employer_name": (
+                "  Example Employer LLC  "
+            ),
+            "employer_inn": (
+                "  0274000000  "
+            ),
+            "knowledge_check_result": (
+                "satisfactory"
+            ),
+            "knowledge_check_date": (
+                "2026-09-05"
+            ),
+            "protocol_number": (
+                "  OT-CONTEXT-001  "
+            ),
+        }
+
+        status_code, created = (
+            request_json(
+                "PATCH",
+                context_path,
+                complete_payload,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert created[
+            "id"
+        ] == editable[
+            "obligation_id"
+        ]
+
+        assert created[
+            "status"
+        ] == "ready"
+
+        assert created[
+            "readiness_errors"
+        ] == []
+
+        context = created[
+            "mintrud_context"
+        ]
+
+        assert context is not None
+
+        first_context_id = (
+            context["id"]
+        )
+
+        assert (
+            context[
+                "obligation_id"
+            ]
+            == editable[
+                "obligation_id"
+            ]
+        )
+
+        assert (
+            context[
+                "reporting_scenario"
+            ]
+            == "external_training_provider"
+        )
+
+        assert (
+            context[
+                "profession_or_position"
+            ]
+            == "safety engineer"
+        )
+
+        assert (
+            context[
+                "employer_name"
+            ]
+            == "Example Employer LLC"
+        )
+
+        assert (
+            context[
+                "employer_inn"
+            ]
+            == "0274000000"
+        )
+
+        assert (
+            context[
+                "knowledge_check_result"
+            ]
+            == "satisfactory"
+        )
+
+        assert (
+            context[
+                "knowledge_check_date"
+            ]
+            == "2026-09-05"
+        )
+
+        assert (
+            context[
+                "protocol_number"
+            ]
+            == "OT-CONTEXT-001"
+        )
+
+        status_code, partial = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "protocol_number": (
+                        "OT-CONTEXT-002"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            partial[
+                "mintrud_context"
+            ][
+                "id"
+            ]
+            == first_context_id
+        )
+
+        assert (
+            partial[
+                "mintrud_context"
+            ][
+                "protocol_number"
+            ]
+            == "OT-CONTEXT-002"
+        )
+
+        assert (
+            partial[
+                "mintrud_context"
+            ][
+                "profession_or_position"
+            ]
+            == "safety engineer"
+        )
+
+        assert (
+            partial[
+                "status"
+            ]
+            == "ready"
+        )
+
+        status_code, cleared = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "employer_name": None,
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            cleared[
+                "mintrud_context"
+            ][
+                "id"
+            ]
+            == first_context_id
+        )
+
+        assert (
+            cleared[
+                "mintrud_context"
+            ][
+                "employer_name"
+            ]
+            is None
+        )
+
+        assert (
+            cleared[
+                "status"
+            ]
+            == "pending_data"
+        )
+
+        cleared_codes = {
+            item["code"]
+            for item
+            in cleared[
+                "readiness_errors"
+            ]
+        }
+
+        assert (
+            "mintrud.employer_name_missing"
+            in cleared_codes
+        )
+
+        status_code, restored = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "employer_name": (
+                        "Restored Employer LLC"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            restored[
+                "status"
+            ]
+            == "ready"
+        )
+
+        assert (
+            restored[
+                "readiness_errors"
+            ]
+            == []
+        )
+
+        assert (
+            restored[
+                "mintrud_context"
+            ][
+                "id"
+            ]
+            == first_context_id
+        )
+
+        actions = (
+            get_mintrud_audit_actions(
+                editable[
+                    "obligation_id"
+                ]
+            )
+        )
+
+        assert (
+            "admin.mintrud_context_updated"
+            in actions
+        )
+
+        status_code, empty = (
+            request_json(
+                "PATCH",
+                context_path,
+                {},
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 400
+        assert isinstance(
+            empty,
+            dict,
+        )
+
+        status_code, invalid_scenario = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "reporting_scenario": (
+                        "invalid_scenario"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 422
+        assert isinstance(
+            invalid_scenario,
+            dict,
+        )
+
+        status_code, invalid_result = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "knowledge_check_result": (
+                        "invalid_result"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 422
+        assert isinstance(
+            invalid_result,
+            dict,
+        )
+
+        status_code, too_long_inn = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "employer_inn": (
+                        "  1234567890123  "
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 422
+        assert isinstance(
+            too_long_inn,
+            dict,
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "protocol_number": (
+                        "FORBIDDEN"
+                    ),
+                },
+                token=learner_token,
+            )
+        )
+
+        assert status_code == 403
+        assert isinstance(
+            forbidden,
+            dict,
+        )
+
+        approved_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + approved[
+                "obligation_id"
+            ]
+            + "/context"
+        )
+
+        status_code, lifecycle_guard = (
+            request_json(
+                "PATCH",
+                approved_path,
+                {
+                    "protocol_number": (
+                        "SHOULD-NOT-WRITE"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            lifecycle_guard,
+            dict,
+        )
+
+        missing_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            "00000000-0000-0000-"
+            "0000-000000000000/"
+            "context"
+        )
+
+        status_code, missing = (
+            request_json(
+                "PATCH",
+                missing_path,
+                {
+                    "protocol_number": (
+                        "MISSING"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 404
+        assert isinstance(
+            missing,
+            dict,
+        )
+
+    finally:
+        cleanup_mintrud_fixtures(
+            fixtures
+        )
