@@ -32,6 +32,7 @@ from app.models.import_batch import ImportBatch, ImportRow
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
+from app.models.registry_obligation import RegistryObligation
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.services.document_storage import (
@@ -54,6 +55,16 @@ from app.services.completion_documents import (
     write_completion_document_pdf_to_storage,
 )
 from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.compliance_registry_contract import (
+    OBLIGATION_STATUSES,
+    OBLIGATION_STATUS_NEEDS_APPROVAL,
+    OBLIGATION_STATUS_PENDING_DATA,
+    OBLIGATION_STATUS_READY,
+    REGISTRY_FRDO,
+)
+from app.services.compliance_registry_readiness import (
+    evaluate_registry_readiness,
+)
 from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
     normalize_lesson_block_type,
@@ -116,6 +127,9 @@ from app.schemas.admin import (
     AdminEnrollmentUpdate,
     AdminDocumentGenerationEventItem,
     AdminDocumentItem,
+    AdminFrdoObligationItem,
+    AdminFrdoObligationValidationResult,
+    AdminRegistryReadinessIssue,
     AdminDeleteResult,
     AdminOrganizationCreate,
     AdminOrganizationDetail,
@@ -8117,4 +8131,608 @@ async def create_learner_import(
     return build_admin_learner_import_batch_detail(
         batch,
         preflight=preflight,
+    )
+
+
+def build_admin_frdo_obligation_query():
+    return (
+        select(
+            RegistryObligation.id.label("id"),
+            RegistryObligation.registry.label(
+                "registry"
+            ),
+            RegistryObligation.status.label(
+                "status"
+            ),
+            RegistryObligation.enrollment_id.label(
+                "enrollment_id"
+            ),
+            RegistryObligation.document_id.label(
+                "document_id"
+            ),
+            RegistryObligation.rule_code.label(
+                "rule_code"
+            ),
+            RegistryObligation.rule_version.label(
+                "rule_version"
+            ),
+            RegistryObligation.requirement_reason.label(
+                "requirement_reason"
+            ),
+            RegistryObligation.readiness_errors.label(
+                "readiness_errors"
+            ),
+            RegistryObligation.due_at.label(
+                "due_at"
+            ),
+            RegistryObligation.approved_by_user_id.label(
+                "approved_by_user_id"
+            ),
+            RegistryObligation.approved_at.label(
+                "approved_at"
+            ),
+            RegistryObligation.submitted_at.label(
+                "submitted_at"
+            ),
+            RegistryObligation.accepted_at.label(
+                "accepted_at"
+            ),
+            RegistryObligation.external_id.label(
+                "external_id"
+            ),
+            RegistryObligation.last_error.label(
+                "last_error"
+            ),
+            RegistryObligation.created_at.label(
+                "created_at"
+            ),
+            RegistryObligation.updated_at.label(
+                "updated_at"
+            ),
+            Enrollment.user_id.label(
+                "user_id"
+            ),
+            Enrollment.course_id.label(
+                "course_id"
+            ),
+            Enrollment.organization_id.label(
+                "organization_id"
+            ),
+            Enrollment.completed_at.label(
+                "enrollment_completed_at"
+            ),
+            User.email.label(
+                "user_email"
+            ),
+            User.full_name.label(
+                "user_full_name"
+            ),
+            Course.title.label(
+                "course_title"
+            ),
+            Course.regulatory_program_type.label(
+                "regulatory_program_type"
+            ),
+            Organization.name.label(
+                "organization_name"
+            ),
+            DocumentRecord.document_number.label(
+                "document_number"
+            ),
+            DocumentRecord.document_type.label(
+                "document_type"
+            ),
+            DocumentRecord.status.label(
+                "document_status"
+            ),
+        )
+        .join(
+            Enrollment,
+            Enrollment.id
+            == RegistryObligation.enrollment_id,
+        )
+        .join(
+            Course,
+            Course.id
+            == Enrollment.course_id,
+        )
+        .join(
+            User,
+            User.id
+            == Enrollment.user_id,
+        )
+        .outerjoin(
+            Organization,
+            Organization.id
+            == Enrollment.organization_id,
+        )
+        .outerjoin(
+            DocumentRecord,
+            DocumentRecord.id
+            == RegistryObligation.document_id,
+        )
+        .where(
+            RegistryObligation.registry
+            == REGISTRY_FRDO
+        )
+    )
+
+
+def build_admin_frdo_obligation_item(
+    row,
+) -> AdminFrdoObligationItem:
+    return AdminFrdoObligationItem(
+        id=str(row["id"]),
+        registry=row["registry"],
+        status=row["status"],
+        enrollment_id=str(
+            row["enrollment_id"]
+        ),
+        document_id=(
+            str(row["document_id"])
+            if row["document_id"]
+            else None
+        ),
+        rule_code=row["rule_code"],
+        rule_version=row["rule_version"],
+        requirement_reason=(
+            row["requirement_reason"]
+        ),
+        readiness_errors=list(
+            row["readiness_errors"]
+            or []
+        ),
+        due_at=row["due_at"],
+        approved_by_user_id=(
+            str(
+                row[
+                    "approved_by_user_id"
+                ]
+            )
+            if row[
+                "approved_by_user_id"
+            ]
+            else None
+        ),
+        approved_at=row["approved_at"],
+        submitted_at=row["submitted_at"],
+        accepted_at=row["accepted_at"],
+        external_id=row["external_id"],
+        last_error=row["last_error"],
+        user_id=str(row["user_id"]),
+        user_email=row["user_email"],
+        user_full_name=(
+            row["user_full_name"]
+        ),
+        course_id=str(row["course_id"]),
+        course_title=row["course_title"],
+        regulatory_program_type=(
+            row[
+                "regulatory_program_type"
+            ]
+        ),
+        organization_id=(
+            str(row["organization_id"])
+            if row["organization_id"]
+            else None
+        ),
+        organization_name=(
+            row["organization_name"]
+        ),
+        enrollment_completed_at=(
+            row[
+                "enrollment_completed_at"
+            ]
+        ),
+        document_number=(
+            row["document_number"]
+        ),
+        document_type=(
+            row["document_type"]
+        ),
+        document_status=(
+            row["document_status"]
+        ),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+async def get_admin_frdo_obligation_item_or_404(
+    obligation_id: str,
+    session: AsyncSession,
+) -> AdminFrdoObligationItem:
+    result = await session.execute(
+        build_admin_frdo_obligation_query()
+        .where(
+            RegistryObligation.id
+            == obligation_id
+        )
+    )
+
+    row = (
+        result.mappings()
+        .one_or_none()
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="FRDO obligation not found",
+        )
+
+    return build_admin_frdo_obligation_item(
+        row
+    )
+
+
+async def get_admin_frdo_obligation_or_404(
+    obligation_id: str,
+    session: AsyncSession,
+    *,
+    for_update: bool = False,
+) -> RegistryObligation:
+    query = (
+        select(
+            RegistryObligation
+        )
+        .where(
+            RegistryObligation.id
+            == obligation_id,
+            RegistryObligation.registry
+            == REGISTRY_FRDO,
+        )
+    )
+
+    if for_update:
+        query = query.with_for_update()
+
+    result = await session.execute(
+        query
+    )
+
+    obligation = (
+        result.scalar_one_or_none()
+    )
+
+    if obligation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="FRDO obligation not found",
+        )
+
+    return obligation
+
+
+@router.get(
+    "/frdo/obligations",
+    response_model=list[
+        AdminFrdoObligationItem
+    ],
+)
+async def list_admin_frdo_obligations(
+    user_id: str | None = Query(
+        default=None,
+        max_length=64,
+    ),
+    course_id: str | None = Query(
+        default=None,
+        max_length=64,
+    ),
+    status_filter: str | None = Query(
+        default=None,
+        alias="status",
+        max_length=32,
+    ),
+    q: str | None = Query(
+        default=None,
+        max_length=255,
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=300,
+    ),
+    _: User = Depends(
+        require_permission("frdo.read")
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[AdminFrdoObligationItem]:
+    query = (
+        build_admin_frdo_obligation_query()
+    )
+
+    if status_filter:
+        normalized_status = (
+            status_filter.strip()
+        )
+
+        if (
+            normalized_status
+            not in OBLIGATION_STATUSES
+        ):
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "Unsupported registry "
+                    "obligation status"
+                ),
+            )
+
+        query = query.where(
+            RegistryObligation.status
+            == normalized_status
+        )
+
+    if user_id and user_id.strip():
+        query = query.where(
+            Enrollment.user_id
+            == user_id.strip()
+        )
+
+    if course_id and course_id.strip():
+        query = query.where(
+            Enrollment.course_id
+            == course_id.strip()
+        )
+
+    if q and q.strip():
+        search = (
+            "%"
+            + q.strip()
+            + "%"
+        )
+
+        query = query.where(
+            or_(
+                User.email.ilike(
+                    search
+                ),
+                User.full_name.ilike(
+                    search
+                ),
+                Course.title.ilike(
+                    search
+                ),
+                DocumentRecord
+                .document_number
+                .ilike(
+                    search
+                ),
+            )
+        )
+
+    result = await session.execute(
+        query
+        .order_by(
+            RegistryObligation
+            .created_at
+            .desc(),
+            RegistryObligation
+            .id
+            .desc(),
+        )
+        .limit(limit)
+    )
+
+    return [
+        build_admin_frdo_obligation_item(
+            row
+        )
+        for row
+        in result.mappings().all()
+    ]
+
+
+@router.post(
+    "/frdo/obligations/{obligation_id}/validate",
+    response_model=(
+        AdminFrdoObligationValidationResult
+    ),
+)
+async def validate_admin_frdo_obligation(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.validate"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminFrdoObligationValidationResult:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    validation_allowed_statuses = {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+    }
+
+    if (
+        obligation.status
+        not in validation_allowed_statuses
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "FRDO obligation lifecycle "
+                "does not allow readiness "
+                "validation"
+            ),
+        )
+
+    enrollment_result = (
+        await session.execute(
+            select(
+                Enrollment
+            ).where(
+                Enrollment.id
+                == obligation.enrollment_id
+            )
+        )
+    )
+
+    enrollment = (
+        enrollment_result
+        .scalar_one_or_none()
+    )
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "FRDO obligation enrollment "
+                "is not available"
+            ),
+        )
+
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = (
+        await load_completion_document_context(
+            enrollment,
+            session,
+        )
+    )
+
+    document = None
+
+    if obligation.document_id:
+        document_result = (
+            await session.execute(
+                select(
+                    DocumentRecord
+                ).where(
+                    DocumentRecord.id
+                    == obligation.document_id
+                )
+            )
+        )
+
+        document = (
+            document_result
+            .scalar_one_or_none()
+        )
+
+    readiness = (
+        evaluate_registry_readiness(
+            registry=REGISTRY_FRDO,
+            enrollment=enrollment,
+            course=course,
+            learner=learner,
+            learner_profile=(
+                learner_profile
+            ),
+            document=document,
+            organization=organization,
+        )
+    )
+
+    before_status = (
+        obligation.status
+    )
+
+    before_errors = list(
+        obligation.readiness_errors
+        or []
+    )
+
+    obligation.readiness_errors = (
+        readiness.as_error_payload()
+    )
+
+    if obligation.status in {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+    }:
+        obligation.status = (
+            OBLIGATION_STATUS_READY
+            if readiness.is_ready
+            else OBLIGATION_STATUS_PENDING_DATA
+        )
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.frdo_obligation_validated"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_FRDO,
+            "before": {
+                "status": (
+                    before_status
+                ),
+                "readiness_errors": (
+                    before_errors
+                ),
+            },
+            "after": {
+                "status": (
+                    obligation.status
+                ),
+                "readiness_errors": (
+                    obligation
+                    .readiness_errors
+                ),
+            },
+            "is_ready": (
+                readiness.is_ready
+            ),
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    refreshed = (
+        await get_admin_frdo_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
+
+    return (
+        AdminFrdoObligationValidationResult(
+            is_ready=(
+                readiness.is_ready
+            ),
+            issues=[
+                AdminRegistryReadinessIssue(
+                    code=issue.code,
+                    field=issue.field,
+                    message=issue.message,
+                )
+                for issue
+                in readiness.issues
+            ],
+            obligation=refreshed,
+        )
     )

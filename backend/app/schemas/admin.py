@@ -765,3 +765,61 @@ class AdminLearnerImportBatchDetail(BaseModel):
     preflight: (
         AdminLearnerImportPreflightItem | None
     ) = None
+
+
+class AdminRegistryReadinessIssue(BaseModel):
+    code: str
+    field: str | None = None
+    message: str
+
+
+class AdminFrdoObligationItem(BaseModel):
+    id: str
+    registry: str
+    status: str
+    enrollment_id: str
+    document_id: str | None = None
+
+    rule_code: str | None = None
+    rule_version: str | None = None
+    requirement_reason: str | None = None
+    readiness_errors: list[
+        dict[str, str | None]
+    ] = Field(default_factory=list)
+
+    due_at: datetime | None = None
+
+    approved_by_user_id: str | None = None
+    approved_at: datetime | None = None
+    submitted_at: datetime | None = None
+    accepted_at: datetime | None = None
+    external_id: str | None = None
+    last_error: str | None = None
+
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+
+    course_id: str
+    course_title: str
+    regulatory_program_type: str
+
+    organization_id: str | None = None
+    organization_name: str | None = None
+
+    enrollment_completed_at: datetime | None = None
+
+    document_number: str | None = None
+    document_type: str | None = None
+    document_status: str | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminFrdoObligationValidationResult(BaseModel):
+    is_ready: bool
+    issues: list[
+        AdminRegistryReadinessIssue
+    ] = Field(default_factory=list)
+    obligation: AdminFrdoObligationItem
