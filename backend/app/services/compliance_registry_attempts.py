@@ -15,6 +15,7 @@ from app.models.registry_obligation import (
 )
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_ACCEPTED,
+    OBLIGATION_STATUS_APPROVED,
     OBLIGATION_STATUS_CORRECTION_REQUIRED,
     OBLIGATION_STATUS_EXPORTED,
     OBLIGATION_STATUS_REJECTED,
@@ -854,6 +855,74 @@ async def record_registry_submission_result(
             if normalized_errors
             else None
         )
+
+    await session.flush()
+
+    return attempt
+
+async def mark_registry_exported(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+) -> RegistrySubmissionAttempt:
+    (
+        attempt,
+        obligation,
+    ) = await _load_registry_attempt_and_obligation_for_update(
+        session,
+        attempt_id=attempt_id,
+    )
+
+    if (
+        obligation.status
+        != OBLIGATION_STATUS_APPROVED
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry obligation must be approved before export"
+        )
+
+    if (
+        attempt.submitted_at is not None
+        or attempt.submitted_by_user_id is not None
+        or attempt.result_status is not None
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt lifecycle does not allow export finalization"
+        )
+
+    latest_attempt_no = (
+        await session.scalar(
+            select(
+                func.max(
+                    RegistrySubmissionAttempt.attempt_no
+                )
+            ).where(
+                RegistrySubmissionAttempt.obligation_id
+                == obligation.id
+            )
+        )
+    )
+
+    if (
+        latest_attempt_no is None
+        or int(
+            attempt.attempt_no
+        )
+        != int(
+            latest_attempt_no
+        )
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Only the latest registry submission attempt can be exported"
+        )
+
+    validate_registry_attempt_artifact_integrity(
+        attempt
+    )
+
+    obligation.status = (
+        OBLIGATION_STATUS_EXPORTED
+    )
 
     await session.flush()
 
