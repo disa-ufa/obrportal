@@ -61,6 +61,38 @@ def write_private_storage_file(
     return safe_relative_path
 
 
+def write_private_storage_file_exclusive(
+    storage_path: str | Path | PurePosixPath,
+    content: bytes,
+) -> str:
+    safe_relative_path = normalize_relative_storage_path(
+        storage_path
+    )
+
+    absolute_path = resolve_private_storage_path(
+        safe_relative_path
+    )
+
+    if absolute_path is None:
+        raise ValueError(
+            "Invalid document storage path"
+        )
+
+    absolute_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with absolute_path.open(
+        "xb"
+    ) as file_handle:
+        file_handle.write(
+            content
+        )
+
+    return safe_relative_path
+
+
 def delete_private_storage_file(storage_path: str | Path | PurePosixPath | None) -> bool:
     if not storage_path:
         return False
@@ -125,4 +157,3 @@ def detect_document_download_metadata(
     )
 
     return media_type, filename
-

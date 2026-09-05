@@ -24,7 +24,7 @@ from app.services.compliance_registry_contract import (
 from app.services.document_storage import (
     delete_private_storage_file,
     resolve_private_storage_path,
-    write_private_storage_file,
+    write_private_storage_file_exclusive,
 )
 
 
@@ -408,13 +408,17 @@ async def attach_registry_submission_artifact(
         content
     ).hexdigest()
 
+    file_created = False
+
     try:
         saved_path = (
-            write_private_storage_file(
+            write_private_storage_file_exclusive(
                 artifact_path,
                 content,
             )
         )
+
+        file_created = True
 
         attempt.artifact_path = (
             saved_path
@@ -426,10 +430,16 @@ async def attach_registry_submission_artifact(
 
         await session.flush()
 
+    except FileExistsError as exc:
+        raise RegistrySubmissionAttemptError(
+            "Registry artifact storage path already exists"
+        ) from exc
+
     except Exception:
-        delete_registry_artifact_safely(
-            artifact_path
-        )
+        if file_created:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
 
         raise
 

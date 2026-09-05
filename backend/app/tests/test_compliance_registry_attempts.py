@@ -23,6 +23,7 @@ from app.models.user import User
 from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
     attach_registry_submission_artifact,
+    build_registry_artifact_storage_path,
     create_registry_submission_attempt,
     delete_registry_artifact_safely,
     freeze_registry_snapshot,
@@ -3174,6 +3175,183 @@ def test_mark_registry_exported_rejects_invalid_lifecycle(
         if artifact_path:
             delete_registry_artifact_safely(
                 artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+def test_attach_registry_submission_artifact_preserves_existing_collision(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    collision_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await create_registry_submission_attempt(
+                        session,
+                        obligation_id=fixture[
+                            "obligation_id"
+                        ],
+                        snapshot={
+                            "registry": "frdo",
+                            "collision": True,
+                        },
+                        generated_by_user_id=fixture[
+                            "user_id"
+                        ],
+                        transport="file",
+                        schema_version=None,
+                    )
+                )
+
+                attempt_id = str(
+                    attempt.id
+                )
+
+                artifact_path = (
+                    build_registry_artifact_storage_path(
+                        attempt,
+                        extension=".xml",
+                    )
+                )
+
+                resolved = (
+                    resolve_private_storage_path(
+                        artifact_path
+                    )
+                )
+
+                assert (
+                    resolved
+                    is not None
+                )
+
+                resolved.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                sentinel = (
+                    b"pre-existing-orphan"
+                )
+
+                resolved.write_bytes(
+                    sentinel
+                )
+
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match="storage path already exists",
+                ):
+                    await attach_registry_submission_artifact(
+                        session,
+                        attempt_id=attempt_id,
+                        content=b"new-artifact",
+                        extension=".xml",
+                    )
+
+                assert (
+                    resolved.exists()
+                )
+
+                assert (
+                    resolved.read_bytes()
+                    == sentinel
+                )
+
+                await session.rollback()
+
+                return artifact_path
+
+            await engine.dispose()
+
+        collision_path = asyncio.run(
+            _run()
+        )
+
+        async def _verify():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempts = (
+                    await session.execute(
+                        select(
+                            RegistrySubmissionAttempt
+                        ).where(
+                            RegistrySubmissionAttempt
+                            .obligation_id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                ).scalars().all()
+
+                assert attempts == []
+
+            await engine.dispose()
+
+        asyncio.run(
+            _verify()
+        )
+
+        resolved = (
+            resolve_private_storage_path(
+                collision_path
+            )
+        )
+
+        assert resolved is not None
+
+        assert (
+            resolved.read_bytes()
+            == b"pre-existing-orphan"
+        )
+
+    finally:
+        if collision_path:
+            delete_registry_artifact_safely(
+                collision_path
             )
 
         cleanup_attempt_fixture(
