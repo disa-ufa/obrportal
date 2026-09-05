@@ -33,6 +33,7 @@ from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
 from app.models.registry_obligation import RegistryObligation
+from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.services.document_storage import (
@@ -61,6 +62,7 @@ from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_PENDING_DATA,
     OBLIGATION_STATUS_READY,
     REGISTRY_FRDO,
+    REGISTRY_MINTRUD,
 )
 from app.services.compliance_registry_readiness import (
     evaluate_registry_readiness,
@@ -129,6 +131,9 @@ from app.schemas.admin import (
     AdminDocumentItem,
     AdminFrdoObligationItem,
     AdminFrdoObligationValidationResult,
+    AdminMintrudObligationItem,
+    AdminMintrudObligationValidationResult,
+    AdminMintrudRegistryContext,
     AdminRegistryReadinessIssue,
     AdminDeleteResult,
     AdminOrganizationCreate,
@@ -8722,6 +8727,658 @@ async def validate_admin_frdo_obligation(
 
     return (
         AdminFrdoObligationValidationResult(
+            is_ready=(
+                readiness.is_ready
+            ),
+            issues=[
+                AdminRegistryReadinessIssue(
+                    code=issue.code,
+                    field=issue.field,
+                    message=issue.message,
+                )
+                for issue
+                in readiness.issues
+            ],
+            obligation=refreshed,
+        )
+    )
+
+def build_admin_mintrud_obligation_query():
+    return (
+        select(
+            RegistryObligation.id.label("id"),
+            RegistryObligation.registry.label(
+                "registry"
+            ),
+            RegistryObligation.status.label(
+                "status"
+            ),
+            RegistryObligation.enrollment_id.label(
+                "enrollment_id"
+            ),
+            RegistryObligation.document_id.label(
+                "document_id"
+            ),
+            RegistryObligation.rule_code.label(
+                "rule_code"
+            ),
+            RegistryObligation.rule_version.label(
+                "rule_version"
+            ),
+            RegistryObligation.requirement_reason.label(
+                "requirement_reason"
+            ),
+            RegistryObligation.readiness_errors.label(
+                "readiness_errors"
+            ),
+            RegistryObligation.due_at.label(
+                "due_at"
+            ),
+            RegistryObligation.approved_by_user_id.label(
+                "approved_by_user_id"
+            ),
+            RegistryObligation.approved_at.label(
+                "approved_at"
+            ),
+            RegistryObligation.submitted_at.label(
+                "submitted_at"
+            ),
+            RegistryObligation.accepted_at.label(
+                "accepted_at"
+            ),
+            RegistryObligation.external_id.label(
+                "external_id"
+            ),
+            RegistryObligation.last_error.label(
+                "last_error"
+            ),
+            RegistryObligation.created_at.label(
+                "created_at"
+            ),
+            RegistryObligation.updated_at.label(
+                "updated_at"
+            ),
+            Enrollment.user_id.label(
+                "user_id"
+            ),
+            Enrollment.course_id.label(
+                "course_id"
+            ),
+            Enrollment.organization_id.label(
+                "organization_id"
+            ),
+            Enrollment.completed_at.label(
+                "enrollment_completed_at"
+            ),
+            User.email.label(
+                "user_email"
+            ),
+            User.full_name.label(
+                "user_full_name"
+            ),
+            Course.title.label(
+                "course_title"
+            ),
+            Course.regulatory_program_type.label(
+                "regulatory_program_type"
+            ),
+            Organization.name.label(
+                "organization_name"
+            ),
+            DocumentRecord.document_number.label(
+                "document_number"
+            ),
+            DocumentRecord.document_type.label(
+                "document_type"
+            ),
+            DocumentRecord.status.label(
+                "document_status"
+            ),
+            MintrudRegistryContext.id.label(
+                "mintrud_context_id"
+            ),
+            MintrudRegistryContext.obligation_id.label(
+                "mintrud_context_obligation_id"
+            ),
+            MintrudRegistryContext.reporting_scenario.label(
+                "mintrud_reporting_scenario"
+            ),
+            MintrudRegistryContext.profession_or_position.label(
+                "mintrud_profession_or_position"
+            ),
+            MintrudRegistryContext.employer_name.label(
+                "mintrud_employer_name"
+            ),
+            MintrudRegistryContext.employer_inn.label(
+                "mintrud_employer_inn"
+            ),
+            MintrudRegistryContext.knowledge_check_result.label(
+                "mintrud_knowledge_check_result"
+            ),
+            MintrudRegistryContext.knowledge_check_date.label(
+                "mintrud_knowledge_check_date"
+            ),
+            MintrudRegistryContext.protocol_number.label(
+                "mintrud_protocol_number"
+            ),
+            MintrudRegistryContext.created_at.label(
+                "mintrud_context_created_at"
+            ),
+            MintrudRegistryContext.updated_at.label(
+                "mintrud_context_updated_at"
+            ),
+        )
+        .join(
+            Enrollment,
+            Enrollment.id
+            == RegistryObligation.enrollment_id,
+        )
+        .join(
+            Course,
+            Course.id
+            == Enrollment.course_id,
+        )
+        .join(
+            User,
+            User.id
+            == Enrollment.user_id,
+        )
+        .outerjoin(
+            Organization,
+            Organization.id
+            == Enrollment.organization_id,
+        )
+        .outerjoin(
+            DocumentRecord,
+            DocumentRecord.id
+            == RegistryObligation.document_id,
+        )
+        .outerjoin(
+            MintrudRegistryContext,
+            MintrudRegistryContext.obligation_id
+            == RegistryObligation.id,
+        )
+        .where(
+            RegistryObligation.registry
+            == REGISTRY_MINTRUD
+        )
+    )
+
+
+def build_admin_mintrud_obligation_item(
+    row,
+) -> AdminMintrudObligationItem:
+    base = build_admin_frdo_obligation_item(
+        row
+    )
+
+    context = None
+
+    if row["mintrud_context_id"]:
+        context = AdminMintrudRegistryContext(
+            id=str(
+                row[
+                    "mintrud_context_id"
+                ]
+            ),
+            obligation_id=str(
+                row[
+                    "mintrud_context_obligation_id"
+                ]
+            ),
+            reporting_scenario=(
+                row[
+                    "mintrud_reporting_scenario"
+                ]
+            ),
+            profession_or_position=(
+                row[
+                    "mintrud_profession_or_position"
+                ]
+            ),
+            employer_name=(
+                row[
+                    "mintrud_employer_name"
+                ]
+            ),
+            employer_inn=(
+                row[
+                    "mintrud_employer_inn"
+                ]
+            ),
+            knowledge_check_result=(
+                row[
+                    "mintrud_knowledge_check_result"
+                ]
+            ),
+            knowledge_check_date=(
+                row[
+                    "mintrud_knowledge_check_date"
+                ]
+            ),
+            protocol_number=(
+                row[
+                    "mintrud_protocol_number"
+                ]
+            ),
+            created_at=(
+                row[
+                    "mintrud_context_created_at"
+                ]
+            ),
+            updated_at=(
+                row[
+                    "mintrud_context_updated_at"
+                ]
+            ),
+        )
+
+    return AdminMintrudObligationItem(
+        **base.model_dump(),
+        mintrud_context=context,
+    )
+
+
+async def get_admin_mintrud_obligation_item_or_404(
+    obligation_id: str,
+    session: AsyncSession,
+) -> AdminMintrudObligationItem:
+    result = await session.execute(
+        build_admin_mintrud_obligation_query()
+        .where(
+            RegistryObligation.id
+            == obligation_id
+        )
+    )
+
+    row = (
+        result.mappings()
+        .one_or_none()
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mintrud obligation not found",
+        )
+
+    return build_admin_mintrud_obligation_item(
+        row
+    )
+
+
+async def get_admin_mintrud_obligation_or_404(
+    obligation_id: str,
+    session: AsyncSession,
+    *,
+    for_update: bool = False,
+) -> RegistryObligation:
+    query = (
+        select(
+            RegistryObligation
+        )
+        .where(
+            RegistryObligation.id
+            == obligation_id,
+            RegistryObligation.registry
+            == REGISTRY_MINTRUD,
+        )
+    )
+
+    if for_update:
+        query = query.with_for_update()
+
+    result = await session.execute(
+        query
+    )
+
+    obligation = (
+        result.scalar_one_or_none()
+    )
+
+    if obligation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mintrud obligation not found",
+        )
+
+    return obligation
+
+
+@router.get(
+    "/mintrud/obligations",
+    response_model=list[
+        AdminMintrudObligationItem
+    ],
+)
+async def list_admin_mintrud_obligations(
+    user_id: str | None = Query(
+        default=None,
+        max_length=64,
+    ),
+    course_id: str | None = Query(
+        default=None,
+        max_length=64,
+    ),
+    status_filter: str | None = Query(
+        default=None,
+        alias="status",
+        max_length=32,
+    ),
+    q: str | None = Query(
+        default=None,
+        max_length=255,
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=300,
+    ),
+    _: User = Depends(
+        require_permission("mintrud.read")
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[AdminMintrudObligationItem]:
+    query = (
+        build_admin_mintrud_obligation_query()
+    )
+
+    if status_filter:
+        normalized_status = (
+            status_filter.strip()
+        )
+
+        if (
+            normalized_status
+            not in OBLIGATION_STATUSES
+        ):
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "Unsupported registry "
+                    "obligation status"
+                ),
+            )
+
+        query = query.where(
+            RegistryObligation.status
+            == normalized_status
+        )
+
+    if user_id and user_id.strip():
+        query = query.where(
+            Enrollment.user_id
+            == user_id.strip()
+        )
+
+    if course_id and course_id.strip():
+        query = query.where(
+            Enrollment.course_id
+            == course_id.strip()
+        )
+
+    if q and q.strip():
+        search = (
+            "%"
+            + q.strip()
+            + "%"
+        )
+
+        query = query.where(
+            or_(
+                User.email.ilike(
+                    search
+                ),
+                User.full_name.ilike(
+                    search
+                ),
+                Course.title.ilike(
+                    search
+                ),
+                DocumentRecord
+                .document_number
+                .ilike(
+                    search
+                ),
+                MintrudRegistryContext
+                .profession_or_position
+                .ilike(
+                    search
+                ),
+                MintrudRegistryContext
+                .employer_name
+                .ilike(
+                    search
+                ),
+                MintrudRegistryContext
+                .employer_inn
+                .ilike(
+                    search
+                ),
+                MintrudRegistryContext
+                .protocol_number
+                .ilike(
+                    search
+                ),
+            )
+        )
+
+    result = await session.execute(
+        query
+        .order_by(
+            RegistryObligation
+            .created_at
+            .desc(),
+            RegistryObligation
+            .id
+            .desc(),
+        )
+        .limit(limit)
+    )
+
+    return [
+        build_admin_mintrud_obligation_item(
+            row
+        )
+        for row
+        in result.mappings().all()
+    ]
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/validate",
+    response_model=(
+        AdminMintrudObligationValidationResult
+    ),
+)
+async def validate_admin_mintrud_obligation(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.validate"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudObligationValidationResult:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    validation_allowed_statuses = {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+    }
+
+    if (
+        obligation.status
+        not in validation_allowed_statuses
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Mintrud obligation lifecycle "
+                "does not allow readiness "
+                "validation"
+            ),
+        )
+
+    enrollment_result = (
+        await session.execute(
+            select(
+                Enrollment
+            ).where(
+                Enrollment.id
+                == obligation.enrollment_id
+            )
+        )
+    )
+
+    enrollment = (
+        enrollment_result
+        .scalar_one_or_none()
+    )
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Mintrud obligation enrollment "
+                "is not available"
+            ),
+        )
+
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = (
+        await load_completion_document_context(
+            enrollment,
+            session,
+        )
+    )
+
+    context_result = (
+        await session.execute(
+            select(
+                MintrudRegistryContext
+            ).where(
+                MintrudRegistryContext.obligation_id
+                == obligation.id
+            )
+        )
+    )
+
+    mintrud_context = (
+        context_result
+        .scalar_one_or_none()
+    )
+
+    readiness = (
+        evaluate_registry_readiness(
+            registry=REGISTRY_MINTRUD,
+            enrollment=enrollment,
+            course=course,
+            learner=learner,
+            learner_profile=(
+                learner_profile
+            ),
+            organization=organization,
+            mintrud_context=(
+                mintrud_context
+            ),
+        )
+    )
+
+    before_status = (
+        obligation.status
+    )
+
+    before_errors = list(
+        obligation.readiness_errors
+        or []
+    )
+
+    obligation.readiness_errors = (
+        readiness.as_error_payload()
+    )
+
+    if obligation.status in {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+    }:
+        obligation.status = (
+            OBLIGATION_STATUS_READY
+            if readiness.is_ready
+            else OBLIGATION_STATUS_PENDING_DATA
+        )
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.mintrud_obligation_validated"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_MINTRUD,
+            "before": {
+                "status": before_status,
+                "readiness_errors": (
+                    before_errors
+                ),
+            },
+            "after": {
+                "status": (
+                    obligation.status
+                ),
+                "readiness_errors": (
+                    obligation
+                    .readiness_errors
+                ),
+            },
+            "is_ready": (
+                readiness.is_ready
+            ),
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    refreshed = (
+        await get_admin_mintrud_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
+
+    return (
+        AdminMintrudObligationValidationResult(
             is_ready=(
                 readiness.is_ready
             ),

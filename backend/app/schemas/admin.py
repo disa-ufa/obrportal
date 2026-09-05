@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -823,3 +823,37 @@ class AdminFrdoObligationValidationResult(BaseModel):
         AdminRegistryReadinessIssue
     ] = Field(default_factory=list)
     obligation: AdminFrdoObligationItem
+
+class AdminMintrudRegistryContext(BaseModel):
+    id: str
+    obligation_id: str
+
+    reporting_scenario: str | None = None
+    profession_or_position: str | None = None
+
+    employer_name: str | None = None
+    employer_inn: str | None = None
+
+    knowledge_check_result: str | None = None
+    knowledge_check_date: date | None = None
+    protocol_number: str | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminMintrudObligationItem(
+    AdminFrdoObligationItem
+):
+    mintrud_context: (
+        AdminMintrudRegistryContext | None
+    ) = None
+
+
+class AdminMintrudObligationValidationResult(BaseModel):
+    is_ready: bool
+    issues: list[
+        AdminRegistryReadinessIssue
+    ] = Field(default_factory=list)
+
+    obligation: AdminMintrudObligationItem
