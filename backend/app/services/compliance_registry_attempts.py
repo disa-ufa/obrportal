@@ -13,8 +13,16 @@ from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
 )
+from app.services.compliance_registry_contract import (
+    OBLIGATION_STATUS_ACCEPTED,
+    OBLIGATION_STATUS_CORRECTION_REQUIRED,
+    OBLIGATION_STATUS_EXPORTED,
+    OBLIGATION_STATUS_REJECTED,
+    OBLIGATION_STATUS_SUBMITTED,
+)
 from app.services.document_storage import (
     delete_private_storage_file,
+    resolve_private_storage_path,
     write_private_storage_file,
 )
 
@@ -423,5 +431,430 @@ async def attach_registry_submission_artifact(
         )
 
         raise
+
+    return attempt
+
+REGISTRY_RECONCILIATION_RESULT_STATUSES = frozenset(
+    {
+        OBLIGATION_STATUS_ACCEPTED,
+        OBLIGATION_STATUS_REJECTED,
+        OBLIGATION_STATUS_CORRECTION_REQUIRED,
+    }
+)
+
+
+def normalize_registry_external_reference(
+    value: str | None,
+) -> str | None:
+    if value is None:
+        return None
+
+    normalized = str(
+        value
+    ).strip()
+
+    if not normalized:
+        return None
+
+    if len(normalized) > 255:
+        raise RegistrySubmissionAttemptError(
+            "Registry external reference exceeds maximum length 255"
+        )
+
+    return normalized
+
+
+def normalize_registry_external_id(
+    value: str | None,
+) -> str | None:
+    if value is None:
+        return None
+
+    normalized = str(
+        value
+    ).strip()
+
+    if not normalized:
+        return None
+
+    if len(normalized) > 255:
+        raise RegistrySubmissionAttemptError(
+            "Registry external id exceeds maximum length 255"
+        )
+
+    return normalized
+
+
+def normalize_registry_result_errors(
+    errors: list[str] | tuple[str, ...] | None,
+) -> list[str]:
+    if errors is None:
+        return []
+
+    if not isinstance(
+        errors,
+        (
+            list,
+            tuple,
+        ),
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry result errors must be a list"
+        )
+
+    normalized = []
+
+    for value in errors:
+        text = str(
+            value
+            or ""
+        ).strip()
+
+        if not text:
+            continue
+
+        if len(text) > 4000:
+            raise RegistrySubmissionAttemptError(
+                "Registry result error exceeds maximum length 4000"
+            )
+
+        normalized.append(
+            text
+        )
+
+    return normalized
+
+
+async def _load_registry_attempt_and_obligation_for_update(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+) -> tuple[
+    RegistrySubmissionAttempt,
+    RegistryObligation,
+]:
+    normalized_attempt_id = str(
+        attempt_id
+        or ""
+    ).strip()
+
+    if not normalized_attempt_id:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt id is required"
+        )
+
+    obligation_id = (
+        await session.scalar(
+            select(
+                RegistrySubmissionAttempt.obligation_id
+            ).where(
+                RegistrySubmissionAttempt.id
+                == normalized_attempt_id
+            )
+        )
+    )
+
+    if obligation_id is None:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt was not found"
+        )
+
+    obligation_result = (
+        await session.execute(
+            select(
+                RegistryObligation
+            )
+            .where(
+                RegistryObligation.id
+                == obligation_id
+            )
+            .with_for_update()
+        )
+    )
+
+    obligation = (
+        obligation_result
+        .scalar_one_or_none()
+    )
+
+    if obligation is None:
+        raise RegistrySubmissionAttemptError(
+            "Registry obligation was not found"
+        )
+
+    attempt_result = (
+        await session.execute(
+            select(
+                RegistrySubmissionAttempt
+            )
+            .where(
+                RegistrySubmissionAttempt.id
+                == normalized_attempt_id,
+                RegistrySubmissionAttempt.obligation_id
+                == obligation.id,
+            )
+            .with_for_update()
+        )
+    )
+
+    attempt = (
+        attempt_result
+        .scalar_one_or_none()
+    )
+
+    if attempt is None:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt was not found"
+        )
+
+    return (
+        attempt,
+        obligation,
+    )
+
+
+def validate_registry_attempt_artifact_integrity(
+    attempt: RegistrySubmissionAttempt,
+) -> None:
+    if (
+        not attempt.artifact_path
+        or not attempt.artifact_sha256
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt has no attached artifact"
+        )
+
+    absolute_path = (
+        resolve_private_storage_path(
+            attempt.artifact_path
+        )
+    )
+
+    if (
+        absolute_path is None
+        or not absolute_path.exists()
+        or not absolute_path.is_file()
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry submission artifact file is missing"
+        )
+
+    actual_sha256 = sha256(
+        absolute_path.read_bytes()
+    ).hexdigest()
+
+    if (
+        actual_sha256
+        != attempt.artifact_sha256
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry submission artifact checksum mismatch"
+        )
+
+
+async def mark_registry_submission(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+    submitted_by_user_id: str,
+    external_reference: str | None = None,
+) -> RegistrySubmissionAttempt:
+    normalized_user_id = str(
+        submitted_by_user_id
+        or ""
+    ).strip()
+
+    if not normalized_user_id:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission actor is required"
+        )
+
+    normalized_reference = (
+        normalize_registry_external_reference(
+            external_reference
+        )
+    )
+
+    (
+        attempt,
+        obligation,
+    ) = await _load_registry_attempt_and_obligation_for_update(
+        session,
+        attempt_id=attempt_id,
+    )
+
+    if (
+        attempt.submitted_at is not None
+        or attempt.submitted_by_user_id is not None
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt is already submitted"
+        )
+
+    if (
+        obligation.status
+        != OBLIGATION_STATUS_EXPORTED
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry obligation must be exported before submission"
+        )
+
+    validate_registry_attempt_artifact_integrity(
+        attempt
+    )
+
+    submitted_at = datetime.now(
+        timezone.utc
+    )
+
+    attempt.submitted_by_user_id = (
+        normalized_user_id
+    )
+
+    attempt.submitted_at = (
+        submitted_at
+    )
+
+    attempt.external_reference = (
+        normalized_reference
+    )
+
+    attempt.result_status = None
+    attempt.errors_json = []
+
+    obligation.status = (
+        OBLIGATION_STATUS_SUBMITTED
+    )
+
+    obligation.submitted_at = (
+        submitted_at
+    )
+
+    obligation.accepted_at = None
+    obligation.last_error = None
+
+    await session.flush()
+
+    return attempt
+
+
+async def record_registry_submission_result(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+    result_status: str,
+    external_id: str | None = None,
+    errors: list[str] | tuple[str, ...] | None = None,
+) -> RegistrySubmissionAttempt:
+    normalized_result_status = str(
+        result_status
+        or ""
+    ).strip()
+
+    if (
+        normalized_result_status
+        not in REGISTRY_RECONCILIATION_RESULT_STATUSES
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Unsupported registry submission result status"
+        )
+
+    normalized_external_id = (
+        normalize_registry_external_id(
+            external_id
+        )
+    )
+
+    normalized_errors = (
+        normalize_registry_result_errors(
+            errors
+        )
+    )
+
+    if (
+        normalized_result_status
+        == OBLIGATION_STATUS_ACCEPTED
+        and normalized_errors
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Accepted registry result must not contain errors"
+        )
+
+    if (
+        normalized_result_status
+        != OBLIGATION_STATUS_ACCEPTED
+        and normalized_external_id is not None
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry external id is allowed only for accepted result"
+        )
+
+    (
+        attempt,
+        obligation,
+    ) = await _load_registry_attempt_and_obligation_for_update(
+        session,
+        attempt_id=attempt_id,
+    )
+
+    if attempt.submitted_at is None:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt has not been submitted"
+        )
+
+    if attempt.result_status is not None:
+        raise RegistrySubmissionAttemptError(
+            "Registry submission attempt already has a result"
+        )
+
+    if (
+        obligation.status
+        != OBLIGATION_STATUS_SUBMITTED
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry obligation must be submitted before recording result"
+        )
+
+    attempt.result_status = (
+        normalized_result_status
+    )
+
+    attempt.errors_json = (
+        normalized_errors
+    )
+
+    obligation.status = (
+        normalized_result_status
+    )
+
+    if (
+        normalized_result_status
+        == OBLIGATION_STATUS_ACCEPTED
+    ):
+        obligation.accepted_at = (
+            datetime.now(
+                timezone.utc
+            )
+        )
+
+        obligation.external_id = (
+            normalized_external_id
+        )
+
+        obligation.last_error = None
+
+    else:
+        obligation.accepted_at = None
+        obligation.external_id = None
+
+        obligation.last_error = (
+            "\n".join(
+                normalized_errors
+            )
+            if normalized_errors
+            else None
+        )
+
+    await session.flush()
 
     return attempt

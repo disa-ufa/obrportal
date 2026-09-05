@@ -26,6 +26,9 @@ from app.services.compliance_registry_attempts import (
     create_registry_submission_attempt,
     delete_registry_artifact_safely,
     freeze_registry_snapshot,
+    mark_registry_submission,
+    normalize_registry_result_errors,
+    record_registry_submission_result,
 )
 from app.services.document_storage import (
     resolve_private_storage_path,
@@ -1431,6 +1434,988 @@ def test_attach_registry_submission_artifact_validates_inputs(
         assert files == []
 
     finally:
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+def prepare_exported_artifact_attempt(
+    fixture: dict,
+    *,
+    content: bytes = b"registry-export",
+    extension: str = ".xml",
+) -> tuple[str, str]:
+    async def _prepare():
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            attempt = (
+                await create_registry_submission_attempt(
+                    session,
+                    obligation_id=fixture[
+                        "obligation_id"
+                    ],
+                    snapshot={
+                        "registry": "frdo",
+                        "manual_reconciliation": True,
+                    },
+                    generated_by_user_id=fixture[
+                        "user_id"
+                    ],
+                    transport="file",
+                    schema_version=None,
+                )
+            )
+
+            attempt_id = str(
+                attempt.id
+            )
+
+            attached = (
+                await attach_registry_submission_artifact(
+                    session,
+                    attempt_id=attempt_id,
+                    content=content,
+                    extension=extension,
+                )
+            )
+
+            artifact_path = (
+                attached.artifact_path
+            )
+
+            obligation = (
+                await session.scalar(
+                    select(
+                        RegistryObligation
+                    ).where(
+                        RegistryObligation.id
+                        == fixture[
+                            "obligation_id"
+                        ]
+                    )
+                )
+            )
+
+            assert (
+                obligation
+                is not None
+            )
+
+            obligation.status = (
+                "exported"
+            )
+
+            await session.commit()
+
+        await engine.dispose()
+
+        assert (
+            artifact_path
+            is not None
+        )
+
+        return (
+            attempt_id,
+            artifact_path,
+        )
+
+    return asyncio.run(
+        _prepare()
+    )
+
+
+def mark_attempt_submitted(
+    attempt_id: str,
+    *,
+    user_id: str,
+    external_reference: str | None = None,
+) -> None:
+    async def _submit():
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            await mark_registry_submission(
+                session,
+                attempt_id=attempt_id,
+                submitted_by_user_id=user_id,
+                external_reference=(
+                    external_reference
+                ),
+            )
+
+            await session.commit()
+
+        await engine.dispose()
+
+    asyncio.run(
+        _submit()
+    )
+
+
+def test_normalize_registry_result_errors() -> None:
+    assert (
+        normalize_registry_result_errors(
+            None
+        )
+        == []
+    )
+
+    assert (
+        normalize_registry_result_errors(
+            [
+                "  first  ",
+                "",
+                "   ",
+                "second",
+            ]
+        )
+        == [
+            "first",
+            "second",
+        ]
+    )
+
+    with pytest.raises(
+        RegistrySubmissionAttemptError
+    ):
+        normalize_registry_result_errors(
+            "not-a-list"
+        )
+
+    with pytest.raises(
+        RegistrySubmissionAttemptError
+    ):
+        normalize_registry_result_errors(
+            [
+                "x" * 4001,
+            ]
+        )
+
+
+def test_mark_registry_submission_persists_attempt_and_obligation(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_exported_artifact_attempt(
+            fixture
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await mark_registry_submission(
+                        session,
+                        attempt_id=attempt_id,
+                        submitted_by_user_id=fixture[
+                            "user_id"
+                        ],
+                        external_reference=(
+                            "  PACKAGE-42  "
+                        ),
+                    )
+                )
+
+                assert (
+                    str(
+                        attempt.submitted_by_user_id
+                    )
+                    == fixture[
+                        "user_id"
+                    ]
+                )
+
+                assert (
+                    attempt.submitted_at
+                    is not None
+                )
+
+                assert (
+                    attempt.external_reference
+                    == "PACKAGE-42"
+                )
+
+                assert (
+                    attempt.result_status
+                    is None
+                )
+
+                assert (
+                    attempt.errors_json
+                    == []
+                )
+
+                await session.commit()
+
+            async with session_factory() as session:
+                persisted = (
+                    await session.scalar(
+                        select(
+                            RegistrySubmissionAttempt
+                        ).where(
+                            RegistrySubmissionAttempt.id
+                            == attempt_id
+                        )
+                    )
+                )
+
+                obligation = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    persisted
+                    is not None
+                )
+
+                assert (
+                    obligation
+                    is not None
+                )
+
+                assert (
+                    persisted.submitted_at
+                    is not None
+                )
+
+                assert (
+                    obligation.status
+                    == "submitted"
+                )
+
+                assert (
+                    obligation.submitted_at
+                    is not None
+                )
+
+                assert (
+                    obligation.accepted_at
+                    is None
+                )
+
+                assert (
+                    obligation.last_error
+                    is None
+                )
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_mark_registry_submission_requires_valid_artifact(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_exported_artifact_attempt(
+            fixture,
+            content=b"original",
+        )
+
+        resolved = (
+            resolve_private_storage_path(
+                artifact_path
+            )
+        )
+
+        assert (
+            resolved
+            is not None
+        )
+
+        resolved.write_bytes(
+            b"tampered"
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match="checksum mismatch",
+                ):
+                    await mark_registry_submission(
+                        session,
+                        attempt_id=attempt_id,
+                        submitted_by_user_id=fixture[
+                            "user_id"
+                        ],
+                    )
+
+                await session.rollback()
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_mark_registry_submission_obeys_caller_rollback(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_exported_artifact_attempt(
+            fixture
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await mark_registry_submission(
+                        session,
+                        attempt_id=attempt_id,
+                        submitted_by_user_id=fixture[
+                            "user_id"
+                        ],
+                    )
+                )
+
+                assert (
+                    attempt.submitted_at
+                    is not None
+                )
+
+                await session.rollback()
+
+            async with session_factory() as session:
+                persisted = (
+                    await session.scalar(
+                        select(
+                            RegistrySubmissionAttempt
+                        ).where(
+                            RegistrySubmissionAttempt.id
+                            == attempt_id
+                        )
+                    )
+                )
+
+                obligation = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    persisted
+                    is not None
+                )
+
+                assert (
+                    obligation
+                    is not None
+                )
+
+                assert (
+                    persisted.submitted_at
+                    is None
+                )
+
+                assert (
+                    persisted.submitted_by_user_id
+                    is None
+                )
+
+                assert (
+                    obligation.status
+                    == "exported"
+                )
+
+                assert (
+                    obligation.submitted_at
+                    is None
+                )
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_record_registry_submission_result_accepted(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_exported_artifact_attempt(
+            fixture
+        )
+
+        mark_attempt_submitted(
+            attempt_id,
+            user_id=fixture[
+                "user_id"
+            ],
+            external_reference="PKG-1",
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status="accepted",
+                        external_id=(
+                            "  REGISTRY-777  "
+                        ),
+                        errors=[],
+                    )
+                )
+
+                assert (
+                    attempt.result_status
+                    == "accepted"
+                )
+
+                assert (
+                    attempt.errors_json
+                    == []
+                )
+
+                await session.commit()
+
+            async with session_factory() as session:
+                obligation = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    obligation
+                    is not None
+                )
+
+                assert (
+                    obligation.status
+                    == "accepted"
+                )
+
+                assert (
+                    obligation.accepted_at
+                    is not None
+                )
+
+                assert (
+                    obligation.external_id
+                    == "REGISTRY-777"
+                )
+
+                assert (
+                    obligation.last_error
+                    is None
+                )
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+@pytest.mark.parametrize(
+    (
+        "result_status",
+        "errors",
+        "expected_last_error",
+    ),
+    [
+        (
+            "rejected",
+            [
+                " invalid SNILS ",
+                "Program mismatch",
+            ],
+            (
+                "invalid SNILS\n"
+                "Program mismatch"
+            ),
+        ),
+        (
+            "correction_required",
+            [],
+            None,
+        ),
+    ],
+)
+def test_record_registry_submission_result_negative_states(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+    result_status: str,
+    errors: list[str],
+    expected_last_error: str | None,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_exported_artifact_attempt(
+            fixture
+        )
+
+        mark_attempt_submitted(
+            attempt_id,
+            user_id=fixture[
+                "user_id"
+            ],
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                attempt = (
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status=(
+                            result_status
+                        ),
+                        errors=errors,
+                    )
+                )
+
+                assert (
+                    attempt.result_status
+                    == result_status
+                )
+
+                await session.commit()
+
+            async with session_factory() as session:
+                obligation = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    obligation
+                    is not None
+                )
+
+                assert (
+                    obligation.status
+                    == result_status
+                )
+
+                assert (
+                    obligation.accepted_at
+                    is None
+                )
+
+                assert (
+                    obligation.external_id
+                    is None
+                )
+
+                assert (
+                    obligation.last_error
+                    == expected_last_error
+                )
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+
+def test_registry_reconciliation_rejects_duplicate_and_invalid_transitions(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_exported_artifact_attempt(
+            fixture
+        )
+
+        mark_attempt_submitted(
+            attempt_id,
+            user_id=fixture[
+                "user_id"
+            ],
+        )
+
+        async def _run():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match="already submitted",
+                ):
+                    await mark_registry_submission(
+                        session,
+                        attempt_id=attempt_id,
+                        submitted_by_user_id=fixture[
+                            "user_id"
+                        ],
+                    )
+
+                await session.rollback()
+
+            async with session_factory() as session:
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match="Unsupported",
+                ):
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status="unknown",
+                    )
+
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match=(
+                        "allowed only for accepted"
+                    ),
+                ):
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status="rejected",
+                        external_id="BAD",
+                    )
+
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match=(
+                        "must not contain errors"
+                    ),
+                ):
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status="accepted",
+                        errors=[
+                            "error",
+                        ],
+                    )
+
+                accepted = (
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status="accepted",
+                    )
+                )
+
+                assert (
+                    accepted.result_status
+                    == "accepted"
+                )
+
+                await session.commit()
+
+            async with session_factory() as session:
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match=(
+                        "already has a result"
+                    ),
+                ):
+                    await record_registry_submission_result(
+                        session,
+                        attempt_id=attempt_id,
+                        result_status="rejected",
+                    )
+
+                await session.rollback()
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
+            )
+
         cleanup_attempt_fixture(
             fixture
         )
