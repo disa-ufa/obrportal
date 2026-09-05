@@ -1411,3 +1411,220 @@ def test_mintrud_admin_context_write_api() -> None:
         cleanup_mintrud_fixtures(
             fixtures
         )
+
+def test_mintrud_admin_approval_state_machine() -> None:
+    needs_approval = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="needs_approval",
+    )
+
+    ready = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="ready",
+    )
+
+    incomplete = create_mintrud_fixture(
+        with_context=False,
+        obligation_status="needs_approval",
+    )
+
+    already_approved = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    fixtures = [
+        needs_approval,
+        ready,
+        incomplete,
+        already_approved,
+    ]
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        approve_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + needs_approval[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        assert (
+            approved[
+                "approved_by_user_id"
+            ]
+            is not None
+        )
+
+        assert (
+            approved[
+                "approved_at"
+            ]
+            is not None
+        )
+
+        assert (
+            approved[
+                "readiness_errors"
+            ]
+            == []
+        )
+
+        assert (
+            approved[
+                "mintrud_context"
+            ]
+            is not None
+        )
+
+        actions = (
+            get_mintrud_audit_actions(
+                needs_approval[
+                    "obligation_id"
+                ]
+            )
+        )
+
+        assert (
+            "admin.mintrud_obligation_approved"
+            in actions
+        )
+
+        ready_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + ready[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, ready_approved = (
+            request_json(
+                "POST",
+                ready_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            ready_approved[
+                "status"
+            ]
+            == "approved"
+        )
+
+        incomplete_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + incomplete[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, not_ready = (
+            request_json(
+                "POST",
+                incomplete_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            not_ready,
+            dict,
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "POST",
+                incomplete_path,
+                token=learner_token,
+            )
+        )
+
+        assert status_code == 403
+        assert isinstance(
+            forbidden,
+            dict,
+        )
+
+        approved_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + already_approved[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, lifecycle_guard = (
+            request_json(
+                "POST",
+                approved_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            lifecycle_guard,
+            dict,
+        )
+
+        missing_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            "00000000-0000-0000-"
+            "0000-000000000000/"
+            "approve"
+        )
+
+        status_code, missing = (
+            request_json(
+                "POST",
+                missing_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 404
+        assert isinstance(
+            missing,
+            dict,
+        )
+
+    finally:
+        cleanup_mintrud_fixtures(
+            fixtures
+        )

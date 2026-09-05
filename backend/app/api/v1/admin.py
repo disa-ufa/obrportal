@@ -63,6 +63,7 @@ from app.services.enrollment_completion import ensure_enrollment_completed
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUSES,
     OBLIGATION_STATUS_NEEDS_APPROVAL,
+    OBLIGATION_STATUS_APPROVED,
     OBLIGATION_STATUS_PENDING_DATA,
     OBLIGATION_STATUS_READY,
     REGISTRY_FRDO,
@@ -9781,6 +9782,457 @@ async def update_admin_mintrud_obligation_context(
             "is_ready": (
                 readiness.is_ready
             ),
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_mintrud_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
+
+@router.post(
+    "/frdo/obligations/{obligation_id}/approve",
+    response_model=AdminFrdoObligationItem,
+)
+async def approve_admin_frdo_obligation(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.approve"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminFrdoObligationItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    approvable_statuses = {
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+    }
+
+    if (
+        obligation.status
+        not in approvable_statuses
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "FRDO obligation lifecycle "
+                "does not allow approval"
+            ),
+        )
+
+    enrollment_result = (
+        await session.execute(
+            select(
+                Enrollment
+            ).where(
+                Enrollment.id
+                == obligation.enrollment_id
+            )
+        )
+    )
+
+    enrollment = (
+        enrollment_result
+        .scalar_one_or_none()
+    )
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "FRDO obligation enrollment "
+                "is not available"
+            ),
+        )
+
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = (
+        await load_completion_document_context(
+            enrollment,
+            session,
+        )
+    )
+
+    document = None
+
+    if obligation.document_id:
+        document_result = (
+            await session.execute(
+                select(
+                    DocumentRecord
+                ).where(
+                    DocumentRecord.id
+                    == obligation.document_id
+                )
+            )
+        )
+
+        document = (
+            document_result
+            .scalar_one_or_none()
+        )
+
+    readiness = (
+        evaluate_registry_readiness(
+            registry=REGISTRY_FRDO,
+            enrollment=enrollment,
+            course=course,
+            learner=learner,
+            learner_profile=(
+                learner_profile
+            ),
+            document=document,
+            organization=organization,
+        )
+    )
+
+    if not readiness.is_ready:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail={
+                "message": (
+                    "FRDO obligation is not "
+                    "ready for approval"
+                ),
+                "issues": (
+                    readiness
+                    .as_error_payload()
+                ),
+            },
+        )
+
+    before = {
+        "status": obligation.status,
+        "approved_by_user_id": (
+            str(
+                obligation
+                .approved_by_user_id
+            )
+            if obligation
+            .approved_by_user_id
+            else None
+        ),
+        "approved_at": (
+            obligation
+            .approved_at
+            .isoformat()
+            if obligation.approved_at
+            else None
+        ),
+        "readiness_errors": list(
+            obligation.readiness_errors
+            or []
+        ),
+    }
+
+    obligation.status = (
+        OBLIGATION_STATUS_APPROVED
+    )
+
+    obligation.approved_by_user_id = (
+        str(current_user.id)
+    )
+
+    obligation.approved_at = (
+        datetime.now(
+            timezone.utc
+        )
+    )
+
+    obligation.readiness_errors = (
+        readiness.as_error_payload()
+    )
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.frdo_obligation_approved"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_FRDO,
+            "before": before,
+            "after": {
+                "status": (
+                    obligation.status
+                ),
+                "approved_by_user_id": (
+                    str(
+                        obligation
+                        .approved_by_user_id
+                    )
+                ),
+                "approved_at": (
+                    obligation
+                    .approved_at
+                    .isoformat()
+                ),
+                "readiness_errors": (
+                    obligation
+                    .readiness_errors
+                ),
+            },
+            "is_ready": True,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_frdo_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/approve",
+    response_model=AdminMintrudObligationItem,
+)
+async def approve_admin_mintrud_obligation(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.approve"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudObligationItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    approvable_statuses = {
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+    }
+
+    if (
+        obligation.status
+        not in approvable_statuses
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Mintrud obligation lifecycle "
+                "does not allow approval"
+            ),
+        )
+
+    enrollment_result = (
+        await session.execute(
+            select(
+                Enrollment
+            ).where(
+                Enrollment.id
+                == obligation.enrollment_id
+            )
+        )
+    )
+
+    enrollment = (
+        enrollment_result
+        .scalar_one_or_none()
+    )
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Mintrud obligation enrollment "
+                "is not available"
+            ),
+        )
+
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = (
+        await load_completion_document_context(
+            enrollment,
+            session,
+        )
+    )
+
+    context_result = (
+        await session.execute(
+            select(
+                MintrudRegistryContext
+            ).where(
+                MintrudRegistryContext
+                .obligation_id
+                == obligation.id
+            )
+        )
+    )
+
+    mintrud_context = (
+        context_result
+        .scalar_one_or_none()
+    )
+
+    readiness = (
+        evaluate_registry_readiness(
+            registry=REGISTRY_MINTRUD,
+            enrollment=enrollment,
+            course=course,
+            learner=learner,
+            learner_profile=(
+                learner_profile
+            ),
+            organization=organization,
+            mintrud_context=(
+                mintrud_context
+            ),
+        )
+    )
+
+    if not readiness.is_ready:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail={
+                "message": (
+                    "Mintrud obligation is not "
+                    "ready for approval"
+                ),
+                "issues": (
+                    readiness
+                    .as_error_payload()
+                ),
+            },
+        )
+
+    before = {
+        "status": obligation.status,
+        "approved_by_user_id": (
+            str(
+                obligation
+                .approved_by_user_id
+            )
+            if obligation
+            .approved_by_user_id
+            else None
+        ),
+        "approved_at": (
+            obligation
+            .approved_at
+            .isoformat()
+            if obligation.approved_at
+            else None
+        ),
+        "readiness_errors": list(
+            obligation.readiness_errors
+            or []
+        ),
+    }
+
+    obligation.status = (
+        OBLIGATION_STATUS_APPROVED
+    )
+
+    obligation.approved_by_user_id = (
+        str(current_user.id)
+    )
+
+    obligation.approved_at = (
+        datetime.now(
+            timezone.utc
+        )
+    )
+
+    obligation.readiness_errors = (
+        readiness.as_error_payload()
+    )
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.mintrud_obligation_approved"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_MINTRUD,
+            "before": before,
+            "after": {
+                "status": (
+                    obligation.status
+                ),
+                "approved_by_user_id": (
+                    str(
+                        obligation
+                        .approved_by_user_id
+                    )
+                ),
+                "approved_at": (
+                    obligation
+                    .approved_at
+                    .isoformat()
+                ),
+                "readiness_errors": (
+                    obligation
+                    .readiness_errors
+                ),
+            },
+            "is_ready": True,
         },
         request=request,
     )

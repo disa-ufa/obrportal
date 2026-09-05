@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import settings
 from app.core.security import get_password_hash
+from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
@@ -361,6 +362,19 @@ def cleanup_frdo_fixtures(
 
         async with session_factory() as session:
             for fixture in fixtures:
+                await session.execute(
+                    delete(
+                        AuditEvent
+                    ).where(
+                        AuditEvent.entity_type
+                        == "registry_obligation",
+                        AuditEvent.entity_id
+                        == fixture[
+                            "obligation_id"
+                        ],
+                    )
+                )
+
                 await session.execute(
                     delete(
                         RegistryObligation
@@ -714,6 +728,258 @@ def test_frdo_admin_list_validate_and_permissions() -> None:
         assert status_code == 422
         assert isinstance(
             invalid_filter,
+            dict,
+        )
+
+    finally:
+        cleanup_frdo_fixtures(
+            fixtures
+        )
+
+def get_frdo_audit_actions(
+    obligation_id: str,
+) -> list[str]:
+    async def _read():
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            result = await session.execute(
+                select(
+                    AuditEvent.action
+                ).where(
+                    AuditEvent.entity_type
+                    == "registry_obligation",
+                    AuditEvent.entity_id
+                    == obligation_id,
+                )
+            )
+
+            actions = list(
+                result.scalars().all()
+            )
+
+        await engine.dispose()
+
+        return actions
+
+    return asyncio.run(
+        _read()
+    )
+
+
+def test_frdo_admin_approval_state_machine() -> None:
+    needs_approval = create_frdo_fixture(
+        with_profile=True,
+        obligation_status="needs_approval",
+    )
+
+    ready = create_frdo_fixture(
+        with_profile=True,
+        obligation_status="ready",
+    )
+
+    incomplete = create_frdo_fixture(
+        with_profile=False,
+        obligation_status="needs_approval",
+    )
+
+    already_approved = create_frdo_fixture(
+        with_profile=True,
+        obligation_status="approved",
+    )
+
+    fixtures = [
+        needs_approval,
+        ready,
+        incomplete,
+        already_approved,
+    ]
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        approve_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + needs_approval[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        assert (
+            approved[
+                "approved_by_user_id"
+            ]
+            is not None
+        )
+
+        assert (
+            approved[
+                "approved_at"
+            ]
+            is not None
+        )
+
+        assert (
+            approved[
+                "readiness_errors"
+            ]
+            == []
+        )
+
+        actions = (
+            get_frdo_audit_actions(
+                needs_approval[
+                    "obligation_id"
+                ]
+            )
+        )
+
+        assert (
+            "admin.frdo_obligation_approved"
+            in actions
+        )
+
+        ready_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + ready[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, ready_approved = (
+            request_json(
+                "POST",
+                ready_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            ready_approved[
+                "status"
+            ]
+            == "approved"
+        )
+
+        incomplete_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + incomplete[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, not_ready = (
+            request_json(
+                "POST",
+                incomplete_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            not_ready,
+            dict,
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "POST",
+                incomplete_path,
+                token=learner_token,
+            )
+        )
+
+        assert status_code == 403
+        assert isinstance(
+            forbidden,
+            dict,
+        )
+
+        approved_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + already_approved[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, lifecycle_guard = (
+            request_json(
+                "POST",
+                approved_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            lifecycle_guard,
+            dict,
+        )
+
+        missing_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            "00000000-0000-0000-"
+            "0000-000000000000/"
+            "approve"
+        )
+
+        status_code, missing = (
+            request_json(
+                "POST",
+                missing_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 404
+        assert isinstance(
+            missing,
             dict,
         )
 
