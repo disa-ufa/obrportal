@@ -56,8 +56,7 @@ def test_mintrud_seed_contract() -> None:
         roles_by_code[
             "mintrud_operator"
         ]["name"]
-        == "???????? ????????"
-    )
+        == "Оператор Минтруда"    )
 
     permission_codes = {
         code
