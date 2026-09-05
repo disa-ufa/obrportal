@@ -11,6 +11,9 @@ from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
     MINTRUD_KNOWLEDGE_CHECK_RESULT_SATISFACTORY,
     MINTRUD_KNOWLEDGE_CHECK_RESULT_UNSATISFACTORY,
+    MINTRUD_REPORTING_SCENARIOS,
+    MINTRUD_REPORTING_SCENARIO_EMPLOYER_SELF_TRAINING,
+    MINTRUD_REPORTING_SCENARIO_EXTERNAL_TRAINING_PROVIDER,
     MintrudRegistryContext,
 )
 
@@ -28,6 +31,7 @@ def test_mintrud_registry_context_model_contract() -> None:
     expected_columns = {
         "id",
         "obligation_id",
+        "reporting_scenario",
         "profession_or_position",
         "employer_name",
         "employer_inn",
@@ -196,4 +200,61 @@ def test_mintrud_context_does_not_duplicate_identity_or_course_data() -> None:
     assert not (
         columns
         & forbidden_duplicates
+    )
+
+def test_mintrud_reporting_scenario_contract() -> None:
+    assert (
+        MINTRUD_REPORTING_SCENARIOS
+        == {
+            "external_training_provider",
+            "employer_self_training",
+        }
+    )
+
+    assert (
+        MINTRUD_REPORTING_SCENARIO_EXTERNAL_TRAINING_PROVIDER
+        == "external_training_provider"
+    )
+
+    assert (
+        MINTRUD_REPORTING_SCENARIO_EMPLOYER_SELF_TRAINING
+        == "employer_self_training"
+    )
+
+    table = (
+        MintrudRegistryContext.__table__
+    )
+
+    assert (
+        table.columns.reporting_scenario.nullable
+        is True
+    )
+
+    checks = {
+        constraint.name: str(
+            constraint.sqltext
+        )
+        for constraint
+        in table.constraints
+        if isinstance(
+            constraint,
+            CheckConstraint,
+        )
+    }
+
+    expression = checks[
+        (
+            "ck_mintrud_registry_context_"
+            "reporting_scenario"
+        )
+    ]
+
+    assert (
+        "external_training_provider"
+        in expression
+    )
+
+    assert (
+        "employer_self_training"
+        in expression
     )

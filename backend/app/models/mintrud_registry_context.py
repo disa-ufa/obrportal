@@ -32,6 +32,22 @@ MINTRUD_KNOWLEDGE_CHECK_RESULTS = frozenset(
 )
 
 
+MINTRUD_REPORTING_SCENARIO_EXTERNAL_TRAINING_PROVIDER = (
+    "external_training_provider"
+)
+
+MINTRUD_REPORTING_SCENARIO_EMPLOYER_SELF_TRAINING = (
+    "employer_self_training"
+)
+
+MINTRUD_REPORTING_SCENARIOS = frozenset(
+    {
+        MINTRUD_REPORTING_SCENARIO_EXTERNAL_TRAINING_PROVIDER,
+        MINTRUD_REPORTING_SCENARIO_EMPLOYER_SELF_TRAINING,
+    }
+)
+
+
 class MintrudRegistryContext(
     Base,
     UUIDPrimaryKeyMixin,
@@ -69,6 +85,18 @@ class MintrudRegistryContext(
                 "knowledge_check_result"
             ),
         ),
+        CheckConstraint(
+            (
+                "reporting_scenario IS NULL "
+                "OR reporting_scenario IN "
+                "('external_training_provider', "
+                "'employer_self_training')"
+            ),
+            name=(
+                "ck_mintrud_registry_context_"
+                "reporting_scenario"
+            ),
+        ),
     )
 
     obligation_id: Mapped[str] = mapped_column(
@@ -79,6 +107,20 @@ class MintrudRegistryContext(
         ),
         index=True,
         nullable=False,
+    )
+
+    # Paragraph 118 distinguishes:
+    # - an accredited external training provider;
+    # - an employer training its own workers.
+    #
+    # Employer name/INN are required only in the first
+    # scenario, so readiness must never infer the scenario
+    # from Enrollment.organization_id.
+    reporting_scenario: Mapped[str | None] = (
+        mapped_column(
+            String(32),
+            nullable=True,
+        )
     )
 
     profession_or_position: Mapped[str | None] = (
