@@ -40,6 +40,7 @@ from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
     mark_registry_submission,
     record_registry_submission_result,
+    validate_registry_attempt_artifact_integrity,
 )
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
@@ -10951,4 +10952,146 @@ async def record_admin_mintrud_submission_attempt_result(
             ),
             session,
         )
+    )
+
+async def prepare_admin_registry_submission_attempt_download(
+    obligation_id: str,
+    attempt_id: str,
+    session: AsyncSession,
+):
+    attempt = (
+        await get_admin_registry_submission_attempt_or_404(
+            obligation_id,
+            attempt_id,
+            session,
+        )
+    )
+
+    try:
+        validate_registry_attempt_artifact_integrity(
+            attempt
+        )
+
+    except RegistrySubmissionAttemptError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(
+                exc
+            ),
+        ) from exc
+
+    resolved_path = (
+        resolve_private_storage_path(
+            attempt.artifact_path
+        )
+    )
+
+    if (
+        resolved_path is None
+        or not resolved_path.exists()
+        or not resolved_path.is_file()
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "Registry submission artifact "
+                "file is not available"
+            ),
+        )
+
+    return (
+        attempt,
+        resolved_path,
+    )
+
+
+@router.get(
+    "/frdo/obligations/{obligation_id}/"
+    "attempts/{attempt_id}/download",
+)
+async def download_admin_frdo_submission_attempt_artifact(
+    obligation_id: str,
+    attempt_id: str,
+    _: User = Depends(
+        require_permission(
+            "frdo.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+):
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    (
+        _attempt,
+        resolved_path,
+    ) = (
+        await prepare_admin_registry_submission_attempt_download(
+            str(
+                obligation.id
+            ),
+            attempt_id,
+            session,
+        )
+    )
+
+    return FileResponse(
+        path=resolved_path,
+        filename=(
+            resolved_path.name
+        ),
+    )
+
+
+@router.get(
+    "/mintrud/obligations/{obligation_id}/"
+    "attempts/{attempt_id}/download",
+)
+async def download_admin_mintrud_submission_attempt_artifact(
+    obligation_id: str,
+    attempt_id: str,
+    _: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+):
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    (
+        _attempt,
+        resolved_path,
+    ) = (
+        await prepare_admin_registry_submission_attempt_download(
+            str(
+                obligation.id
+            ),
+            attempt_id,
+            session,
+        )
+    )
+
+    return FileResponse(
+        path=resolved_path,
+        filename=(
+            resolved_path.name
+        ),
     )

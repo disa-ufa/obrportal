@@ -2233,3 +2233,234 @@ def test_mintrud_admin_manual_submission_reconciliation() -> None:
                 fixture,
             ]
         )
+
+def request_bytes(
+    method: str,
+    path: str,
+    *,
+    token: str | None = None,
+):
+    headers = {
+        "Accept": (
+            "application/octet-stream"
+        ),
+    }
+
+    if token:
+        headers[
+            "Authorization"
+        ] = (
+            "Bearer "
+            + token
+        )
+
+    request = Request(
+        BASE_URL + path,
+        headers=headers,
+        method=method,
+    )
+
+    try:
+        with urlopen(
+            request,
+            timeout=20,
+        ) as response:
+            return (
+                response.status,
+                response.read(),
+                dict(
+                    response.headers.items()
+                ),
+            )
+
+    except HTTPError as exc:
+        return (
+            exc.code,
+            exc.read(),
+            (
+                dict(
+                    exc.headers.items()
+                )
+                if exc.headers
+                else {}
+            ),
+        )
+
+
+def test_mintrud_admin_submission_attempt_download() -> None:
+    fixture = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    artifact_path = None
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_mintrud_exported_attempt(
+            fixture
+        )
+
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + fixture[
+                "obligation_id"
+            ]
+            + "/attempts/"
+            + attempt_id
+            + "/download"
+        )
+
+        (
+            status_code,
+            body,
+            headers,
+        ) = request_bytes(
+            "GET",
+            path,
+            token=admin_token,
+        )
+
+        assert (
+            status_code
+            == 200
+        )
+
+        assert (
+            body
+            == b"mintrud-manual-submission-test"
+        )
+
+        disposition = next(
+            (
+                value
+                for key, value
+                in headers.items()
+                if key.lower()
+                == "content-disposition"
+            ),
+            "",
+        )
+
+        assert (
+            "attachment"
+            in disposition.lower()
+        )
+
+        assert (
+            ".xml"
+            in disposition.lower()
+        )
+
+        (
+            status_code,
+            _body,
+            _headers,
+        ) = request_bytes(
+            "GET",
+            path,
+            token=learner_token,
+        )
+
+        assert (
+            status_code
+            == 403
+        )
+
+        missing_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + fixture[
+                "obligation_id"
+            ]
+            + "/attempts/"
+            "00000000-0000-0000-"
+            "0000-000000000000/"
+            "download"
+        )
+
+        (
+            status_code,
+            _body,
+            _headers,
+        ) = request_bytes(
+            "GET",
+            missing_path,
+            token=admin_token,
+        )
+
+        assert (
+            status_code
+            == 404
+        )
+
+        from app.services.document_storage import (
+            resolve_private_storage_path,
+        )
+
+        resolved = (
+            resolve_private_storage_path(
+                artifact_path
+            )
+        )
+
+        assert (
+            resolved
+            is not None
+        )
+
+        resolved.write_bytes(
+            b"tampered-mintrud-artifact"
+        )
+
+        (
+            status_code,
+            error_body,
+            _headers,
+        ) = request_bytes(
+            "GET",
+            path,
+            token=admin_token,
+        )
+
+        assert (
+            status_code
+            == 409
+        )
+
+        error_payload = json.loads(
+            error_body.decode(
+                "utf-8"
+            )
+        )
+
+        assert (
+            "checksum mismatch"
+            in str(
+                error_payload
+            ).lower()
+        )
+
+    finally:
+        delete_mintrud_test_artifact(
+            artifact_path
+        )
+
+        cleanup_mintrud_fixtures(
+            [
+                fixture,
+            ]
+        )
