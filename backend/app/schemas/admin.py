@@ -805,6 +805,22 @@ class AdminRegistrySubmissionAttemptItem(BaseModel):
     updated_at: datetime
 
 
+class AdminRegistrySubmissionMarkSubmitted(
+    BaseModel
+):
+    external_reference: str | None = None
+
+
+class AdminRegistrySubmissionResultUpdate(
+    BaseModel
+):
+    result_status: str
+    external_id: str | None = None
+    errors: list[str] = Field(
+        default_factory=list
+    )
+
+
 class AdminFrdoObligationItem(BaseModel):
     id: str
     registry: str

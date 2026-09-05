@@ -36,6 +36,11 @@ from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
 )
+from app.services.compliance_registry_attempts import (
+    RegistrySubmissionAttemptError,
+    mark_registry_submission,
+    record_registry_submission_result,
+)
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
     MINTRUD_REPORTING_SCENARIOS,
@@ -69,6 +74,7 @@ from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_APPROVED,
     OBLIGATION_STATUS_PENDING_DATA,
     OBLIGATION_STATUS_READY,
+    OBLIGATION_STATUS_SUBMITTED,
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
@@ -170,6 +176,8 @@ from app.schemas.admin import (
     AdminWorklistEnrollmentsSummary,
     AdminWorklistSummary,
     AdminRegistrySubmissionAttemptItem,
+    AdminRegistrySubmissionMarkSubmitted,
+    AdminRegistrySubmissionResultUpdate,
 )
 
 
@@ -10415,6 +10423,529 @@ async def list_admin_mintrud_submission_attempts(
 
     return (
         await list_admin_registry_submission_attempt_items(
+            str(
+                obligation.id
+            ),
+            session,
+        )
+    )
+
+async def get_admin_registry_submission_attempt_or_404(
+    obligation_id: str,
+    attempt_id: str,
+    session: AsyncSession,
+) -> RegistrySubmissionAttempt:
+    result = await session.execute(
+        select(
+            RegistrySubmissionAttempt
+        ).where(
+            RegistrySubmissionAttempt.id
+            == attempt_id,
+            RegistrySubmissionAttempt
+            .obligation_id
+            == obligation_id,
+        )
+    )
+
+    attempt = (
+        result.scalar_one_or_none()
+    )
+
+    if attempt is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail=(
+                "Registry submission attempt "
+                "not found"
+            ),
+        )
+
+    return attempt
+
+
+def registry_submission_attempt_conflict(
+    exc: RegistrySubmissionAttemptError,
+) -> HTTPException:
+    return HTTPException(
+        status_code=(
+            status.HTTP_409_CONFLICT
+        ),
+        detail=str(exc),
+    )
+
+
+@router.post(
+    "/frdo/obligations/{obligation_id}/"
+    "attempts/{attempt_id}/submitted",
+    response_model=AdminFrdoObligationItem,
+)
+async def mark_admin_frdo_submission_attempt_submitted(
+    obligation_id: str,
+    attempt_id: str,
+    payload: AdminRegistrySubmissionMarkSubmitted,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminFrdoObligationItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    attempt = (
+        await get_admin_registry_submission_attempt_or_404(
+            str(obligation.id),
+            attempt_id,
+            session,
+        )
+    )
+
+    before = {
+        "obligation_status": (
+            obligation.status
+        ),
+        "attempt_submitted_at": (
+            attempt.submitted_at.isoformat()
+            if attempt.submitted_at
+            else None
+        ),
+        "external_reference": (
+            attempt.external_reference
+        ),
+    }
+
+    try:
+        attempt = (
+            await mark_registry_submission(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                submitted_by_user_id=str(
+                    current_user.id
+                ),
+                external_reference=(
+                    payload.external_reference
+                ),
+            )
+        )
+
+    except RegistrySubmissionAttemptError as exc:
+        raise (
+            registry_submission_attempt_conflict(
+                exc
+            )
+        ) from exc
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.frdo_registry_"
+            "submission_recorded"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_FRDO,
+            "attempt_id": str(
+                attempt.id
+            ),
+            "before": before,
+            "after": {
+                "obligation_status": (
+                    OBLIGATION_STATUS_SUBMITTED
+                ),
+                "attempt_submitted_at": (
+                    attempt.submitted_at.isoformat()
+                    if attempt.submitted_at
+                    else None
+                ),
+                "external_reference": (
+                    attempt.external_reference
+                ),
+            },
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_frdo_obligation_item_or_404(
+            str(
+                obligation.id
+            ),
+            session,
+        )
+    )
+
+
+@router.post(
+    "/frdo/obligations/{obligation_id}/"
+    "attempts/{attempt_id}/result",
+    response_model=AdminFrdoObligationItem,
+)
+async def record_admin_frdo_submission_attempt_result(
+    obligation_id: str,
+    attempt_id: str,
+    payload: AdminRegistrySubmissionResultUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminFrdoObligationItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    attempt = (
+        await get_admin_registry_submission_attempt_or_404(
+            str(obligation.id),
+            attempt_id,
+            session,
+        )
+    )
+
+    before = {
+        "obligation_status": (
+            obligation.status
+        ),
+        "result_status": (
+            attempt.result_status
+        ),
+        "errors_json": list(
+            attempt.errors_json
+            or []
+        ),
+    }
+
+    try:
+        attempt = (
+            await record_registry_submission_result(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                result_status=(
+                    payload.result_status
+                ),
+                external_id=(
+                    payload.external_id
+                ),
+                errors=(
+                    payload.errors
+                ),
+            )
+        )
+
+    except RegistrySubmissionAttemptError as exc:
+        raise (
+            registry_submission_attempt_conflict(
+                exc
+            )
+        ) from exc
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.frdo_registry_submission_"
+            "result_recorded"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_FRDO,
+            "attempt_id": str(
+                attempt.id
+            ),
+            "before": before,
+            "after": {
+                "obligation_status": (
+                    payload.result_status
+                ),
+                "result_status": (
+                    attempt.result_status
+                ),
+                "errors_json": list(
+                    attempt.errors_json
+                    or []
+                ),
+            },
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_frdo_obligation_item_or_404(
+            str(
+                obligation.id
+            ),
+            session,
+        )
+    )
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/"
+    "attempts/{attempt_id}/submitted",
+    response_model=AdminMintrudObligationItem,
+)
+async def mark_admin_mintrud_submission_attempt_submitted(
+    obligation_id: str,
+    attempt_id: str,
+    payload: AdminRegistrySubmissionMarkSubmitted,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudObligationItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    attempt = (
+        await get_admin_registry_submission_attempt_or_404(
+            str(obligation.id),
+            attempt_id,
+            session,
+        )
+    )
+
+    before = {
+        "obligation_status": (
+            obligation.status
+        ),
+        "attempt_submitted_at": (
+            attempt.submitted_at.isoformat()
+            if attempt.submitted_at
+            else None
+        ),
+        "external_reference": (
+            attempt.external_reference
+        ),
+    }
+
+    try:
+        attempt = (
+            await mark_registry_submission(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                submitted_by_user_id=str(
+                    current_user.id
+                ),
+                external_reference=(
+                    payload.external_reference
+                ),
+            )
+        )
+
+    except RegistrySubmissionAttemptError as exc:
+        raise (
+            registry_submission_attempt_conflict(
+                exc
+            )
+        ) from exc
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.mintrud_registry_"
+            "submission_recorded"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_MINTRUD,
+            "attempt_id": str(
+                attempt.id
+            ),
+            "before": before,
+            "after": {
+                "obligation_status": (
+                    OBLIGATION_STATUS_SUBMITTED
+                ),
+                "attempt_submitted_at": (
+                    attempt.submitted_at.isoformat()
+                    if attempt.submitted_at
+                    else None
+                ),
+                "external_reference": (
+                    attempt.external_reference
+                ),
+            },
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_mintrud_obligation_item_or_404(
+            str(
+                obligation.id
+            ),
+            session,
+        )
+    )
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/"
+    "attempts/{attempt_id}/result",
+    response_model=AdminMintrudObligationItem,
+)
+async def record_admin_mintrud_submission_attempt_result(
+    obligation_id: str,
+    attempt_id: str,
+    payload: AdminRegistrySubmissionResultUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudObligationItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    attempt = (
+        await get_admin_registry_submission_attempt_or_404(
+            str(obligation.id),
+            attempt_id,
+            session,
+        )
+    )
+
+    before = {
+        "obligation_status": (
+            obligation.status
+        ),
+        "result_status": (
+            attempt.result_status
+        ),
+        "errors_json": list(
+            attempt.errors_json
+            or []
+        ),
+    }
+
+    try:
+        attempt = (
+            await record_registry_submission_result(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                result_status=(
+                    payload.result_status
+                ),
+                external_id=(
+                    payload.external_id
+                ),
+                errors=(
+                    payload.errors
+                ),
+            )
+        )
+
+    except RegistrySubmissionAttemptError as exc:
+        raise (
+            registry_submission_attempt_conflict(
+                exc
+            )
+        ) from exc
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.mintrud_registry_submission_"
+            "result_recorded"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_MINTRUD,
+            "attempt_id": str(
+                attempt.id
+            ),
+            "before": before,
+            "after": {
+                "obligation_status": (
+                    payload.result_status
+                ),
+                "result_status": (
+                    attempt.result_status
+                ),
+                "errors_json": list(
+                    attempt.errors_json
+                    or []
+                ),
+            },
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_mintrud_obligation_item_or_404(
             str(
                 obligation.id
             ),

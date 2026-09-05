@@ -1882,3 +1882,354 @@ def test_mintrud_admin_submission_attempt_history() -> None:
                 fixture,
             ]
         )
+
+def prepare_mintrud_exported_attempt(
+    fixture: dict,
+) -> tuple[str, str]:
+    async def _prepare():
+        from hashlib import sha256
+
+        from app.services.document_storage import (
+            write_private_storage_file,
+        )
+
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        content = (
+            b"mintrud-manual-submission-test"
+        )
+
+        async with session_factory() as session:
+            attempt = RegistrySubmissionAttempt(
+                obligation_id=fixture[
+                    "obligation_id"
+                ],
+                attempt_no=1,
+                transport="file",
+                schema_version=None,
+                snapshot_json={
+                    "registry": "mintrud",
+                    "manual": True,
+                },
+                generated_by_user_id=fixture[
+                    "user_id"
+                ],
+                generated_at=datetime.now(
+                    timezone.utc
+                ),
+                errors_json=[],
+            )
+
+            session.add(attempt)
+
+            await session.flush()
+
+            storage_path = (
+                "generated/registry/"
+                + fixture[
+                    "obligation_id"
+                ]
+                + "/api-"
+                + str(attempt.id)
+                + ".xml"
+            )
+
+            write_private_storage_file(
+                storage_path,
+                content,
+            )
+
+            attempt.artifact_path = (
+                storage_path
+            )
+
+            attempt.artifact_sha256 = (
+                sha256(
+                    content
+                ).hexdigest()
+            )
+
+            obligation = (
+                await session.scalar(
+                    select(
+                        RegistryObligation
+                    ).where(
+                        RegistryObligation.id
+                        == fixture[
+                            "obligation_id"
+                        ]
+                    )
+                )
+            )
+
+            assert obligation is not None
+
+            obligation.status = (
+                "exported"
+            )
+
+            await session.commit()
+
+            result = (
+                str(attempt.id),
+                storage_path,
+            )
+
+        await engine.dispose()
+
+        return result
+
+    return asyncio.run(
+        _prepare()
+    )
+
+
+def delete_mintrud_test_artifact(
+    storage_path: str | None,
+) -> None:
+    if not storage_path:
+        return
+
+    from app.services.document_storage import (
+        delete_private_storage_file,
+    )
+
+    delete_private_storage_file(
+        storage_path
+    )
+
+
+def test_mintrud_admin_manual_submission_reconciliation() -> None:
+    fixture = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    artifact_path = None
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_mintrud_exported_attempt(
+            fixture
+        )
+
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        base_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + fixture[
+                "obligation_id"
+            ]
+            + "/attempts/"
+            + attempt_id
+        )
+
+        status_code, submitted = (
+            request_json(
+                "POST",
+                base_path
+                + "/submitted",
+                {
+                    "external_reference": (
+                        "  EISOT-PACKAGE-9  "
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            submitted[
+                "status"
+            ]
+            == "submitted"
+        )
+
+        assert (
+            submitted[
+                "submitted_at"
+            ]
+            is not None
+        )
+
+        status_code, corrected = (
+            request_json(
+                "POST",
+                base_path
+                + "/result",
+                {
+                    "result_status": (
+                        "correction_required"
+                    ),
+                    "external_id": None,
+                    "errors": [
+                        "  SNILS rejected  ",
+                        "Protocol mismatch",
+                    ],
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            corrected[
+                "status"
+            ]
+            == "correction_required"
+        )
+
+        assert (
+            corrected[
+                "accepted_at"
+            ]
+            is None
+        )
+
+        assert (
+            corrected[
+                "external_id"
+            ]
+            is None
+        )
+
+        assert (
+            corrected[
+                "last_error"
+            ]
+            == (
+                "SNILS rejected\n"
+                "Protocol mismatch"
+            )
+        )
+
+        attempts_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + fixture[
+                "obligation_id"
+            ]
+            + "/attempts"
+        )
+
+        status_code, attempts = (
+            request_json(
+                "GET",
+                attempts_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+
+        assert (
+            attempts[0][
+                "external_reference"
+            ]
+            == "EISOT-PACKAGE-9"
+        )
+
+        assert (
+            attempts[0][
+                "result_status"
+            ]
+            == "correction_required"
+        )
+
+        assert (
+            attempts[0][
+                "errors_json"
+            ]
+            == [
+                "SNILS rejected",
+                "Protocol mismatch",
+            ]
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "POST",
+                base_path
+                + "/submitted",
+                {},
+                token=learner_token,
+            )
+        )
+
+        assert status_code == 403
+
+        status_code, duplicate_result = (
+            request_json(
+                "POST",
+                base_path
+                + "/result",
+                {
+                    "result_status": (
+                        "accepted"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            duplicate_result,
+            dict,
+        )
+
+        actions = (
+            get_mintrud_audit_actions(
+                fixture[
+                    "obligation_id"
+                ]
+            )
+        )
+
+        assert (
+            "admin.mintrud_registry_"
+            "submission_recorded"
+            in actions
+        )
+
+        assert (
+            "admin.mintrud_registry_submission_"
+            "result_recorded"
+            in actions
+        )
+
+    finally:
+        delete_mintrud_test_artifact(
+            artifact_path
+        )
+
+        cleanup_mintrud_fixtures(
+            [
+                fixture,
+            ]
+        )
