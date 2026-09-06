@@ -63,6 +63,8 @@ for marker in [
     'data-testid="admin-registries-table"',
     'data-testid="admin-registries-attempts"',
     'data-testid="admin-registries-mintrud-context-form"',
+    'data-testid="admin-registry-submission-form"',
+    'data-testid="admin-registry-result-form"',
     "getAdminFrdoObligations",
     "getAdminMintrudObligations",
     "validateAdminFrdoObligation",
@@ -112,6 +114,16 @@ for name in [
     )
 
 
+for forbidden_ui in [
+    "window.prompt",
+    "window.alert",
+]:
+    require(
+        forbidden_ui not in page,
+        "forbidden UI primitive found: " + forbidden_ui,
+    )
+
+
 for forbidden in [
     "createAdminFrdoSubmissionAttempt",
     "createAdminMintrudSubmissionAttempt",
@@ -130,5 +142,7 @@ print("ADMIN_REGISTRIES_ROUTE=PASS")
 print("ADMIN_REGISTRIES_SHELL=PASS")
 print("ADMIN_REGISTRIES_RENDERER=PASS")
 print("ADMIN_REGISTRIES_PAGE=PASS")
+print("ADMIN_REGISTRIES_INLINE_ACTION_FORMS=PASS")
+print("ADMIN_REGISTRIES_NO_FORBIDDEN_UI=PASS")
 print("ADMIN_REGISTRIES_NO_FAKE_EXPORTER=PASS")
 print("SMOKE_ADMIN_REGISTRIES_PAGE=PASS")

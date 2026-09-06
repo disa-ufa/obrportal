@@ -259,6 +259,80 @@ function AttemptList({
   onSubmitted,
   onResult,
 }) {
+  const [
+    submissionAttemptId,
+    setSubmissionAttemptId,
+  ] = useState("");
+
+  const [
+    submissionReference,
+    setSubmissionReference,
+  ] = useState("");
+
+  const [
+    resultAttemptId,
+    setResultAttemptId,
+  ] = useState("");
+
+  const [
+    resultForm,
+    setResultForm,
+  ] = useState({
+    result_status: "accepted",
+    external_id: "",
+    errors: "",
+  });
+
+  function openSubmissionForm(attempt) {
+    setResultAttemptId("");
+    setSubmissionAttemptId(attempt.id);
+    setSubmissionReference(
+      attempt.external_reference || ""
+    );
+  }
+
+  function openResultForm(attempt) {
+    setSubmissionAttemptId("");
+    setResultAttemptId(attempt.id);
+    setResultForm({
+      result_status: "accepted",
+      external_id: "",
+      errors: "",
+    });
+  }
+
+  async function submitSubmission(
+    event,
+    attempt
+  ) {
+    event.preventDefault();
+
+    const success = await onSubmitted(
+      attempt,
+      submissionReference
+    );
+
+    if (success) {
+      setSubmissionAttemptId("");
+    }
+  }
+
+  async function submitResult(
+    event,
+    attempt
+  ) {
+    event.preventDefault();
+
+    const success = await onResult(
+      attempt,
+      resultForm
+    );
+
+    if (success) {
+      setResultAttemptId("");
+    }
+  }
+
   return (
     <div
       data-testid="admin-registries-attempts"
@@ -281,6 +355,7 @@ function AttemptList({
               <div className="font-semibold text-slate-900">
                 #{attempt.attempt_no} / {attempt.transport}
               </div>
+
               <div className="mt-1 text-xs text-slate-500">
                 schema: {attempt.schema_version || "\u2014"}
               </div>
@@ -330,7 +405,7 @@ function AttemptList({
                 type="button"
                 className={BLUE}
                 disabled={busy}
-                onClick={() => onSubmitted(attempt)}
+                onClick={() => openSubmissionForm(attempt)}
               >
                 {T.submitted}
               </button>
@@ -341,12 +416,144 @@ function AttemptList({
                 type="button"
                 className={PRIMARY}
                 disabled={busy}
-                onClick={() => onResult(attempt)}
+                onClick={() => openResultForm(attempt)}
               >
                 {T.result}
               </button>
             ) : null}
           </div>
+
+          {submissionAttemptId === attempt.id ? (
+            <form
+              data-testid="admin-registry-submission-form"
+              className="mt-4 grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+              onSubmit={(event) => submitSubmission(
+                event,
+                attempt
+              )}
+            >
+              <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                external_reference
+                <input
+                  className={INPUT}
+                  value={submissionReference}
+                  disabled={busy}
+                  onChange={(event) => (
+                    setSubmissionReference(
+                      event.target.value
+                    )
+                  )}
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  className={BLUE}
+                  disabled={busy}
+                >
+                  {T.save}
+                </button>
+
+                <button
+                  type="button"
+                  className={SECONDARY}
+                  disabled={busy}
+                  onClick={() => setSubmissionAttemptId("")}
+                >
+                  {T.cancel}
+                </button>
+              </div>
+            </form>
+          ) : null}
+
+          {resultAttemptId === attempt.id ? (
+            <form
+              data-testid="admin-registry-result-form"
+              className="mt-4 grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+              onSubmit={(event) => submitResult(
+                event,
+                attempt
+              )}
+            >
+              <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                result_status
+                <select
+                  className={INPUT}
+                  value={resultForm.result_status}
+                  disabled={busy}
+                  onChange={(event) => (
+                    setResultForm((current) => ({
+                      ...current,
+                      result_status: event.target.value,
+                    }))
+                  )}
+                >
+                  <option value="accepted">
+                    accepted
+                  </option>
+                  <option value="rejected">
+                    rejected
+                  </option>
+                  <option value="correction_required">
+                    correction_required
+                  </option>
+                </select>
+              </label>
+
+              {resultForm.result_status === "accepted" ? (
+                <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                  external_id
+                  <input
+                    className={INPUT}
+                    value={resultForm.external_id}
+                    disabled={busy}
+                    onChange={(event) => (
+                      setResultForm((current) => ({
+                        ...current,
+                        external_id: event.target.value,
+                      }))
+                    )}
+                  />
+                </label>
+              ) : (
+                <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                  errors
+                  <textarea
+                    className={`${INPUT} min-h-24 py-2`}
+                    value={resultForm.errors}
+                    disabled={busy}
+                    placeholder="One error per line"
+                    onChange={(event) => (
+                      setResultForm((current) => ({
+                        ...current,
+                        errors: event.target.value,
+                      }))
+                    )}
+                  />
+                </label>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  className={PRIMARY}
+                  disabled={busy}
+                >
+                  {T.save}
+                </button>
+
+                <button
+                  type="button"
+                  className={SECONDARY}
+                  disabled={busy}
+                  onClick={() => setResultAttemptId("")}
+                >
+                  {T.cancel}
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           <div className="mt-3 text-[11px] text-slate-400">
             {registry} / {obligation.id} / {attempt.id}
@@ -356,7 +563,6 @@ function AttemptList({
     </div>
   );
 }
-
 
 export function AdminRegistriesPage() {
   const [activeRegistry, setActiveRegistry] = useState("frdo");
@@ -447,8 +653,10 @@ export function AdminRegistriesPage() {
 
     try {
       await callback();
+      return true;
     } catch (err) {
       setError(formatApiError(err));
+      return false;
     } finally {
       setBusyKey("");
     }
@@ -543,18 +751,10 @@ export function AdminRegistriesPage() {
 
   async function markSubmitted(
     obligation,
-    attempt
+    attempt,
+    reference
   ) {
-    const reference = window.prompt(
-      "external_reference",
-      attempt.external_reference || ""
-    );
-
-    if (reference === null) {
-      return;
-    }
-
-    await withAction(
+    return withAction(
       `submitted:${attempt.id}`,
       async () => {
         await api.submitted(
@@ -576,18 +776,11 @@ export function AdminRegistriesPage() {
 
   async function recordResult(
     obligation,
-    attempt
+    attempt,
+    payload
   ) {
-    const resultStatus = window.prompt(
-      "result_status: accepted / rejected / correction_required",
-      "accepted"
-    );
-
-    if (!resultStatus) {
-      return;
-    }
-
-    const normalized = resultStatus.trim();
+    const normalized =
+      payload.result_status.trim();
 
     if (
       ![
@@ -599,41 +792,23 @@ export function AdminRegistriesPage() {
       setError(
         "Unsupported result_status"
       );
-      return;
+      return false;
     }
 
-    let externalId = null;
-    let errors = [];
+    const externalId =
+      normalized === "accepted"
+        ? payload.external_id.trim() || null
+        : null;
 
-    if (normalized === "accepted") {
-      const value = window.prompt(
-        "external_id",
-        ""
-      );
+    const errors =
+      normalized === "accepted"
+        ? []
+        : payload.errors
+            .split("\n")
+            .map((item) => item.trim())
+            .filter(Boolean);
 
-      if (value === null) {
-        return;
-      }
-
-      externalId =
-        value.trim() || null;
-    } else {
-      const value = window.prompt(
-        "errors (one per line)",
-        ""
-      );
-
-      if (value === null) {
-        return;
-      }
-
-      errors = value
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-
-    await withAction(
+    return withAction(
       `result:${attempt.id}`,
       async () => {
         await api.result(
@@ -1013,13 +1188,15 @@ export function AdminRegistriesPage() {
                                   obligation,
                                   attempt
                                 )}
-                                onSubmitted={(attempt) => markSubmitted(
+                                onSubmitted={(attempt, reference) => markSubmitted(
                                   obligation,
-                                  attempt
+                                  attempt,
+                                  reference
                                 )}
-                                onResult={(attempt) => recordResult(
+                                onResult={(attempt, payload) => recordResult(
                                   obligation,
-                                  attempt
+                                  attempt,
+                                  payload
                                 )}
                               />
                             </div>
