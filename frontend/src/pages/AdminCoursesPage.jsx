@@ -233,6 +233,9 @@ const EMPTY_COURSE_FORM = {
   format: "",
   direction: "",
   document_type: RU.certificate,
+  regulatory_program_type: "unspecified",
+  frdo_requirement_mode: "auto",
+  mintrud_requirement_mode: "auto",
   is_public: false,
   is_active: true,
   cover_file: null,
@@ -248,6 +251,9 @@ const EMPTY_EDIT_FORM = {
   format: "",
   direction: "",
   document_type: "",
+  regulatory_program_type: "unspecified",
+  frdo_requirement_mode: "auto",
+  mintrud_requirement_mode: "auto",
   is_public: false,
   is_active: true,
   cover_file: null,
@@ -424,6 +430,9 @@ function buildEditForm(course) {
     format: course.format || "",
     direction: course.direction || "",
     document_type: course.document_type || "",
+    regulatory_program_type: course.regulatory_program_type || "unspecified",
+    frdo_requirement_mode: course.frdo_requirement_mode || "auto",
+    mintrud_requirement_mode: course.mintrud_requirement_mode || "auto",
     is_public: Boolean(course.is_public),
     is_active: Boolean(course.is_active),
     cover_file: null,
@@ -879,6 +888,132 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
                 <option value="без документа">Без документа</option>
               </select>
             </label>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+            <div className="text-sm font-black text-slate-950">
+              Государственные реестры
+            </div>
+
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Регуляторная классификация используется при завершении обучения и определяет правила ФРДО и Минтруда.
+            </p>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Тип программы для госреестров
+                </span>
+
+                <select
+                  value={values.regulatory_program_type || "unspecified"}
+                  onChange={(event) =>
+                    onChange(
+                      "regulatory_program_type",
+                      event.target.value
+                    )
+                  }
+                  data-testid={`${prefix}course-regulatory-program-type-field`}
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+                >
+                  <option value="unspecified">
+                    Не классифицирована
+                  </option>
+
+                  <option value="general_education">
+                    Общее образование
+                  </option>
+
+                  <option value="additional_general_education">
+                    Дополнительное общее образование
+                  </option>
+
+                  <option value="dpo_advanced_training">
+                    ДПО — повышение квалификации
+                  </option>
+
+                  <option value="dpo_professional_retraining">
+                    ДПО — профессиональная переподготовка
+                  </option>
+
+                  <option value="vocational_training">
+                    Профессиональное обучение
+                  </option>
+
+                  <option value="occupational_safety_training">
+                    Обучение по охране труда
+                  </option>
+
+                  <option value="other">
+                    Другое
+                  </option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  ФРДО
+                </span>
+
+                <select
+                  value={values.frdo_requirement_mode || "auto"}
+                  onChange={(event) =>
+                    onChange(
+                      "frdo_requirement_mode",
+                      event.target.value
+                    )
+                  }
+                  data-testid={`${prefix}course-frdo-requirement-mode-field`}
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+                >
+                  <option value="auto">
+                    Автоматически
+                  </option>
+
+                  <option value="required">
+                    Требуется
+                  </option>
+
+                  <option value="not_required">
+                    Не требуется
+                  </option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Минтруд
+                </span>
+
+                <select
+                  value={values.mintrud_requirement_mode || "auto"}
+                  onChange={(event) =>
+                    onChange(
+                      "mintrud_requirement_mode",
+                      event.target.value
+                    )
+                  }
+                  data-testid={`${prefix}course-mintrud-requirement-mode-field`}
+                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
+                >
+                  <option value="auto">
+                    Автоматически
+                  </option>
+
+                  <option value="required">
+                    Требуется
+                  </option>
+
+                  <option value="not_required">
+                    Не требуется
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              В режиме «Автоматически» решение определяется типом программы. Явное значение «Требуется» или «Не требуется» имеет приоритет.
+            </p>
           </div>
         </div>
 
@@ -4856,6 +4991,9 @@ export function AdminCoursesPage() {
       format: values.format.trim() || null,
       direction: values.direction.trim() || null,
       document_type: values.document_type.trim() || null,
+      regulatory_program_type: values.regulatory_program_type || "unspecified",
+      frdo_requirement_mode: values.frdo_requirement_mode || "auto",
+      mintrud_requirement_mode: values.mintrud_requirement_mode || "auto",
       is_public: Boolean(values.is_public),
       is_active: Boolean(values.is_active),
     };
