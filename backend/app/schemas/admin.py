@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -285,6 +285,9 @@ class AdminCourseItem(BaseModel):
     format: str | None = None
     document_type: str | None = None
     direction: str | None = None
+    regulatory_program_type: str
+    frdo_requirement_mode: str
+    mintrud_requirement_mode: str
     cover_image_url: str | None = None
     is_public: bool
     is_active: bool
@@ -431,6 +434,21 @@ class AdminCourseCreate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     direction: str | None = Field(default=None, max_length=128)
+    regulatory_program_type: str = Field(
+        default="unspecified",
+        min_length=1,
+        max_length=64,
+    )
+    frdo_requirement_mode: str = Field(
+        default="auto",
+        min_length=1,
+        max_length=32,
+    )
+    mintrud_requirement_mode: str = Field(
+        default="auto",
+        min_length=1,
+        max_length=32,
+    )
     is_public: bool = False
     is_active: bool = True
 
@@ -443,6 +461,21 @@ class AdminCourseUpdate(BaseModel):
     format: str | None = Field(default=None, max_length=64)
     document_type: str | None = Field(default=None, max_length=128)
     direction: str | None = Field(default=None, max_length=128)
+    regulatory_program_type: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=64,
+    )
+    frdo_requirement_mode: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=32,
+    )
+    mintrud_requirement_mode: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=32,
+    )
     is_public: bool | None = None
     is_active: bool | None = None
 
@@ -732,3 +765,156 @@ class AdminLearnerImportBatchDetail(BaseModel):
     preflight: (
         AdminLearnerImportPreflightItem | None
     ) = None
+
+
+class AdminRegistryReadinessIssue(BaseModel):
+    code: str
+    field: str | None = None
+    message: str
+
+
+class AdminRegistrySubmissionAttemptItem(BaseModel):
+    id: str
+    obligation_id: str
+    attempt_no: int
+
+    transport: str
+    schema_version: str | None = None
+
+    snapshot_json: dict[str, Any] = Field(
+        default_factory=dict
+    )
+
+    has_artifact: bool = False
+    artifact_sha256: str | None = None
+
+    generated_by_user_id: str | None = None
+    generated_at: datetime | None = None
+
+    submitted_by_user_id: str | None = None
+    submitted_at: datetime | None = None
+
+    external_reference: str | None = None
+    result_status: str | None = None
+
+    errors_json: list[str] = Field(
+        default_factory=list
+    )
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminRegistrySubmissionMarkSubmitted(
+    BaseModel
+):
+    external_reference: str | None = None
+
+
+class AdminRegistrySubmissionResultUpdate(
+    BaseModel
+):
+    result_status: str
+    external_id: str | None = None
+    errors: list[str] = Field(
+        default_factory=list
+    )
+
+
+class AdminFrdoObligationItem(BaseModel):
+    id: str
+    registry: str
+    status: str
+    enrollment_id: str
+    document_id: str | None = None
+
+    rule_code: str | None = None
+    rule_version: str | None = None
+    requirement_reason: str | None = None
+    readiness_errors: list[
+        dict[str, str | None]
+    ] = Field(default_factory=list)
+
+    due_at: datetime | None = None
+
+    approved_by_user_id: str | None = None
+    approved_at: datetime | None = None
+    submitted_at: datetime | None = None
+    accepted_at: datetime | None = None
+    external_id: str | None = None
+    last_error: str | None = None
+
+    user_id: str
+    user_email: str
+    user_full_name: str | None = None
+
+    course_id: str
+    course_title: str
+    regulatory_program_type: str
+
+    organization_id: str | None = None
+    organization_name: str | None = None
+
+    enrollment_completed_at: datetime | None = None
+
+    document_number: str | None = None
+    document_type: str | None = None
+    document_status: str | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminFrdoObligationValidationResult(BaseModel):
+    is_ready: bool
+    issues: list[
+        AdminRegistryReadinessIssue
+    ] = Field(default_factory=list)
+    obligation: AdminFrdoObligationItem
+
+class AdminMintrudRegistryContext(BaseModel):
+    id: str
+    obligation_id: str
+
+    reporting_scenario: str | None = None
+    profession_or_position: str | None = None
+
+    employer_name: str | None = None
+    employer_inn: str | None = None
+
+    knowledge_check_result: str | None = None
+    knowledge_check_date: date | None = None
+    protocol_number: str | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminMintrudRegistryContextUpdate(BaseModel):
+    reporting_scenario: str | None = None
+    profession_or_position: str | None = None
+
+    employer_name: str | None = None
+    employer_inn: str | None = None
+
+    knowledge_check_result: str | None = None
+    knowledge_check_date: date | None = None
+
+    protocol_number: str | None = None
+
+
+class AdminMintrudObligationItem(
+    AdminFrdoObligationItem
+):
+    mintrud_context: (
+        AdminMintrudRegistryContext | None
+    ) = None
+
+
+class AdminMintrudObligationValidationResult(BaseModel):
+    is_ready: bool
+    issues: list[
+        AdminRegistryReadinessIssue
+    ] = Field(default_factory=list)
+
+    obligation: AdminMintrudObligationItem

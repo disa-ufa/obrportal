@@ -428,6 +428,9 @@ def test_admin_course_item_exposes_cover_url():
         format="online",
         document_type="certificate",
         direction="direction",
+        regulatory_program_type="unspecified",
+        frdo_requirement_mode="auto",
+        mintrud_requirement_mode="auto",
         cover_image_path=(
             "course-covers/course-123/"
             "asset-456.jpg"

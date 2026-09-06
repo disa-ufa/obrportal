@@ -49,6 +49,7 @@ from app.schemas.org import (
     OrgUserSearchOrganizationItem,
     OrgUserSearchRoleItem,
 )
+from app.services.enrollment_completion import ensure_enrollment_completed
 
 
 router = APIRouter(prefix="/org", tags=["org"])
@@ -1345,6 +1346,7 @@ async def create_org_group_enrollments(
 
     created_enrollments: list[Enrollment] = []
     skipped: list[OrgEnrollmentBulkSkippedItem] = []
+    normalized_status = payload.status.strip() or "assigned"
 
     for user_id, user_email, user_full_name in members:
         existing_enrollment_id = await enrollment_for_user_course_exists(
@@ -1370,7 +1372,7 @@ async def create_org_group_enrollments(
             course_id=course.id,
             organization_id=group.organization_id,
             learning_group_id=group.id,
-            status=payload.status.strip() or "assigned",
+            status=normalized_status,
             started_at=payload.started_at,
             completed_at=payload.completed_at,
         )
@@ -1380,6 +1382,15 @@ async def create_org_group_enrollments(
     try:
         await session.flush()
         created_ids = [str(enrollment.id) for enrollment in created_enrollments]
+
+        if normalized_status == "completed":
+            for enrollment in created_enrollments:
+                await ensure_enrollment_completed(
+                    enrollment=enrollment,
+                    session=session,
+                    completed_at=payload.completed_at,
+                )
+
         await session.commit()
     except IntegrityError:
         await session.rollback()

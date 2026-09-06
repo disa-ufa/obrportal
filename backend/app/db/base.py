@@ -9,8 +9,13 @@ from app.models.enrollment import Enrollment
 from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learning_group import LearningGroup
 from app.models.learner_profile import LearnerProfile
+from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
+from app.models.registry_obligation import (
+    RegistryObligation,
+    RegistrySubmissionAttempt,
+)
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.models.user_password_token import UserPasswordToken
@@ -29,7 +34,10 @@ __all__ = [
     "ImportRow",
     "LearningGroup",
     "LearnerProfile",
+    "MintrudRegistryContext",
     "Organization",
+    "RegistryObligation",
+    "RegistrySubmissionAttempt",
     "Permission",
     "Role",
     "RolePermission",

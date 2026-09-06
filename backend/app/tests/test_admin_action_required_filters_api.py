@@ -228,6 +228,37 @@ def delete_ignore(token: str, path: str) -> None:
     assert status in {200, 204, 404}
 
 
+def delete_admin_documents_for_enrollment(
+    token: str,
+    enrollment_id: str,
+) -> None:
+    status, documents = request_json(
+        "GET",
+        (
+            "/api/v1/admin/documents"
+            f"?enrollment_id={enrollment_id}"
+        ),
+        token=token,
+    )
+
+    assert status == 200
+    assert isinstance(documents, list)
+
+    for document in documents:
+        status, payload = request_json(
+            "DELETE",
+            (
+                "/api/v1/admin/documents/"
+                f"{document['id']}"
+            ),
+            token=token,
+        )
+
+        assert status == 200
+        assert isinstance(payload, dict)
+        assert payload["status"] == "deleted"
+
+
 def test_admin_documents_action_required_filter() -> None:
     token = login()
     user_id = get_user_id_by_email(token, LEARNER_EMAIL)
@@ -361,7 +392,14 @@ def test_admin_enrollments_action_required_filter() -> None:
         assert {item["status"] for item in non_required_enrollments} == {"active", "cancelled"}
     finally:
         for enrollment in created_enrollments:
-            delete_ignore(token, f"/api/v1/admin/enrollments/{enrollment['id']}")
+            delete_admin_documents_for_enrollment(
+                token,
+                str(enrollment["id"]),
+            )
+            delete_ignore(
+                token,
+                f"/api/v1/admin/enrollments/{enrollment['id']}",
+            )
 
         for course in created_courses:
             delete_ignore(token, f"/api/v1/admin/courses/{course['id']}")

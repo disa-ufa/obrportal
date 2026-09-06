@@ -1165,3 +1165,300 @@ export async function getPublicCourses(filters = {}) {
 export async function getPublicCourseDetail(slug) {
   return request(`/api/v1/public/courses/${slug}`);
 }
+function buildAdminRegistryObligationsPath(
+  registry,
+  filters = {}
+) {
+  const params = new URLSearchParams();
+
+  [
+    "user_id",
+    "course_id",
+    "status",
+    "q",
+    "limit",
+  ].forEach((key) => {
+    const value = filters?.[key];
+
+    if (
+      value === undefined
+      || value === null
+      || `${value}`.trim() === ""
+    ) {
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  const query = params.toString();
+
+  return `/api/v1/admin/${registry}/obligations${query ? `?${query}` : ""}`;
+}
+
+
+async function downloadAdminRegistrySubmissionAttempt(
+  registry,
+  obligationId,
+  attemptId
+) {
+  const token = getStoredToken();
+
+  const response = await fetch(
+    buildApiUrl(
+      `/api/v1/admin/${registry}/obligations/${obligationId}/attempts/${attemptId}/download`
+    ),
+    {
+      method: "GET",
+      headers: {
+        "Accept": "application/xml, text/xml, application/octet-stream",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    const message =
+      data?.detail
+      || `HTTP ${response.status}`;
+
+    const error = new Error(
+      typeof message === "string"
+        ? message
+        : JSON.stringify(message)
+    );
+
+    error.status = response.status;
+    error.payload = data;
+
+    throw error;
+  }
+
+  const blob = await response.blob();
+
+  const filename = normalizeDownloadedFilename(
+    extractDownloadFilename(
+      response,
+      `${registry}-submission-${attemptId}.bin`
+    ),
+    blob
+  );
+
+  const objectUrl =
+    window.URL.createObjectURL(blob);
+
+  try {
+    const link =
+      document.createElement("a");
+
+    link.href = objectUrl;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(
+        objectUrl
+      );
+    }, 0);
+  }
+}
+
+
+export async function getAdminFrdoObligations(
+  filters = {}
+) {
+  return request(
+    buildAdminRegistryObligationsPath(
+      "frdo",
+      filters
+    )
+  );
+}
+
+
+export async function validateAdminFrdoObligation(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/validate`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function approveAdminFrdoObligation(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/approve`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function getAdminFrdoSubmissionAttempts(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/attempts`
+  );
+}
+
+
+export async function downloadAdminFrdoSubmissionAttempt(
+  obligationId,
+  attemptId
+) {
+  return downloadAdminRegistrySubmissionAttempt(
+    "frdo",
+    obligationId,
+    attemptId
+  );
+}
+
+
+export async function markAdminFrdoSubmissionAttemptSubmitted(
+  obligationId,
+  attemptId,
+  payload = {}
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/attempts/${attemptId}/submitted`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
+export async function recordAdminFrdoSubmissionAttemptResult(
+  obligationId,
+  attemptId,
+  payload
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/attempts/${attemptId}/result`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
+export async function getAdminMintrudObligations(
+  filters = {}
+) {
+  return request(
+    buildAdminRegistryObligationsPath(
+      "mintrud",
+      filters
+    )
+  );
+}
+
+
+export async function validateAdminMintrudObligation(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/validate`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function updateAdminMintrudObligationContext(
+  obligationId,
+  payload
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/context`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
+export async function approveAdminMintrudObligation(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/approve`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function getAdminMintrudSubmissionAttempts(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/attempts`
+  );
+}
+
+
+export async function downloadAdminMintrudSubmissionAttempt(
+  obligationId,
+  attemptId
+) {
+  return downloadAdminRegistrySubmissionAttempt(
+    "mintrud",
+    obligationId,
+    attemptId
+  );
+}
+
+
+export async function markAdminMintrudSubmissionAttemptSubmitted(
+  obligationId,
+  attemptId,
+  payload = {}
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/attempts/${attemptId}/submitted`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
+export async function recordAdminMintrudSubmissionAttemptResult(
+  obligationId,
+  attemptId,
+  payload
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/attempts/${attemptId}/result`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}

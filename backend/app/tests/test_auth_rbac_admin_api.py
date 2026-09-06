@@ -4819,6 +4819,203 @@ def test_admin_can_create_update_activate_deactivate_and_delete_course() -> None
     assert isinstance(missing, dict)
 
 
+def test_admin_course_regulatory_fields_default_and_roundtrip() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+    course_id = None
+
+    try:
+        status, created = request_json(
+            "POST",
+            "/api/v1/admin/courses",
+            token=token,
+            body={
+                "slug": slug,
+                "title": "Regulatory defaults course",
+            },
+        )
+
+        assert status == 201
+        assert isinstance(created, dict)
+        course_id = created["id"]
+
+        assert created["regulatory_program_type"] == "unspecified"
+        assert created["frdo_requirement_mode"] == "auto"
+        assert created["mintrud_requirement_mode"] == "auto"
+
+        status, updated = request_json(
+            "PATCH",
+            f"/api/v1/admin/courses/{course_id}",
+            token=token,
+            body={
+                "regulatory_program_type": (
+                    "  DPO_ADVANCED_TRAINING  "
+                ),
+                "frdo_requirement_mode": " REQUIRED ",
+                "mintrud_requirement_mode": " NOT_REQUIRED ",
+            },
+        )
+
+        assert status == 200
+        assert isinstance(updated, dict)
+
+        assert (
+            updated["regulatory_program_type"]
+            == "dpo_advanced_training"
+        )
+        assert updated["frdo_requirement_mode"] == "required"
+        assert (
+            updated["mintrud_requirement_mode"]
+            == "not_required"
+        )
+
+        status, detail = request_json(
+            "GET",
+            f"/api/v1/admin/courses/{course_id}",
+            token=token,
+        )
+
+        assert status == 200
+        assert isinstance(detail, dict)
+        assert (
+            detail["regulatory_program_type"]
+            == "dpo_advanced_training"
+        )
+        assert detail["frdo_requirement_mode"] == "required"
+        assert (
+            detail["mintrud_requirement_mode"]
+            == "not_required"
+        )
+
+        status, listed = request_json(
+            "GET",
+            f"/api/v1/admin/courses?q={slug}",
+            token=token,
+        )
+
+        assert status == 200
+        assert isinstance(listed, list)
+
+        matched = next(
+            item
+            for item in listed
+            if item["id"] == course_id
+        )
+
+        assert (
+            matched["regulatory_program_type"]
+            == "dpo_advanced_training"
+        )
+        assert matched["frdo_requirement_mode"] == "required"
+        assert (
+            matched["mintrud_requirement_mode"]
+            == "not_required"
+        )
+
+    finally:
+        if course_id is not None:
+            request_json(
+                "DELETE",
+                f"/api/v1/admin/courses/{course_id}",
+                token=token,
+            )
+
+
+def test_admin_course_regulatory_fields_reject_unsupported_values() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+
+    cases = [
+        (
+            "regulatory_program_type",
+            "unknown_program",
+            "Unsupported regulatory program type",
+        ),
+        (
+            "frdo_requirement_mode",
+            "sometimes",
+            "Unsupported registry requirement mode",
+        ),
+        (
+            "mintrud_requirement_mode",
+            "later",
+            "Unsupported registry requirement mode",
+        ),
+    ]
+
+    for field, value, expected_detail in cases:
+        status, payload = request_json(
+            "POST",
+            "/api/v1/admin/courses",
+            token=token,
+            body={
+                "slug": unique_course_slug(),
+                "title": "Invalid regulatory field",
+                field: value,
+            },
+        )
+
+        assert status == 422
+        assert isinstance(payload, dict)
+        assert payload["detail"] == expected_detail
+
+
+def test_admin_course_regulatory_fields_reject_null_updates() -> None:
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    slug = unique_course_slug()
+    course_id = None
+
+    try:
+        status, created = request_json(
+            "POST",
+            "/api/v1/admin/courses",
+            token=token,
+            body={
+                "slug": slug,
+                "title": "Regulatory null guard course",
+            },
+        )
+
+        assert status == 201
+        assert isinstance(created, dict)
+        course_id = created["id"]
+
+        for field in [
+            "regulatory_program_type",
+            "frdo_requirement_mode",
+            "mintrud_requirement_mode",
+        ]:
+            status, payload = request_json(
+                "PATCH",
+                f"/api/v1/admin/courses/{course_id}",
+                token=token,
+                body={
+                    field: None,
+                },
+            )
+
+            assert status == 422
+            assert isinstance(payload, dict)
+
+        status, detail = request_json(
+            "GET",
+            f"/api/v1/admin/courses/{course_id}",
+            token=token,
+        )
+
+        assert status == 200
+        assert detail["regulatory_program_type"] == "unspecified"
+        assert detail["frdo_requirement_mode"] == "auto"
+        assert detail["mintrud_requirement_mode"] == "auto"
+
+    finally:
+        if course_id is not None:
+            request_json(
+                "DELETE",
+                f"/api/v1/admin/courses/{course_id}",
+                token=token,
+            )
+
+
 def test_admin_course_duplicate_slug_returns_409() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     slug = unique_course_slug()

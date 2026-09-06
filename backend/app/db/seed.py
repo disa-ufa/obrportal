@@ -61,6 +61,13 @@ ROLES = [
         "name": "Оператор ФРДО",
         "description": "Staging, валидация, экспорт и контроль сведений ФИС ФРДО.",
     },
+    {
+        "code": "mintrud_operator",
+        "name": "Оператор Минтруда",
+        "description": (
+            "Подготовка, валидация, экспорт и контроль сведений реестра Минтруда."
+        ),
+    },
 ]
 
 
@@ -116,6 +123,12 @@ PERMISSIONS = [
     ("frdo.validate", "Валидация записей ФРДО"),
     ("frdo.approve", "Утверждение записей ФРДО"),
     ("frdo.export", "Экспорт / отправка сведений ФРДО"),
+
+    ("mintrud.read", "Просмотр Минтруда"),
+    ("mintrud.write", "Подготовка записей Минтруда"),
+    ("mintrud.validate", "Валидация записей Минтруда"),
+    ("mintrud.approve", "Утверждение записей Минтруда"),
+    ("mintrud.export", "Экспорт / отправка сведений Минтруда"),
 
     ("files.read", "Чтение файлов"),
     ("files.write", "Загрузка файлов"),
@@ -215,6 +228,18 @@ ROLE_PERMISSION_MAP = {
         "frdo.validate",
         "frdo.approve",
         "frdo.export",
+        "audit.read",
+        "files.read",
+        "files.write",
+    ],
+
+    "mintrud_operator": [
+        "documents.read",
+        "mintrud.read",
+        "mintrud.write",
+        "mintrud.validate",
+        "mintrud.approve",
+        "mintrud.export",
         "audit.read",
         "files.read",
         "files.write",

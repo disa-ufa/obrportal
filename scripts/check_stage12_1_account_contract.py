@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 FILES = {
     "backend_account": ROOT / "backend" / "app" / "api" / "v1" / "account.py",
+    "enrollment_completion": ROOT / "backend" / "app" / "services" / "enrollment_completion.py",
     "backend_account_schema": ROOT / "backend" / "app" / "schemas" / "account.py",
     "frontend_account": ROOT / "frontend" / "src" / "pages" / "AccountPage.jsx",
     "frontend_learner_course": ROOT / "frontend" / "src" / "pages" / "LearnerCoursePage.jsx",
@@ -36,7 +37,13 @@ REQUIRED_MARKERS = {
         "DocumentRecord.id == document_id",
         "Complete required lessons before completing course",
         "Completed course cannot be changed",
-        "ensure_completion_document_for_enrollment",
+        "ensure_enrollment_completed",
+    ],
+    "enrollment_completion": [
+        "async def ensure_enrollment_completed(",
+        "ensure_completion_document_for_enrollment(",
+        "ensure_registry_obligations_for_completed_enrollment(",
+        "await session.flush()",
     ],
     "backend_account_schema": [
         "class AccountSummaryResponse",

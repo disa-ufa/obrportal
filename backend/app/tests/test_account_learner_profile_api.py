@@ -55,6 +55,8 @@ def test_account_profile_get_is_non_mutating_and_patch_upserts_profile() -> None
     assert initial["user_id"] == str(learner["response"]["id"])
     assert initial["last_name"] is None
     assert initial["first_name"] is None
+    assert initial["sex"] is None
+    assert initial["citizenship_country_code"] is None
     assert initial["snils"] is None
     assert initial["identity_document_status"] == "not_provided"
     assert initial["education_document_status"] == "not_provided"
@@ -69,6 +71,8 @@ def test_account_profile_get_is_non_mutating_and_patch_upserts_profile() -> None
             "first_name": " Иван ",
             "middle_name": " Иванович ",
             "birth_date": "1990-05-17",
+            "sex": "female",
+            "citizenship_country_code": "643",
             "snils": f"  {snils.replace('-', '').replace(' ', '')}  ",
             "phone": " 8 (999) 111-22-33 ",
             "email": " LEARNER.PROFILE@EXAMPLE.COM ",
@@ -89,6 +93,8 @@ def test_account_profile_get_is_non_mutating_and_patch_upserts_profile() -> None
     assert created["first_name"] == "Иван"
     assert created["middle_name"] == "Иванович"
     assert created["birth_date"] == "1990-05-17"
+    assert created["sex"] == "female"
+    assert created["citizenship_country_code"] == "643"
     assert created["snils"] == snils
     assert created["phone"] == "+79991112233"
     assert created["email"] == "learner.profile@example.com"

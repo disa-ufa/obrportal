@@ -48,6 +48,12 @@ export const ADMIN_ROUTE_ITEMS = [
     description: "Выданные документы, PDF, QR и проверка.",
   },
   {
+    key: "registries",
+    label: "Госреестры",
+    path: "/admin/registries",
+    description: "ФРДО и Минтруд: готовность, утверждение, попытки и ручная сверка.",
+  },
+  {
     key: "roles",
     label: "Роли",
     path: "/admin/roles",
@@ -76,7 +82,7 @@ export const ADMIN_ROUTE_GROUPS = [
   {
     key: "operations",
     label: "Операции",
-    items: ["users", "organizations", "groups", "enrollments", "learnerImports", "documents"],
+    items: ["users", "organizations", "groups", "enrollments", "learnerImports", "documents", "registries"],
   },
   {
     key: "content",

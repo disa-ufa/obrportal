@@ -11,6 +11,7 @@ from app.services.document_storage import (
     normalize_relative_storage_path,
     resolve_private_storage_path,
     write_private_storage_file,
+    write_private_storage_file_exclusive,
 )
 
 
@@ -101,3 +102,79 @@ def test_build_document_download_filename() -> None:
         "DOC_123___test.docx"
     )
     assert build_document_download_filename("   ", None) == "document.bin"
+
+def test_write_private_storage_file_exclusive_preserves_existing(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    storage_path = (
+        "generated/registry/"
+        "exclusive/test.xml"
+    )
+
+    relative_path = (
+        write_private_storage_file_exclusive(
+            storage_path,
+            b"first",
+        )
+    )
+
+    assert (
+        relative_path
+        == storage_path
+    )
+
+    resolved = (
+        resolve_private_storage_path(
+            storage_path
+        )
+    )
+
+    assert resolved is not None
+
+    assert (
+        resolved.read_bytes()
+        == b"first"
+    )
+
+    with pytest.raises(
+        FileExistsError
+    ):
+        write_private_storage_file_exclusive(
+            storage_path,
+            b"second",
+        )
+
+    assert (
+        resolved.read_bytes()
+        == b"first"
+    )
+
+
+def test_write_private_storage_file_exclusive_rejects_traversal(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    with pytest.raises(
+        ValueError
+    ):
+        write_private_storage_file_exclusive(
+            "../outside.xml",
+            b"bad",
+        )

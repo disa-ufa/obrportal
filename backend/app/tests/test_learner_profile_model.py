@@ -18,6 +18,8 @@ def test_learner_profile_model_columns_contract() -> None:
         "first_name",
         "middle_name",
         "birth_date",
+        "sex",
+        "citizenship_country_code",
         "snils",
         "phone",
         "email",
