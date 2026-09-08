@@ -69,6 +69,10 @@ from app.schemas.account import (
     AccountDocumentsResponse,
     AccountSummaryResponse,
 )
+from app.services.compliance_registry_readiness_propagation import (
+    LEARNER_PROFILE_READINESS_FIELDS,
+    refresh_registry_readiness_for_user,
+)
 
 
 router = APIRouter(prefix="/account", tags=["account"])
@@ -427,6 +431,14 @@ async def update_account_learner_profile(
 
     try:
         await session.flush()
+
+        if set(changed_fields).intersection(
+            LEARNER_PROFILE_READINESS_FIELDS
+        ):
+            await refresh_registry_readiness_for_user(
+                session,
+                user_id=str(current_user.id),
+            )
 
         await write_audit_event(
             session,
