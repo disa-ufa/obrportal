@@ -948,6 +948,32 @@ def test_frdo_admin_approval_state_machine() -> None:
             + "/approve"
         )
 
+        status_code, legacy_reapproved = (
+            request_json(
+                "POST",
+                approved_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            legacy_reapproved["status"]
+            == "approved"
+        )
+        assert (
+            legacy_reapproved[
+                "approved_by_user_id"
+            ]
+            is not None
+        )
+        assert (
+            legacy_reapproved[
+                "approved_at"
+            ]
+            is not None
+        )
+
         status_code, lifecycle_guard = (
             request_json(
                 "POST",

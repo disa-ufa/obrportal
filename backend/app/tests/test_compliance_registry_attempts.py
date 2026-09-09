@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -14,12 +14,18 @@ from sqlalchemy.ext.asyncio import (
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.course import Course
+from app.models.document_record import DocumentRecord
+from app.models.learner_profile import LearnerProfile
 from app.models.enrollment import Enrollment
 from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
 )
 from app.models.user import User
+from app.services.compliance_registry_approval import (
+    apply_registry_approval,
+    build_registry_approval_snapshot,
+)
 from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
     attach_registry_submission_artifact,
@@ -132,14 +138,64 @@ def create_attempt_fixture() -> dict:
 
             await session.flush()
 
+            learner_profile = LearnerProfile(
+                user_id=str(
+                    user.id
+                ),
+                last_name="Registry",
+                first_name="Learner",
+                middle_name=None,
+                birth_date=date(
+                    1990,
+                    1,
+                    1,
+                ),
+                sex="male",
+                citizenship_country_code="RUS",
+                snils=None,
+                phone=None,
+                email=None,
+            )
+
+            document = DocumentRecord(
+                user_id=str(
+                    user.id
+                ),
+                course_id=str(
+                    course.id
+                ),
+                enrollment_id=str(
+                    enrollment.id
+                ),
+                document_number=(
+                    "REG-ATTEMPT-"
+                    + suffix[:16]
+                ),
+                document_type="certificate",
+                title=course.title,
+                status="available",
+                revoked_at=None,
+            )
+
+            session.add_all(
+                [
+                    learner_profile,
+                    document,
+                ]
+            )
+
+            await session.flush()
+
             obligation = (
                 RegistryObligation(
                     registry="frdo",
                     enrollment_id=str(
                         enrollment.id
                     ),
-                    document_id=None,
-                    status="approved",
+                    document_id=str(
+                        document.id
+                    ),
+                    status="ready",
                     rule_code=(
                         "test.registry.attempt"
                     ),
@@ -157,6 +213,29 @@ def create_attempt_fixture() -> dict:
                 )
             )
 
+            approval_snapshot = (
+                build_registry_approval_snapshot(
+                    registry="frdo",
+                    enrollment=enrollment,
+                    course=course,
+                    learner_profile=(
+                        learner_profile
+                    ),
+                    document=document,
+                )
+            )
+
+            apply_registry_approval(
+                obligation,
+                current_snapshot=(
+                    approval_snapshot
+                ),
+                approved_by_user_id=str(
+                    user.id
+                ),
+                approved_at=now,
+            )
+
             session.add(
                 obligation
             )
@@ -172,6 +251,12 @@ def create_attempt_fixture() -> dict:
                 ),
                 "enrollment_id": str(
                     enrollment.id
+                ),
+                "learner_profile_id": str(
+                    learner_profile.id
+                ),
+                "document_id": str(
+                    document.id
                 ),
                 "obligation_id": str(
                     obligation.id
@@ -224,6 +309,28 @@ def cleanup_attempt_fixture(
                     RegistryObligation.id
                     == fixture[
                         "obligation_id"
+                    ]
+                )
+            )
+
+            await session.execute(
+                delete(
+                    DocumentRecord
+                ).where(
+                    DocumentRecord.id
+                    == fixture[
+                        "document_id"
+                    ]
+                )
+            )
+
+            await session.execute(
+                delete(
+                    LearnerProfile
+                ).where(
+                    LearnerProfile.id
+                    == fixture[
+                        "learner_profile_id"
                     ]
                 )
             )
@@ -3352,6 +3459,212 @@ def test_attach_registry_submission_artifact_preserves_existing_collision(
         if collision_path:
             delete_registry_artifact_safely(
                 collision_path
+            )
+
+        cleanup_attempt_fixture(
+            fixture
+        )
+
+@pytest.mark.parametrize(
+    "staleness_case",
+    [
+        "legacy_missing_snapshot",
+        "missing_fingerprint",
+        "invalidated",
+        "stored_fingerprint_mismatch",
+        "current_data_mismatch",
+    ],
+)
+def test_mark_registry_exported_rejects_stale_approval(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+    staleness_case: str,
+) -> None:
+    fixture = (
+        create_attempt_fixture()
+    )
+
+    artifact_path = None
+
+    monkeypatch.setattr(
+        settings,
+        "document_storage_dir",
+        str(
+            tmp_path
+        ),
+    )
+
+    try:
+        (
+            attempt_id,
+            artifact_path,
+        ) = prepare_attached_approved_attempt(
+            fixture
+        )
+
+        async def _make_stale():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                obligation = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    obligation
+                    is not None
+                )
+
+                if (
+                    staleness_case
+                    == "legacy_missing_snapshot"
+                ):
+                    obligation.approval_snapshot_json = None
+                    obligation.approval_fingerprint = None
+
+                elif (
+                    staleness_case
+                    == "missing_fingerprint"
+                ):
+                    obligation.approval_fingerprint = None
+
+                elif (
+                    staleness_case
+                    == "invalidated"
+                ):
+                    obligation.approval_invalidated_at = (
+                        datetime.now(
+                            timezone.utc
+                        )
+                    )
+
+                    obligation.approval_invalidation_reason = (
+                        "test_invalidated"
+                    )
+
+                elif (
+                    staleness_case
+                    == "stored_fingerprint_mismatch"
+                ):
+                    obligation.approval_fingerprint = (
+                        "0" * 64
+                    )
+
+                elif (
+                    staleness_case
+                    == "current_data_mismatch"
+                ):
+                    course = (
+                        await session.scalar(
+                            select(
+                                Course
+                            ).where(
+                                Course.id
+                                == fixture[
+                                    "course_id"
+                                ]
+                            )
+                        )
+                    )
+
+                    assert (
+                        course
+                        is not None
+                    )
+
+                    course.title = (
+                        course.title
+                        + " changed"
+                    )
+
+                else:
+                    raise AssertionError(
+                        "unexpected staleness case"
+                    )
+
+                await session.commit()
+
+            await engine.dispose()
+
+        asyncio.run(
+            _make_stale()
+        )
+
+        async def _run_export():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            async with session_factory() as session:
+                with pytest.raises(
+                    RegistrySubmissionAttemptError,
+                    match="stale",
+                ):
+                    await mark_registry_exported(
+                        session,
+                        attempt_id=attempt_id,
+                    )
+
+                await session.rollback()
+
+            async with session_factory() as session:
+                status_value = (
+                    await session.scalar(
+                        select(
+                            RegistryObligation.status
+                        ).where(
+                            RegistryObligation.id
+                            == fixture[
+                                "obligation_id"
+                            ]
+                        )
+                    )
+                )
+
+                assert (
+                    status_value
+                    == "approved"
+                )
+
+            await engine.dispose()
+
+        asyncio.run(
+            _run_export()
+        )
+
+    finally:
+        if artifact_path:
+            delete_registry_artifact_safely(
+                artifact_path
             )
 
         cleanup_attempt_fixture(

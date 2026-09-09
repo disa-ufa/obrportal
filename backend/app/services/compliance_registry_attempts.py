@@ -9,9 +9,18 @@ from typing import Any, Mapping
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.course import Course
+from app.models.document_record import DocumentRecord
+from app.models.enrollment import Enrollment
+from app.models.learner_profile import LearnerProfile
+from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
+)
+from app.services.compliance_registry_approval import (
+    build_registry_approval_snapshot,
+    is_registry_approval_current,
 )
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_ACCEPTED,
@@ -20,6 +29,8 @@ from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_EXPORTED,
     OBLIGATION_STATUS_REJECTED,
     OBLIGATION_STATUS_SUBMITTED,
+    REGISTRY_FRDO,
+    REGISTRY_MINTRUD,
 )
 from app.services.document_storage import (
     delete_private_storage_file,
@@ -870,6 +881,171 @@ async def record_registry_submission_result(
 
     return attempt
 
+async def _build_current_registry_approval_snapshot(
+    session: AsyncSession,
+    *,
+    obligation: RegistryObligation,
+) -> dict:
+    with session.no_autoflush:
+        enrollment_result = await session.execute(
+            select(
+                Enrollment
+            )
+            .where(
+                Enrollment.id
+                == str(
+                    obligation.enrollment_id
+                )
+            )
+            .execution_options(
+                populate_existing=True
+            )
+        )
+
+        enrollment = (
+            enrollment_result
+            .scalar_one_or_none()
+        )
+
+        if enrollment is None:
+            raise RegistrySubmissionAttemptError(
+                "Registry approval source enrollment is missing"
+            )
+
+        course_result = await session.execute(
+            select(
+                Course
+            )
+            .where(
+                Course.id
+                == str(
+                    enrollment.course_id
+                )
+            )
+            .execution_options(
+                populate_existing=True
+            )
+        )
+
+        course = (
+            course_result
+            .scalar_one_or_none()
+        )
+
+        if course is None:
+            raise RegistrySubmissionAttemptError(
+                "Registry approval source course is missing"
+            )
+
+        profile_result = await session.execute(
+            select(
+                LearnerProfile
+            )
+            .where(
+                LearnerProfile.user_id
+                == str(
+                    enrollment.user_id
+                )
+            )
+            .execution_options(
+                populate_existing=True
+            )
+        )
+
+        learner_profile = (
+            profile_result
+            .scalar_one_or_none()
+        )
+
+        if learner_profile is None:
+            raise RegistrySubmissionAttemptError(
+                "Registry approval learner profile is missing"
+            )
+
+        if (
+            obligation.registry
+            == REGISTRY_FRDO
+        ):
+            if not obligation.document_id:
+                raise RegistrySubmissionAttemptError(
+                    "FRDO approval document is missing"
+                )
+
+            document_result = await session.execute(
+                select(
+                    DocumentRecord
+                )
+                .where(
+                    DocumentRecord.id
+                    == str(
+                        obligation.document_id
+                    )
+                )
+                .execution_options(
+                    populate_existing=True
+                )
+            )
+
+            document = (
+                document_result
+                .scalar_one_or_none()
+            )
+
+            if document is None:
+                raise RegistrySubmissionAttemptError(
+                    "FRDO approval document is missing"
+                )
+
+            return build_registry_approval_snapshot(
+                registry=REGISTRY_FRDO,
+                enrollment=enrollment,
+                course=course,
+                learner_profile=learner_profile,
+                document=document,
+            )
+
+        if (
+            obligation.registry
+            == REGISTRY_MINTRUD
+        ):
+            context_result = await session.execute(
+                select(
+                    MintrudRegistryContext
+                )
+                .where(
+                    MintrudRegistryContext.obligation_id
+                    == str(
+                        obligation.id
+                    )
+                )
+                .execution_options(
+                    populate_existing=True
+                )
+            )
+
+            mintrud_context = (
+                context_result
+                .scalar_one_or_none()
+            )
+
+            if mintrud_context is None:
+                raise RegistrySubmissionAttemptError(
+                    "Mintrud approval context is missing"
+                )
+
+            return build_registry_approval_snapshot(
+                registry=REGISTRY_MINTRUD,
+                enrollment=enrollment,
+                course=course,
+                learner_profile=learner_profile,
+                mintrud_context=mintrud_context,
+            )
+
+    raise RegistrySubmissionAttemptError(
+        "Unsupported registry approval type"
+    )
+
+
 async def mark_registry_exported(
     session: AsyncSession,
     *,
@@ -889,6 +1065,21 @@ async def mark_registry_exported(
     ):
         raise RegistrySubmissionAttemptError(
             "Registry obligation must be approved before export"
+        )
+
+    current_approval_snapshot = (
+        await _build_current_registry_approval_snapshot(
+            session,
+            obligation=obligation,
+        )
+    )
+
+    if not is_registry_approval_current(
+        obligation,
+        current_snapshot=current_approval_snapshot,
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Registry approval is stale and must be reapproved before export"
         )
 
     if (

@@ -407,7 +407,7 @@ def test_account_profile_snils_removal_refreshes_mintrud_to_pending_data() -> No
         )
 
 
-def test_account_profile_change_does_not_mutate_approved_mintrud() -> None:
+def test_account_profile_change_invalidates_approved_mintrud() -> None:
     fixture = create_mintrud_fixture(
         with_context=True,
         obligation_status="approved",
@@ -451,7 +451,7 @@ def test_account_profile_change_does_not_mutate_approved_mintrud() -> None:
             fixture
         )
 
-        assert after["status"] == "approved"
+        assert after["status"] == "needs_approval"
         assert after["readiness_errors"] == []
         assert after["attempt_count"] == 0
 
