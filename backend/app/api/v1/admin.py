@@ -38,9 +38,20 @@ from app.models.registry_obligation import (
 )
 from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
+    attach_registry_submission_artifact,
+    create_registry_submission_attempt,
+    delete_registry_artifact_safely,
+    mark_registry_exported,
     mark_registry_submission,
     record_registry_submission_result,
     validate_registry_attempt_artifact_integrity,
+)
+from app.services.compliance_registry_export import (
+    REGISTRY_EXPORT_PACKAGE_EXTENSION,
+    REGISTRY_EXPORT_PACKAGE_SCHEMA_VERSION,
+    RegistryExportPackageError,
+    build_registry_export_package,
+    serialize_registry_export_package,
 )
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
@@ -11159,6 +11170,225 @@ async def record_admin_mintrud_submission_attempt_result(
             session,
         )
     )
+
+
+async def prepare_admin_registry_export_attempt(
+    session: AsyncSession,
+    *,
+    obligation: RegistryObligation,
+    current_user: User,
+    request: Request,
+    audit_action: str,
+) -> AdminRegistrySubmissionAttemptItem:
+    artifact_path_to_cleanup: str | None = None
+
+    try:
+        export_package = (
+            build_registry_export_package(
+                obligation
+            )
+        )
+
+        export_content = (
+            serialize_registry_export_package(
+                export_package
+            )
+        )
+
+        attempt = (
+            await create_registry_submission_attempt(
+                session,
+                obligation_id=str(
+                    obligation.id
+                ),
+                snapshot=export_package,
+                generated_by_user_id=str(
+                    current_user.id
+                ),
+                transport="file",
+                schema_version=(
+                    REGISTRY_EXPORT_PACKAGE_SCHEMA_VERSION
+                ),
+            )
+        )
+
+        attempt = (
+            await attach_registry_submission_artifact(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                content=export_content,
+                extension=(
+                    REGISTRY_EXPORT_PACKAGE_EXTENSION
+                ),
+            )
+        )
+
+        artifact_path_to_cleanup = (
+            attempt.artifact_path
+        )
+
+        attempt = (
+            await mark_registry_exported(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+            )
+        )
+
+        response_item = (
+            build_admin_registry_submission_attempt_item(
+                attempt
+            )
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=audit_action,
+            entity_type="registry_obligation",
+            entity_id=str(
+                obligation.id
+            ),
+            payload={
+                "registry": (
+                    obligation.registry
+                ),
+                "attempt_id": str(
+                    attempt.id
+                ),
+                "attempt_no": int(
+                    attempt.attempt_no
+                ),
+                "transport": (
+                    attempt.transport
+                ),
+                "schema_version": (
+                    attempt.schema_version
+                ),
+                "artifact_sha256": (
+                    attempt.artifact_sha256
+                ),
+                "approval_fingerprint": (
+                    obligation.approval_fingerprint
+                ),
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except (
+        RegistryExportPackageError,
+        RegistrySubmissionAttemptError,
+    ) as exc:
+        await session.rollback()
+
+        if artifact_path_to_cleanup:
+            delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
+
+    except Exception:
+        await session.rollback()
+
+        if artifact_path_to_cleanup:
+            delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+
+        raise
+
+    return response_item
+
+
+@router.post(
+    "/frdo/obligations/{obligation_id}/export",
+    response_model=(
+        AdminRegistrySubmissionAttemptItem
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+async def prepare_admin_frdo_registry_export(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminRegistrySubmissionAttemptItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    return (
+        await prepare_admin_registry_export_attempt(
+            session,
+            obligation=obligation,
+            current_user=current_user,
+            request=request,
+            audit_action=(
+                "admin.frdo_registry_export_prepared"
+            ),
+        )
+    )
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/export",
+    response_model=(
+        AdminRegistrySubmissionAttemptItem
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+async def prepare_admin_mintrud_registry_export(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminRegistrySubmissionAttemptItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+        )
+    )
+
+    return (
+        await prepare_admin_registry_export_attempt(
+            session,
+            obligation=obligation,
+            current_user=current_user,
+            request=request,
+            audit_action=(
+                "admin.mintrud_registry_export_prepared"
+            ),
+        )
+    )
+
 
 async def prepare_admin_registry_submission_attempt_download(
     obligation_id: str,
