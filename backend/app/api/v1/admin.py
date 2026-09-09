@@ -11335,6 +11335,7 @@ async def prepare_admin_frdo_registry_export(
         await get_admin_frdo_obligation_or_404(
             obligation_id,
             session,
+            for_update=True,
         )
     )
 
@@ -11374,6 +11375,7 @@ async def prepare_admin_mintrud_registry_export(
         await get_admin_mintrud_obligation_or_404(
             obligation_id,
             session,
+            for_update=True,
         )
     )
 
