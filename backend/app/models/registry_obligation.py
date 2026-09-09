@@ -105,6 +105,26 @@ class RegistryObligation(
         nullable=True,
     )
 
+    approval_snapshot_json: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
+    approval_fingerprint: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    approval_invalidated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    approval_invalidation_reason: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
     submitted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

@@ -82,6 +82,16 @@ from app.services.compliance_registry_contract import (
 from app.services.compliance_registry_readiness import (
     evaluate_registry_readiness,
 )
+from app.services.compliance_registry_approval import (
+    apply_registry_approval,
+    build_registry_approval_snapshot,
+)
+from app.services.compliance_registry_approval_invalidation import (
+    invalidate_registry_approval_for_document,
+    invalidate_registry_approvals_for_course,
+    lock_registry_approval_for_document,
+    lock_registry_approvals_for_course,
+)
 from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
     normalize_lesson_block_type,
@@ -3412,6 +3422,23 @@ async def update_admin_document(
         )
 
     before = document_record_snapshot(document)
+
+    approval_relevant_document_update_requested = any(
+        value is not None
+        for value in (
+            document_type,
+            document_number,
+            doc_status,
+            enrollment_id,
+        )
+    )
+
+    if approval_relevant_document_update_requested:
+        await lock_registry_approval_for_document(
+            session,
+            document_id=str(document.id),
+        )
+
     old_storage_path = document.storage_path
     new_storage_path_to_cleanup = None
     old_storage_path_to_delete = None
@@ -3593,6 +3620,27 @@ async def update_admin_document(
         await session.flush()
 
         after = document_record_snapshot(document)
+
+        approval_relevant_document_changed = any(
+            before.get(field_name)
+            != after.get(field_name)
+            for field_name in (
+                "enrollment_id",
+                "document_number",
+                "document_type",
+                "revoked_at",
+            )
+        )
+
+        if approval_relevant_document_changed:
+            await invalidate_registry_approval_for_document(
+                session,
+                document_id=str(document.id),
+                invalidated_at=datetime.now(
+                    timezone.utc
+                ),
+            )
+
         audit_action = get_document_update_audit_action(before, after)
 
         await create_admin_audit_event(
@@ -3772,6 +3820,15 @@ async def regenerate_admin_completion_document(
         session,
     )
 
+    if (
+        document.status == "available"
+        and before.get("revoked_at") is not None
+    ):
+        await lock_registry_approval_for_document(
+            session,
+            document_id=str(document.id),
+        )
+
     document.storage_path = write_completion_document_pdf_to_storage(
         enrollment=enrollment,
         document=document,
@@ -3800,6 +3857,20 @@ async def regenerate_admin_completion_document(
         )
     await session.flush()
 
+    after = document_record_snapshot(document)
+
+    if (
+        before.get("revoked_at")
+        != after.get("revoked_at")
+    ):
+        await invalidate_registry_approval_for_document(
+            session,
+            document_id=str(document.id),
+            invalidated_at=datetime.now(
+                timezone.utc
+            ),
+        )
+
     await create_admin_audit_event(
         session,
         actor_user=current_user,
@@ -3808,7 +3879,7 @@ async def regenerate_admin_completion_document(
         entity_id=str(document.id),
         payload={
             "before": before,
-            "after": document_record_snapshot(document),
+            "after": after,
             "regenerated_file_available": bool(document.storage_path),
         },
         request=request,
@@ -4327,11 +4398,32 @@ async def update_admin_course(
 
     before = course_snapshot(course)
 
+    approval_relevant_title_changed = (
+        "title" in data
+        and before.get("title")
+        != data.get("title")
+    )
+
+    if approval_relevant_title_changed:
+        await lock_registry_approvals_for_course(
+            session,
+            course_id=str(course.id),
+        )
+
     for field, value in data.items():
         setattr(course, field, value)
 
     try:
         await session.flush()
+
+        if approval_relevant_title_changed:
+            await invalidate_registry_approvals_for_course(
+                session,
+                course_id=str(course.id),
+                invalidated_at=datetime.now(
+                    timezone.utc
+                ),
+            )
 
         await create_admin_audit_event(
             session,
@@ -9835,6 +9927,7 @@ async def approve_admin_frdo_obligation(
     approvable_statuses = {
         OBLIGATION_STATUS_READY,
         OBLIGATION_STATUS_NEEDS_APPROVAL,
+        OBLIGATION_STATUS_APPROVED,
     }
 
     if (
@@ -9962,21 +10055,56 @@ async def approve_admin_frdo_obligation(
             obligation.readiness_errors
             or []
         ),
+        "approval_fingerprint": (
+            obligation.approval_fingerprint
+        ),
+        "approval_invalidated_at": (
+            obligation
+            .approval_invalidated_at
+            .isoformat()
+            if obligation.approval_invalidated_at
+            else None
+        ),
+        "approval_invalidation_reason": (
+            obligation
+            .approval_invalidation_reason
+        ),
     }
 
-    obligation.status = (
-        OBLIGATION_STATUS_APPROVED
-    )
-
-    obligation.approved_by_user_id = (
-        str(current_user.id)
-    )
-
-    obligation.approved_at = (
-        datetime.now(
-            timezone.utc
+    approval_snapshot = (
+        build_registry_approval_snapshot(
+            registry=REGISTRY_FRDO,
+            enrollment=enrollment,
+            course=course,
+            learner_profile=(
+                learner_profile
+            ),
+            document=document,
         )
     )
+
+    try:
+        approval_capture = (
+            apply_registry_approval(
+                obligation,
+                current_snapshot=(
+                    approval_snapshot
+                ),
+                approved_by_user_id=str(
+                    current_user.id
+                ),
+                approved_at=datetime.now(
+                    timezone.utc
+                ),
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
 
     obligation.readiness_errors = (
         readiness.as_error_payload()
@@ -10018,7 +10146,27 @@ async def approve_admin_frdo_obligation(
                     obligation
                     .readiness_errors
                 ),
+                "approval_fingerprint": (
+                    obligation
+                    .approval_fingerprint
+                ),
+                "approval_invalidated_at": (
+                    obligation
+                    .approval_invalidated_at
+                    .isoformat()
+                    if obligation
+                    .approval_invalidated_at
+                    else None
+                ),
+                "approval_invalidation_reason": (
+                    obligation
+                    .approval_invalidation_reason
+                ),
             },
+            "approval_was_reapproval": (
+                approval_capture
+                .was_reapproval
+            ),
             "is_ready": True,
         },
         request=request,
@@ -10061,6 +10209,7 @@ async def approve_admin_mintrud_obligation(
     approvable_statuses = {
         OBLIGATION_STATUS_READY,
         OBLIGATION_STATUS_NEEDS_APPROVAL,
+        OBLIGATION_STATUS_APPROVED,
     }
 
     if (
@@ -10188,21 +10337,58 @@ async def approve_admin_mintrud_obligation(
             obligation.readiness_errors
             or []
         ),
+        "approval_fingerprint": (
+            obligation.approval_fingerprint
+        ),
+        "approval_invalidated_at": (
+            obligation
+            .approval_invalidated_at
+            .isoformat()
+            if obligation.approval_invalidated_at
+            else None
+        ),
+        "approval_invalidation_reason": (
+            obligation
+            .approval_invalidation_reason
+        ),
     }
 
-    obligation.status = (
-        OBLIGATION_STATUS_APPROVED
-    )
-
-    obligation.approved_by_user_id = (
-        str(current_user.id)
-    )
-
-    obligation.approved_at = (
-        datetime.now(
-            timezone.utc
+    approval_snapshot = (
+        build_registry_approval_snapshot(
+            registry=REGISTRY_MINTRUD,
+            enrollment=enrollment,
+            course=course,
+            learner_profile=(
+                learner_profile
+            ),
+            mintrud_context=(
+                mintrud_context
+            ),
         )
     )
+
+    try:
+        approval_capture = (
+            apply_registry_approval(
+                obligation,
+                current_snapshot=(
+                    approval_snapshot
+                ),
+                approved_by_user_id=str(
+                    current_user.id
+                ),
+                approved_at=datetime.now(
+                    timezone.utc
+                ),
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
 
     obligation.readiness_errors = (
         readiness.as_error_payload()
@@ -10244,7 +10430,27 @@ async def approve_admin_mintrud_obligation(
                     obligation
                     .readiness_errors
                 ),
+                "approval_fingerprint": (
+                    obligation
+                    .approval_fingerprint
+                ),
+                "approval_invalidated_at": (
+                    obligation
+                    .approval_invalidated_at
+                    .isoformat()
+                    if obligation
+                    .approval_invalidated_at
+                    else None
+                ),
+                "approval_invalidation_reason": (
+                    obligation
+                    .approval_invalidation_reason
+                ),
             },
+            "approval_was_reapproval": (
+                approval_capture
+                .was_reapproval
+            ),
             "is_ready": True,
         },
         request=request,
