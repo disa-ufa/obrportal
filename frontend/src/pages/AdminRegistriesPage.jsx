@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   approveAdminFrdoObligation,
   approveAdminMintrudObligation,
+  prepareAdminFrdoRegistryExport,
+  prepareAdminMintrudRegistryExport,
   downloadAdminFrdoSubmissionAttempt,
   downloadAdminMintrudSubmissionAttempt,
   getAdminFrdoObligations,
@@ -33,6 +35,7 @@ const T = {
   reset: "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c",
   validate: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c",
   approve: "\u0423\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c",
+  prepareExport: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0444\u0430\u0439\u043b",
   attempts: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438",
   context: "\u0414\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
   save: "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c",
@@ -41,7 +44,7 @@ const T = {
   submitted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443",
   result: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
   noRows: "\u0417\u0430\u043f\u0438\u0441\u0438 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
-  warning: "\u0413\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u044f XML/\u0444\u0430\u0439\u043b\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430: \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f \u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u0430\u044f \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u0430\u044f \u0441\u0445\u0435\u043c\u0430.",
+  warning: "\u041f\u043e\u0434\u0433\u043e\u0442\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON-\u0444\u0430\u0439\u043b \u0434\u043b\u044f \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0441\u043a\u043e\u0439 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438. \u042d\u0442\u043e \u043d\u0435 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 XML/\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442; \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0432\u043e \u0432\u043d\u0435\u0448\u043d\u0438\u0435 \u0440\u0435\u0435\u0441\u0442\u0440\u044b \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f.",
 };
 
 
@@ -592,6 +595,7 @@ export function AdminRegistriesPage() {
         list: getAdminMintrudObligations,
         validate: validateAdminMintrudObligation,
         approve: approveAdminMintrudObligation,
+        prepareExport: prepareAdminMintrudRegistryExport,
         attempts: getAdminMintrudSubmissionAttempts,
         download: downloadAdminMintrudSubmissionAttempt,
         submitted: markAdminMintrudSubmissionAttemptSubmitted,
@@ -603,6 +607,7 @@ export function AdminRegistriesPage() {
       list: getAdminFrdoObligations,
       validate: validateAdminFrdoObligation,
       approve: approveAdminFrdoObligation,
+      prepareExport: prepareAdminFrdoRegistryExport,
       attempts: getAdminFrdoSubmissionAttempts,
       download: downloadAdminFrdoSubmissionAttempt,
       submitted: markAdminFrdoSubmissionAttemptSubmitted,
@@ -717,6 +722,27 @@ export function AdminRegistriesPage() {
       }
     );
   }
+
+  async function prepareExport(obligation) {
+    await withAction(
+      `export:${obligation.id}`,
+      async () => {
+        await api.prepareExport(
+          obligation.id
+        );
+
+        setExpandedId(
+          obligation.id
+        );
+
+        await load();
+        await reloadAttempts(
+          obligation.id
+        );
+      }
+    );
+  }
+
 
   async function saveContext(
     obligation,
@@ -1041,6 +1067,9 @@ export function AdminRegistriesPage() {
                       obligation.status
                     );
 
+                    const canExport =
+                      obligation.status === "approved";
+
                     const readiness = (
                       obligation.readiness_errors
                       || []
@@ -1129,6 +1158,17 @@ export function AdminRegistriesPage() {
                                     onClick={() => approve(obligation)}
                                   >
                                     {T.approve}
+                                  </button>
+                                ) : null}
+
+                                {canExport ? (
+                                  <button
+                                    type="button"
+                                    className={PRIMARY}
+                                    disabled={Boolean(busyKey)}
+                                    onClick={() => prepareExport(obligation)}
+                                  >
+                                    {T.prepareExport}
                                   </button>
                                 ) : null}
 
