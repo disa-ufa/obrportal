@@ -1312,6 +1312,18 @@ export async function approveAdminFrdoObligation(
 }
 
 
+export async function prepareAdminFrdoRegistryExport(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/export`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
 export async function getAdminFrdoSubmissionAttempts(
   obligationId
 ) {
@@ -1406,6 +1418,18 @@ export async function approveAdminMintrudObligation(
 ) {
   return request(
     `/api/v1/admin/mintrud/obligations/${obligationId}/approve`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function prepareAdminMintrudRegistryExport(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/export`,
     {
       method: "POST",
     }
