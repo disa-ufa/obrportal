@@ -11513,8 +11513,8 @@ async def prepare_admin_frdo_portal_artifact(
             status.HTTP_501_NOT_IMPLEMENTED
         ),
         detail=(
-            "Portal upload artifact generation "
-            "is not implemented for the "
+            "Portal upload artifact formatter "
+            "is unavailable for the "
             "confirmed contract"
         ),
     )
@@ -11603,8 +11603,8 @@ async def prepare_admin_mintrud_portal_artifact(
             status.HTTP_501_NOT_IMPLEMENTED
         ),
         detail=(
-            "Portal upload artifact generation "
-            "is not implemented for the "
+            "Portal upload artifact formatter "
+            "is unavailable for the "
             "confirmed contract"
         ),
     )
