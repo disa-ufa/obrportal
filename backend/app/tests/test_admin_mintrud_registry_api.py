@@ -2930,3 +2930,275 @@ def test_mintrud_admin_export_preparation_api() -> None:
                 fixture,
             ]
         )
+
+
+
+def test_mintrud_rework_api_contract() -> None:
+    rejected = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="rejected",
+    )
+
+    correction = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="correction_required",
+    )
+
+    invalid = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="ready",
+    )
+
+    fixtures = [
+        rejected,
+        correction,
+        invalid,
+    ]
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        status_code, reopened = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                + rejected["obligation_id"]
+                + "/reopen"
+            ),
+            token=admin_token,
+        )
+
+        assert status_code == 200
+        assert reopened["id"] == rejected["obligation_id"]
+        assert reopened["registry"] == "mintrud"
+        assert reopened["status"] == "pending_data"
+        assert reopened["readiness_errors"] == []
+        assert reopened["submitted_at"] is None
+        assert reopened["accepted_at"] is None
+        assert reopened["external_id"] is None
+        assert reopened["last_error"] is None
+
+        status_code, correction_reopened = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                + correction["obligation_id"]
+                + "/reopen"
+            ),
+            token=admin_token,
+        )
+
+        assert status_code == 200
+        assert (
+            correction_reopened["status"]
+            == "pending_data"
+        )
+
+        status_code, forbidden = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                + invalid["obligation_id"]
+                + "/reopen"
+            ),
+            token=learner_token,
+        )
+
+        assert status_code == 403
+        assert isinstance(forbidden, dict)
+
+        status_code, lifecycle_guard = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                + invalid["obligation_id"]
+                + "/reopen"
+            ),
+            token=admin_token,
+        )
+
+        assert status_code == 409
+        assert isinstance(lifecycle_guard, dict)
+
+        status_code, missing = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                "00000000-0000-0000-"
+                "0000-000000000000/reopen"
+            ),
+            token=admin_token,
+        )
+
+        assert status_code == 404
+        assert isinstance(missing, dict)
+
+    finally:
+        cleanup_mintrud_fixtures(
+            fixtures
+        )
+
+
+
+def count_mintrud_registry_submission_attempts(
+    obligation_id: str,
+) -> int:
+    async def _count():
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            result = await session.execute(
+                select(
+                    RegistrySubmissionAttempt.id
+                ).where(
+                    RegistrySubmissionAttempt.obligation_id
+                    == obligation_id
+                )
+            )
+
+            count = len(
+                result.scalars().all()
+            )
+
+        await engine.dispose()
+
+        return count
+
+    return asyncio.run(
+        _count()
+    )
+
+
+def test_mintrud_portal_artifact_fail_closed_contract() -> None:
+    approved = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    fixtures = [
+        approved,
+    ]
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        before_count = (
+            count_mintrud_registry_submission_attempts(
+                approved["obligation_id"]
+            )
+        )
+
+        assert before_count == 0
+
+        status_code, conflict = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                + approved["obligation_id"]
+                + "/portal-artifact"
+            ),
+            token=admin_token,
+        )
+
+        after_count = (
+            count_mintrud_registry_submission_attempts(
+                approved["obligation_id"]
+            )
+        )
+
+        assert after_count == before_count
+
+        assert status_code == 409
+        assert isinstance(
+            conflict,
+            dict,
+        )
+        assert (
+            "Official portal upload artifact "
+            "contract is not confirmed for mintrud"
+            in str(
+                conflict.get(
+                    "detail",
+                    "",
+                )
+            )
+        )
+
+        status_code, forbidden = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                + approved["obligation_id"]
+                + "/portal-artifact"
+            ),
+            token=learner_token,
+        )
+
+        assert status_code == 403
+        assert isinstance(
+            forbidden,
+            dict,
+        )
+
+        assert (
+            count_mintrud_registry_submission_attempts(
+                approved["obligation_id"]
+            )
+            == before_count
+        )
+
+        status_code, missing = request_json(
+            "POST",
+            (
+                "/api/v1/admin/mintrud/obligations/"
+                "00000000-0000-0000-"
+                "0000-000000000000/"
+                "portal-artifact"
+            ),
+            token=admin_token,
+        )
+
+        assert status_code == 404
+        assert isinstance(
+            missing,
+            dict,
+        )
+
+        assert (
+            count_mintrud_registry_submission_attempts(
+                approved["obligation_id"]
+            )
+            == before_count
+        )
+
+    finally:
+        cleanup_mintrud_fixtures(
+            fixtures
+        )

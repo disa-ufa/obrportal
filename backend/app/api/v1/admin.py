@@ -46,6 +46,14 @@ from app.services.compliance_registry_attempts import (
     record_registry_submission_result,
     validate_registry_attempt_artifact_integrity,
 )
+from app.services.compliance_registry_portal_artifacts import (
+    RegistryPortalArtifactContractUnavailable,
+    require_registry_portal_artifact_contract,
+)
+from app.services.compliance_registry_rework import (
+    RegistryObligationReworkError,
+    reopen_registry_obligation_for_correction,
+)
 from app.services.compliance_registry_export import (
     REGISTRY_EXPORT_PACKAGE_EXTENSION,
     REGISTRY_EXPORT_PACKAGE_SCHEMA_VERSION,
@@ -9912,6 +9920,81 @@ async def update_admin_mintrud_obligation_context(
     )
 
 @router.post(
+    "/frdo/obligations/{obligation_id}/reopen",
+    response_model=AdminFrdoObligationItem,
+)
+async def reopen_admin_frdo_obligation(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.approve"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminFrdoObligationItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    before_status = obligation.status
+
+    try:
+        reopen_registry_obligation_for_correction(
+            obligation
+        )
+    except RegistryObligationReworkError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.frdo_obligation_reopened"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_FRDO,
+            "before": {
+                "status": before_status,
+            },
+            "after": {
+                "status": obligation.status,
+            },
+            "attempt_history_preserved": True,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_frdo_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
+
+
+@router.post(
     "/frdo/obligations/{obligation_id}/approve",
     response_model=AdminFrdoObligationItem,
 )
@@ -10187,6 +10270,81 @@ async def approve_admin_frdo_obligation(
 
     return (
         await get_admin_frdo_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/reopen",
+    response_model=AdminMintrudObligationItem,
+)
+async def reopen_admin_mintrud_obligation(
+    obligation_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.approve"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudObligationItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    before_status = obligation.status
+
+    try:
+        reopen_registry_obligation_for_correction(
+            obligation
+        )
+    except RegistryObligationReworkError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action=(
+            "admin.mintrud_obligation_reopened"
+        ),
+        entity_type=(
+            "registry_obligation"
+        ),
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_MINTRUD,
+            "before": {
+                "status": before_status,
+            },
+            "after": {
+                "status": obligation.status,
+            },
+            "attempt_history_preserved": True,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_mintrud_obligation_item_or_404(
             str(obligation.id),
             session,
         )
@@ -11313,6 +11471,56 @@ async def prepare_admin_registry_export_attempt(
 
 
 @router.post(
+    "/frdo/obligations/{obligation_id}/portal-artifact",
+    response_model=(
+        AdminRegistrySubmissionAttemptItem
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+async def prepare_admin_frdo_portal_artifact(
+    obligation_id: str,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminRegistrySubmissionAttemptItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    try:
+        require_registry_portal_artifact_contract(
+            obligation.registry
+        )
+    except RegistryPortalArtifactContractUnavailable as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
+
+    raise HTTPException(
+        status_code=(
+            status.HTTP_501_NOT_IMPLEMENTED
+        ),
+        detail=(
+            "Portal upload artifact formatter "
+            "is unavailable for the "
+            "confirmed contract"
+        ),
+    )
+
+
+@router.post(
     "/frdo/obligations/{obligation_id}/export",
     response_model=(
         AdminRegistrySubmissionAttemptItem
@@ -11349,6 +11557,56 @@ async def prepare_admin_frdo_registry_export(
                 "admin.frdo_registry_export_prepared"
             ),
         )
+    )
+
+
+@router.post(
+    "/mintrud/obligations/{obligation_id}/portal-artifact",
+    response_model=(
+        AdminRegistrySubmissionAttemptItem
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+async def prepare_admin_mintrud_portal_artifact(
+    obligation_id: str,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminRegistrySubmissionAttemptItem:
+    obligation = (
+        await get_admin_mintrud_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    try:
+        require_registry_portal_artifact_contract(
+            obligation.registry
+        )
+    except RegistryPortalArtifactContractUnavailable as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(exc),
+        ) from exc
+
+    raise HTTPException(
+        status_code=(
+            status.HTTP_501_NOT_IMPLEMENTED
+        ),
+        detail=(
+            "Portal upload artifact formatter "
+            "is unavailable for the "
+            "confirmed contract"
+        ),
     )
 
 
