@@ -68,6 +68,101 @@ const STATUS_LABELS = {
 
 const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
 
+const READINESS_LABELS = {
+  "enrollment.missing": "\u0417\u0430\u043f\u0438\u0441\u044c \u043e \u0437\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u0438\u0438 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442.",
+  "enrollment.not_completed": "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u0435\u0449\u0451 \u043d\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e.",
+  "enrollment.completed_at_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u0430 \u0434\u0430\u0442\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f.",
+  "course.missing": "\u041a\u0443\u0440\u0441 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442.",
+  "course.title_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043a\u0443\u0440\u0441\u0430.",
+  "learner.missing": "\u0423\u0447\u0451\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442.",
+  "learner_profile.missing": "\u041d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d \u0440\u0435\u0433\u0443\u043b\u044f\u0442\u043e\u0440\u043d\u044b\u0439 \u043f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f.",
+  "learner_profile.last_name_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u0430 \u0444\u0430\u043c\u0438\u043b\u0438\u044f \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f.",
+  "learner_profile.first_name_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u043e \u0438\u043c\u044f \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f.",
+  "learner_profile.birth_date_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u0430 \u0434\u0430\u0442\u0430 \u0440\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f.",
+  "learner_profile.sex_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u043f\u043e\u043b \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f.",
+  "learner_profile.sex_invalid": "\u0423\u043a\u0430\u0437\u0430\u043d\u043e \u043d\u0435\u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043c\u043e\u0435 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u0430.",
+  "learner_profile.citizenship_country_code_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u043a\u043e\u0434 \u0433\u0440\u0430\u0436\u0434\u0430\u043d\u0441\u0442\u0432\u0430.",
+  "learner_profile.citizenship_country_code_invalid": "\u041a\u043e\u0434 \u0433\u0440\u0430\u0436\u0434\u0430\u043d\u0441\u0442\u0432\u0430 \u0434\u043e\u043b\u0436\u0435\u043d \u0441\u043e\u0441\u0442\u043e\u044f\u0442\u044c \u0438\u0437 \u0442\u0440\u0451\u0445 \u0446\u0438\u0444\u0440 \u041e\u041a\u0421\u041c.",
+  "document.missing": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0438 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442.",
+  "document.enrollment_mismatch": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043e\u0442\u043d\u043e\u0441\u0438\u0442\u0441\u044f \u043a \u0434\u0440\u0443\u0433\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438 \u043e \u0437\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u0438\u0438.",
+  "document.number_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u043d\u043e\u043c\u0435\u0440 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+  "document.type_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u0442\u0438\u043f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430.",
+  "document.revoked": "\u0410\u043d\u043d\u0443\u043b\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0439 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442 \u043d\u0435\u043b\u044c\u0437\u044f \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0434\u043b\u044f \u0432\u044b\u0433\u0440\u0443\u0437\u043a\u0438.",
+  "learner_profile.snils_missing": "\u0414\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e \u0443\u043a\u0430\u0437\u0430\u0442\u044c \u0421\u041d\u0418\u041b\u0421 \u0441\u043b\u0443\u0448\u0430\u0442\u0435\u043b\u044f.",
+  "mintrud.context_missing": "\u041d\u0435 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u044b \u0434\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
+  "mintrud.reporting_scenario_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u0439 \u043e\u0442\u0447\u0451\u0442\u043d\u043e\u0441\u0442\u0438 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
+  "mintrud.reporting_scenario_invalid": "\u0423\u043a\u0430\u0437\u0430\u043d \u043d\u0435\u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u0439 \u043e\u0442\u0447\u0451\u0442\u043d\u043e\u0441\u0442\u0438 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
+  "mintrud.profession_or_position_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u0430 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u044f \u0438\u043b\u0438 \u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u043d\u0438\u043a\u0430.",
+  "mintrud.knowledge_check_result_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439.",
+  "mintrud.knowledge_check_result_invalid": "\u0423\u043a\u0430\u0437\u0430\u043d\u043e \u043d\u0435\u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043c\u043e\u0435 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439.",
+  "mintrud.knowledge_check_date_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d\u0430 \u0434\u0430\u0442\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439.",
+  "mintrud.protocol_number_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u043d\u043e\u043c\u0435\u0440 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439.",
+  "mintrud.employer_name_missing": "\u0414\u043b\u044f \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e \u0443\u043a\u0430\u0437\u0430\u0442\u044c \u043d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f.",
+  "mintrud.employer_inn_missing": "\u0414\u043b\u044f \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e \u0443\u043a\u0430\u0437\u0430\u0442\u044c \u0418\u041d\u041d \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f.",
+};
+
+function formatReadinessIssue(item) {
+  if (!item) {
+    return "";
+  }
+
+  if (typeof item === "string") {
+    return item.trim();
+  }
+
+  const code = `${item.code || ""}`.trim();
+
+  if (code && READINESS_LABELS[code]) {
+    return READINESS_LABELS[code];
+  }
+
+  return `${item.message || item.msg || code || ""}`.trim();
+}
+
+function formatApiDetail(detail) {
+  if (!detail) {
+    return "";
+  }
+
+  if (typeof detail === "string") {
+    return detail.trim();
+  }
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => formatApiDetail(item))
+      .filter(Boolean)
+      .join("; ");
+  }
+
+  if (typeof detail === "object") {
+    const nested = [
+      detail.issues,
+      detail.errors,
+      detail.readiness_errors,
+    ].find((value) => Array.isArray(value) && value.length);
+
+    if (nested) {
+      return nested
+        .map((item) => formatReadinessIssue(item))
+        .filter(Boolean)
+        .join("; ");
+    }
+
+    const issue = formatReadinessIssue(detail);
+
+    if (issue) {
+      return issue;
+    }
+
+    if (detail.detail) {
+      return formatApiDetail(detail.detail);
+    }
+  }
+
+  return "";
+}
+
 const BUTTON =
   "inline-flex min-h-9 items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -121,19 +216,25 @@ function statusLabel(status) {
 
 
 function formatApiError(error) {
-  const detail = error?.payload?.detail;
+  const detail = formatApiDetail(
+    error?.payload?.detail
+  );
 
-  if (typeof detail === "string" && detail.trim()) {
+  if (detail) {
     return detail;
   }
 
-  if (Array.isArray(detail)) {
-    return detail
-      .map((item) => item?.msg || JSON.stringify(item))
-      .join("; ");
+  const message = `${error?.message || ""}`.trim();
+
+  if (
+    message
+    && !message.startsWith("{")
+    && !message.startsWith("[")
+  ) {
+    return message;
   }
 
-  return error?.message || "Request failed";
+  return "\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u044e \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u043e\u043f\u044b\u0442\u043a\u0443.";
 }
 
 
@@ -722,6 +823,40 @@ export function AdminRegistriesPage() {
     await withAction(
       `approve:${obligation.id}`,
       async () => {
+        const validated = await api.validate(
+          obligation.id
+        );
+
+        await load();
+
+        const readinessErrors = (
+          validated?.readiness_errors
+          || []
+        );
+
+        if (readinessErrors.length) {
+          const readinessMessage = readinessErrors
+            .map((item) => formatReadinessIssue(item))
+            .filter(Boolean)
+            .join("; ");
+
+          throw new Error(
+            readinessMessage
+            || "\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0435 \u0433\u043e\u0442\u043e\u0432\u0430 \u043a \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044e."
+          );
+        }
+
+        if (
+          ![
+            "ready",
+            "needs_approval",
+          ].includes(validated?.status)
+        ) {
+          throw new Error(
+            "\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0435 \u0433\u043e\u0442\u043e\u0432\u0430 \u043a \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044e."
+          );
+        }
+
         await api.approve(
           obligation.id
         );
@@ -1124,10 +1259,9 @@ export function AdminRegistriesPage() {
                       || []
                     )
                       .map((item) => (
-                        item.message
-                        || item.code
-                        || JSON.stringify(item)
+                        formatReadinessIssue(item)
                       ))
+                      .filter(Boolean)
                       .join("; ");
 
                     return (

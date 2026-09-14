@@ -1211,7 +1211,7 @@ async function downloadAdminRegistrySubmissionAttempt(
     {
       method: "GET",
       headers: {
-        "Accept": "application/xml, text/xml, application/octet-stream",
+        "Accept": "application/json, application/octet-stream",
         ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       },
     }
@@ -1248,7 +1248,7 @@ async function downloadAdminRegistrySubmissionAttempt(
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(
       response,
-      `${registry}-submission-${attemptId}.bin`
+      `${registry}-submission-${attemptId}.json`
     ),
     blob
   );
