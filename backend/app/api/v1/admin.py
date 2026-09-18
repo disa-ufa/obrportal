@@ -41,7 +41,6 @@ from app.services.compliance_registry_attempts import (
     attach_registry_submission_artifact,
     create_registry_submission_attempt,
     delete_registry_artifact_safely,
-    mark_registry_exported,
     mark_registry_submission,
     record_registry_submission_result,
     validate_registry_attempt_artifact_integrity,
@@ -100,6 +99,9 @@ from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_SUBMITTED,
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
+)
+from app.services.compliance_registry_contract import (
+    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE,
 )
 from app.services.compliance_registry_readiness import (
     evaluate_registry_readiness,
@@ -10957,6 +10959,9 @@ def build_admin_registry_submission_attempt_item(
         attempt_no=int(
             attempt.attempt_no
         ),
+        artifact_kind=(
+            attempt.artifact_kind
+        ),
         transport=attempt.transport,
         schema_version=(
             attempt.schema_version
@@ -11673,6 +11678,9 @@ async def prepare_admin_registry_export_attempt(
                 generated_by_user_id=str(
                     current_user.id
                 ),
+                artifact_kind=(
+                    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE
+                ),
                 transport="file",
                 schema_version=(
                     REGISTRY_EXPORT_PACKAGE_SCHEMA_VERSION
@@ -11695,15 +11703,6 @@ async def prepare_admin_registry_export_attempt(
 
         artifact_path_to_cleanup = (
             attempt.artifact_path
-        )
-
-        attempt = (
-            await mark_registry_exported(
-                session,
-                attempt_id=str(
-                    attempt.id
-                ),
-            )
         )
 
         response_item = (
@@ -11732,6 +11731,9 @@ async def prepare_admin_registry_export_attempt(
                 ),
                 "transport": (
                     attempt.transport
+                ),
+                "artifact_kind": (
+                    attempt.artifact_kind
                 ),
                 "schema_version": (
                     attempt.schema_version

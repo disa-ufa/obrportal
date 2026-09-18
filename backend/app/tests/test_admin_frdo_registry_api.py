@@ -1315,6 +1315,9 @@ def prepare_frdo_exported_attempt(
                     "obligation_id"
                 ],
                 attempt_no=1,
+                artifact_kind=(
+                    "portal-upload-artifact"
+                ),
                 transport="file",
                 schema_version=None,
                 snapshot_json={
@@ -2025,6 +2028,7 @@ def test_frdo_admin_export_preparation_api() -> None:
     )
 
     artifact_path = None
+    second_artifact_path = None
 
     try:
         admin_token = login(
@@ -2119,6 +2123,13 @@ def test_frdo_admin_export_preparation_api() -> None:
         assert (
             attempt["transport"]
             == "file"
+        )
+
+        assert (
+            attempt[
+                "artifact_kind"
+            ]
+            == "internal-export-package"
         )
 
         assert (
@@ -2321,7 +2332,7 @@ def test_frdo_admin_export_preparation_api() -> None:
             == package
         )
 
-        status_code, duplicate = (
+        status_code, second_attempt = (
             request_json(
                 "POST",
                 export_path,
@@ -2329,10 +2340,35 @@ def test_frdo_admin_export_preparation_api() -> None:
             )
         )
 
-        assert status_code == 409
+        assert status_code == 201
         assert isinstance(
-            duplicate,
+            second_attempt,
             dict,
+        )
+
+        assert (
+            second_attempt[
+                "attempt_no"
+            ]
+            == 2
+        )
+
+        assert (
+            second_attempt[
+                "artifact_kind"
+            ]
+            == "internal-export-package"
+        )
+
+        second_artifact_path = (
+            get_frdo_attempt_artifact_path(
+                second_attempt["id"]
+            )
+        )
+
+        assert (
+            second_artifact_path
+            is not None
         )
 
         status_code, attempts = (
@@ -2344,7 +2380,29 @@ def test_frdo_admin_export_preparation_api() -> None:
         )
 
         assert status_code == 200
-        assert len(attempts) == 1
+        assert len(attempts) == 2
+
+        assert (
+            attempts[0][
+                "attempt_no"
+            ]
+            == 2
+        )
+
+        assert (
+            attempts[1][
+                "attempt_no"
+            ]
+            == 1
+        )
+
+        assert all(
+            item[
+                "artifact_kind"
+            ]
+            == "internal-export-package"
+            for item in attempts
+        )
 
         actions = (
             get_frdo_audit_actions(
@@ -2361,6 +2419,10 @@ def test_frdo_admin_export_preparation_api() -> None:
     finally:
         delete_frdo_test_artifact(
             artifact_path
+        )
+
+        delete_frdo_test_artifact(
+            second_artifact_path
         )
 
         cleanup_frdo_fixtures(

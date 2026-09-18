@@ -38,6 +38,11 @@ from app.services.compliance_registry_contract import (
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
+from app.services.compliance_registry_contract import (
+    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE,
+    REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD,
+    REGISTRY_ARTIFACT_KINDS,
+)
 from app.services.document_storage import (
     delete_private_storage_file,
     resolve_private_storage_path,
@@ -137,12 +142,34 @@ def normalize_attempt_schema_version(
     return normalized
 
 
+def normalize_registry_artifact_kind(
+    artifact_kind: str,
+) -> str:
+    normalized = str(
+        artifact_kind
+        or ""
+    ).strip()
+
+    if (
+        normalized
+        not in REGISTRY_ARTIFACT_KINDS
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Unsupported registry artifact kind"
+        )
+
+    return normalized
+
+
 async def create_registry_submission_attempt(
     session: AsyncSession,
     *,
     obligation_id: str,
     snapshot: Mapping[str, Any],
     generated_by_user_id: str | None,
+    artifact_kind: str = (
+        REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE
+    ),
     transport: str = "file",
     schema_version: str | None = None,
 ) -> RegistrySubmissionAttempt:
@@ -159,6 +186,12 @@ async def create_registry_submission_attempt(
     frozen_snapshot = (
         freeze_registry_snapshot(
             snapshot
+        )
+    )
+
+    normalized_artifact_kind = (
+        normalize_registry_artifact_kind(
+            artifact_kind
         )
     )
 
@@ -224,6 +257,9 @@ async def create_registry_submission_attempt(
             ),
             attempt_no=(
                 next_attempt_no
+            ),
+            artifact_kind=(
+                normalized_artifact_kind
             ),
             transport=(
                 normalized_transport
@@ -712,6 +748,15 @@ async def mark_registry_submission(
     )
 
     if (
+        attempt.artifact_kind
+        != REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Only portal upload artifacts "
+            "can be submitted"
+        )
+
+    if (
         attempt.submitted_at is not None
         or attempt.submitted_by_user_id is not None
     ):
@@ -1080,6 +1125,15 @@ async def mark_registry_exported(
         session,
         attempt_id=attempt_id,
     )
+
+    if (
+        attempt.artifact_kind
+        != REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Only portal upload artifacts "
+            "can finalize registry export"
+        )
 
     if (
         obligation.status

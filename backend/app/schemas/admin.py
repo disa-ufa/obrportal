@@ -794,6 +794,7 @@ class AdminRegistrySubmissionAttemptItem(BaseModel):
     obligation_id: str
     attempt_no: int
 
+    artifact_kind: str
     transport: str
     schema_version: str | None = None
 
