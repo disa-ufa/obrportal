@@ -86,6 +86,113 @@ def registry_name(
     return None
 
 
+def _name_is_loaded_from_active_program_loader(
+    relative: str,
+    call: ast.Call,
+    variable_name: str,
+) -> bool:
+    path = (
+        Path(__file__)
+        .resolve()
+        .parents[2]
+        / relative
+    )
+    text = path.read_text(
+        encoding="utf-8"
+    )
+    tree = ast.parse(
+        text
+    )
+
+    owner = None
+
+    for node in ast.walk(tree):
+        if not isinstance(
+            node,
+            (
+                ast.FunctionDef,
+                ast.AsyncFunctionDef,
+            ),
+        ):
+            continue
+
+        end_lineno = getattr(
+            node,
+            "end_lineno",
+            node.lineno,
+        )
+
+        if (
+            node.lineno
+            <= call.lineno
+            <= end_lineno
+        ):
+            if (
+                owner is None
+                or node.lineno
+                >= owner.lineno
+            ):
+                owner = node
+
+    assert owner is not None, relative
+
+    for node in ast.walk(owner):
+        target_name = None
+        assigned_value = None
+
+        if isinstance(
+            node,
+            ast.Assign,
+        ):
+            if len(node.targets) != 1:
+                continue
+
+            target = node.targets[0]
+
+            if isinstance(
+                target,
+                ast.Name,
+            ):
+                target_name = target.id
+                assigned_value = node.value
+
+        elif isinstance(
+            node,
+            ast.AnnAssign,
+        ):
+            if isinstance(
+                node.target,
+                ast.Name,
+            ):
+                target_name = (
+                    node.target.id
+                )
+                assigned_value = (
+                    node.value
+                )
+
+        if (
+            target_name
+            != variable_name
+            or assigned_value is None
+        ):
+            continue
+
+        rendered = ast.unparse(
+            assigned_value
+        )
+
+        if (
+            "load_course_mintrud_learn_programs"
+            in rendered
+            and "active_only=True"
+            in rendered
+        ):
+            return True
+
+    return False
+
+
 def test_all_production_mintrud_calls_load_active_programs():
     calls = []
 
@@ -113,6 +220,19 @@ def test_all_production_mintrud_calls_load_active_programs():
         )
 
         assert value is not None, relative
+
+        if isinstance(
+            value,
+            ast.Name,
+        ):
+            assert (
+                _name_is_loaded_from_active_program_loader(
+                    relative,
+                    call,
+                    value.id,
+                )
+            ), relative
+            continue
 
         rendered = ast.unparse(
             value

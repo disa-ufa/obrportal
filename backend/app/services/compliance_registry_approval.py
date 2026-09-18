@@ -15,6 +15,9 @@ from app.services.compliance_registry_contract import (
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
+from app.services.mintrud_learn_programs import (
+    build_mintrud_learn_program_snapshot,
+)
 
 
 APPROVAL_SNAPSHOT_SCHEMA_VERSION = "registry-approval-v1"
@@ -187,6 +190,7 @@ def build_registry_approval_snapshot(
     learner_profile: object | None,
     document: object | None = None,
     mintrud_context: object | None = None,
+    mintrud_learn_programs: tuple[object, ...] = (),
 ) -> dict[str, Any]:
     snapshot: dict[
         str,
@@ -264,6 +268,14 @@ def build_registry_approval_snapshot(
                 "knowledge_check_date",
                 "protocol_number",
             ),
+        )
+
+        snapshot[
+            "mintrud_learn_programs"
+        ] = (
+            build_mintrud_learn_program_snapshot(
+                mintrud_learn_programs
+            )
         )
 
         return snapshot

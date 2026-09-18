@@ -22,6 +22,9 @@ from app.services.compliance_registry_approval import (
     build_registry_approval_snapshot,
     is_registry_approval_current,
 )
+from app.services.mintrud_learn_programs import (
+    load_course_mintrud_learn_programs,
+)
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_ACCEPTED,
     OBLIGATION_STATUS_APPROVED,
@@ -1033,12 +1036,25 @@ async def _build_current_registry_approval_snapshot(
                     "Mintrud approval context is missing"
                 )
 
+            mintrud_learn_programs = (
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            )
+
             return build_registry_approval_snapshot(
                 registry=REGISTRY_MINTRUD,
                 enrollment=enrollment,
                 course=course,
                 learner_profile=learner_profile,
                 mintrud_context=mintrud_context,
+                mintrud_learn_programs=(
+                    mintrud_learn_programs
+                ),
             )
 
     raise RegistrySubmissionAttemptError(

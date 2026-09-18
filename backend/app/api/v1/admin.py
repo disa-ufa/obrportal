@@ -10726,6 +10726,16 @@ async def approve_admin_mintrud_obligation(
         .scalar_one_or_none()
     )
 
+    mintrud_learn_programs = (
+        await load_course_mintrud_learn_programs(
+            session,
+            course_id=str(
+                course.id
+            ),
+            active_only=True,
+        )
+    )
+
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
@@ -10737,13 +10747,7 @@ async def approve_admin_mintrud_obligation(
             ),
             organization=organization,
             mintrud_learn_programs=(
-                await load_course_mintrud_learn_programs(
-                    session,
-                    course_id=str(
-                        course.id
-                    ),
-                    active_only=True,
-                )
+                mintrud_learn_programs
             ),
             mintrud_context=(
                 mintrud_context
@@ -10816,6 +10820,9 @@ async def approve_admin_mintrud_obligation(
             ),
             mintrud_context=(
                 mintrud_context
+            ),
+            mintrud_learn_programs=(
+                mintrud_learn_programs
             ),
         )
     )
