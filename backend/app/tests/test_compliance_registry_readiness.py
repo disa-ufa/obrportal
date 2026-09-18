@@ -333,6 +333,9 @@ def test_incomplete_enrollment_blocks_frdo_readiness() -> None:
 def test_mintrud_external_provider_is_ready_with_complete_data() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -352,6 +355,9 @@ def test_mintrud_external_provider_is_ready_with_complete_data() -> None:
 def test_mintrud_employer_self_training_does_not_require_employer_fields() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -377,6 +383,9 @@ def test_mintrud_employer_self_training_does_not_require_employer_fields() -> No
 def test_mintrud_missing_context_blocks_readiness() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -399,6 +408,9 @@ def test_mintrud_missing_context_blocks_readiness() -> None:
 def test_mintrud_missing_profile_is_reported_with_complete_context() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -457,6 +469,9 @@ def test_mintrud_identity_gaps_are_explicit(
 
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -540,6 +555,9 @@ def test_mintrud_context_gaps_are_explicit(
 ) -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -585,6 +603,9 @@ def test_mintrud_external_provider_requires_sending_employer(
 ) -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -610,6 +631,9 @@ def test_mintrud_external_provider_requires_sending_employer(
 def test_organization_is_not_inferred_as_mintrud_employer() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         mintrud_learn_programs=(
             mintrud_program(),
         ),
@@ -646,6 +670,9 @@ def test_organization_is_not_inferred_as_mintrud_employer() -> None:
 def test_mintrud_missing_learn_program_blocks_readiness() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -666,6 +693,9 @@ def test_mintrud_missing_learn_program_blocks_readiness() -> None:
 def test_mintrud_inactive_program_does_not_satisfy_readiness() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -690,6 +720,9 @@ def test_mintrud_inactive_program_does_not_satisfy_readiness() -> None:
 def test_mintrud_other_schema_program_does_not_satisfy_readiness() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),

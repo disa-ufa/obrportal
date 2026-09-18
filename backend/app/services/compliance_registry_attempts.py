@@ -25,6 +25,9 @@ from app.services.compliance_registry_approval import (
 from app.services.mintrud_learn_programs import (
     load_course_mintrud_learn_programs,
 )
+from app.services.mintrud_reporting_organization import (
+    resolve_mintrud_reporting_organization,
+)
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_ACCEPTED,
     OBLIGATION_STATUS_APPROVED,
@@ -1048,6 +1051,9 @@ async def _build_current_registry_approval_snapshot(
 
             return build_registry_approval_snapshot(
                 registry=REGISTRY_MINTRUD,
+                mintrud_reporting_organization=(
+                    resolve_mintrud_reporting_organization()
+                ),
                 enrollment=enrollment,
                 course=course,
                 learner_profile=learner_profile,

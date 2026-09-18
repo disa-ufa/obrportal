@@ -191,6 +191,7 @@ def build_registry_approval_snapshot(
     document: object | None = None,
     mintrud_context: object | None = None,
     mintrud_learn_programs: tuple[object, ...] = (),
+    mintrud_reporting_organization: object | None = None,
 ) -> dict[str, Any]:
     snapshot: dict[
         str,
@@ -276,6 +277,16 @@ def build_registry_approval_snapshot(
             build_mintrud_learn_program_snapshot(
                 mintrud_learn_programs
             )
+        )
+
+        snapshot[
+            "mintrud_reporting_organization"
+        ] = _field_snapshot(
+            mintrud_reporting_organization,
+            (
+                "name",
+                "inn",
+            ),
         )
 
         return snapshot

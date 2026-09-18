@@ -451,6 +451,7 @@ def _evaluate_mintrud_readiness(
     learner_profile: Any,
     mintrud_context: Any,
     mintrud_learn_programs: Any,
+    mintrud_reporting_organization: Any,
 ) -> RegistryReadinessResult:
     issues = _evaluate_completion_context(
         enrollment=enrollment,
@@ -469,6 +470,50 @@ def _evaluate_mintrud_readiness(
                 "At least one active Mintrud learn program "
                 "for schema version 1.0.9 must be assigned "
                 "to the course."
+            ),
+        )
+
+    if not _text_present(
+        getattr(
+            mintrud_reporting_organization,
+            "name",
+            None,
+        )
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "mintrud."
+                "reporting_organization_name_missing"
+            ),
+            field=(
+                "mintrud_reporting_organization.name"
+            ),
+            message=(
+                "Mintrud reporting organization name "
+                "is missing."
+            ),
+        )
+
+    if not _text_present(
+        getattr(
+            mintrud_reporting_organization,
+            "inn",
+            None,
+        )
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "mintrud."
+                "reporting_organization_inn_missing"
+            ),
+            field=(
+                "mintrud_reporting_organization.inn"
+            ),
+            message=(
+                "Mintrud reporting organization INN "
+                "is missing."
             ),
         )
 
@@ -748,6 +793,7 @@ def evaluate_registry_readiness(
     organization: Any = None,
     mintrud_context: Any = None,
     mintrud_learn_programs: Any = None,
+    mintrud_reporting_organization: Any = None,
 ) -> RegistryReadinessResult:
     # organization is accepted now because it is part of
     # registry preparation context, but it is deliberately
@@ -774,6 +820,9 @@ def evaluate_registry_readiness(
             mintrud_context=mintrud_context,
             mintrud_learn_programs=(
                 mintrud_learn_programs
+            ),
+            mintrud_reporting_organization=(
+                mintrud_reporting_organization
             ),
         )
 

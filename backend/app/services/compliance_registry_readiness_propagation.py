@@ -25,6 +25,9 @@ from app.services.compliance_registry_readiness import (
 from app.services.mintrud_learn_programs import (
     load_course_mintrud_learn_programs,
 )
+from app.services.mintrud_reporting_organization import (
+    resolve_mintrud_reporting_organization,
+)
 
 
 LEARNER_PROFILE_READINESS_FIELDS = frozenset(
@@ -234,6 +237,9 @@ async def refresh_registry_readiness_for_user(
 
             readiness = evaluate_registry_readiness(
                 registry=REGISTRY_MINTRUD,
+                mintrud_reporting_organization=(
+                    resolve_mintrud_reporting_organization()
+                ),
                 enrollment=enrollment,
                 course=course,
                 learner=learner,

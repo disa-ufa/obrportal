@@ -125,6 +125,9 @@ from app.services.mintrud_learn_programs import (
     replace_course_mintrud_learn_programs,
     resolve_active_mintrud_learn_programs,
 )
+from app.services.mintrud_reporting_organization import (
+    resolve_mintrud_reporting_organization,
+)
 from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
     normalize_lesson_block_type,
@@ -9681,6 +9684,9 @@ async def validate_admin_mintrud_obligation(
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                resolve_mintrud_reporting_organization()
+            ),
             enrollment=enrollment,
             course=course,
             learner=learner,
@@ -10091,6 +10097,9 @@ async def update_admin_mintrud_obligation_context(
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                resolve_mintrud_reporting_organization()
+            ),
             enrollment=enrollment,
             course=course,
             learner=learner,
@@ -10736,9 +10745,16 @@ async def approve_admin_mintrud_obligation(
         )
     )
 
+    mintrud_reporting_organization = (
+        resolve_mintrud_reporting_organization()
+    )
+
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                mintrud_reporting_organization
+            ),
             enrollment=enrollment,
             course=course,
             learner=learner,
@@ -10813,6 +10829,9 @@ async def approve_admin_mintrud_obligation(
     approval_snapshot = (
         build_registry_approval_snapshot(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                mintrud_reporting_organization
+            ),
             enrollment=enrollment,
             course=course,
             learner_profile=(
