@@ -252,6 +252,7 @@ def build_registry_approval_snapshot(
             (
                 "last_name",
                 "first_name",
+                "middle_name",
                 "snils",
             ),
         )

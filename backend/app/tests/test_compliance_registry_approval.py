@@ -258,6 +258,7 @@ def test_mintrud_snapshot_contains_exact_approval_inputs():
     ] == {
         "last_name": "Tester",
         "first_name": "Worker",
+        "middle_name": None,
         "snils": "000-000-000 00",
     }
 
