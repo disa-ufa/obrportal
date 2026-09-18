@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.models.mintrud_learn_program import (
+    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
+)
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
     MINTRUD_REPORTING_SCENARIOS,
@@ -380,6 +383,66 @@ def _evaluate_frdo_readiness(
     )
 
 
+def _has_current_active_mintrud_learn_program(
+    programs: Any,
+) -> bool:
+    if programs is None:
+        return False
+
+    try:
+        candidates = tuple(
+            programs
+        )
+    except TypeError:
+        return False
+
+    for program in candidates:
+        if program is None:
+            continue
+
+        schema_version = str(
+            getattr(
+                program,
+                "schema_version",
+                "",
+            )
+            or ""
+        )
+
+        if (
+            schema_version
+            != MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109
+        ):
+            continue
+
+        if (
+            getattr(
+                program,
+                "is_active",
+                False,
+            )
+            is not True
+        ):
+            continue
+
+        learn_program_id = getattr(
+            program,
+            "learn_program_id",
+            None,
+        )
+
+        try:
+            if int(learn_program_id) > 0:
+                return True
+        except (
+            TypeError,
+            ValueError,
+        ):
+            continue
+
+    return False
+
+
 def _evaluate_mintrud_readiness(
     *,
     enrollment: Any,
@@ -387,12 +450,27 @@ def _evaluate_mintrud_readiness(
     learner: Any,
     learner_profile: Any,
     mintrud_context: Any,
+    mintrud_learn_programs: Any,
 ) -> RegistryReadinessResult:
     issues = _evaluate_completion_context(
         enrollment=enrollment,
         course=course,
         learner=learner,
     )
+
+    if not _has_current_active_mintrud_learn_program(
+        mintrud_learn_programs
+    ):
+        _append_issue(
+            issues,
+            code="mintrud.learn_program_missing",
+            field="course.mintrud_learn_programs",
+            message=(
+                "At least one active Mintrud learn program "
+                "for schema version 1.0.9 must be assigned "
+                "to the course."
+            ),
+        )
 
     if learner_profile is None:
         _append_issue(
@@ -669,6 +747,7 @@ def evaluate_registry_readiness(
     document: Any = None,
     organization: Any = None,
     mintrud_context: Any = None,
+    mintrud_learn_programs: Any = None,
 ) -> RegistryReadinessResult:
     # organization is accepted now because it is part of
     # registry preparation context, but it is deliberately
@@ -693,6 +772,9 @@ def evaluate_registry_readiness(
             learner=learner,
             learner_profile=learner_profile,
             mintrud_context=mintrud_context,
+            mintrud_learn_programs=(
+                mintrud_learn_programs
+            ),
         )
 
     raise ValueError(

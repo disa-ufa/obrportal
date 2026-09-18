@@ -21,6 +21,11 @@ from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learner_profile import LearnerProfile
+from app.models.mintrud_learn_program import (
+    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
+    CourseMintrudLearnProgram,
+    MintrudLearnProgram,
+)
 from app.models.mintrud_registry_context import (
     MintrudRegistryContext,
 )
@@ -222,6 +227,51 @@ def create_mintrud_fixture(
 
             await session.flush()
 
+            mintrud_program = MintrudLearnProgram(
+                learn_program_id=(
+                    int(
+                        suffix[:7],
+                        16,
+                    )
+                    + 1
+                ),
+                code=(
+                    "test-mintrud-"
+                    + suffix
+                ),
+                title=(
+                    "Mintrud integration test program "
+                    + suffix[:8]
+                ),
+                schema_version=(
+                    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109
+                ),
+                is_active=True,
+            )
+
+            session.add(
+                mintrud_program
+            )
+
+            await session.flush()
+
+            course_program = (
+                CourseMintrudLearnProgram(
+                    course_id=str(
+                        course.id
+                    ),
+                    mintrud_learn_program_id=str(
+                        mintrud_program.id
+                    ),
+                )
+            )
+
+            session.add(
+                course_program
+            )
+
+            await session.flush()
+
             profile = LearnerProfile(
                 user_id=str(user.id),
                 last_name="Ivanov",
@@ -386,6 +436,9 @@ def create_mintrud_fixture(
                 "course_id": str(
                     course.id
                 ),
+                "mintrud_program_id": str(
+                    mintrud_program.id
+                ),
                 "user_id": str(
                     user.id
                 ),
@@ -491,11 +544,38 @@ def cleanup_mintrud_fixtures(
 
                 await session.execute(
                     delete(
+                        CourseMintrudLearnProgram
+                    ).where(
+                        CourseMintrudLearnProgram.course_id
+                        == fixture[
+                            "course_id"
+                        ],
+                        CourseMintrudLearnProgram
+                        .mintrud_learn_program_id
+                        == fixture[
+                            "mintrud_program_id"
+                        ],
+                    )
+                )
+
+                await session.execute(
+                    delete(
                         Course
                     ).where(
                         Course.id
                         == fixture[
                             "course_id"
+                        ]
+                    )
+                )
+
+                await session.execute(
+                    delete(
+                        MintrudLearnProgram
+                    ).where(
+                        MintrudLearnProgram.id
+                        == fixture[
+                            "mintrud_program_id"
                         ]
                     )
                 )

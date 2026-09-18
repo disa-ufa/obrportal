@@ -9688,6 +9688,15 @@ async def validate_admin_mintrud_obligation(
                 learner_profile
             ),
             organization=organization,
+            mintrud_learn_programs=(
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            ),
             mintrud_context=(
                 mintrud_context
             ),
@@ -10089,6 +10098,15 @@ async def update_admin_mintrud_obligation_context(
                 learner_profile
             ),
             organization=organization,
+            mintrud_learn_programs=(
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            ),
             mintrud_context=(
                 mintrud_context
             ),
@@ -10718,6 +10736,15 @@ async def approve_admin_mintrud_obligation(
                 learner_profile
             ),
             organization=organization,
+            mintrud_learn_programs=(
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            ),
             mintrud_context=(
                 mintrud_context
             ),

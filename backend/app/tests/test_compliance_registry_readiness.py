@@ -103,6 +103,22 @@ def mintrud_context(**overrides):
     )
 
 
+def mintrud_program(
+    *,
+    learn_program_id: int = 1,
+    schema_version: str = "1.0.9",
+    is_active: bool = True,
+):
+    return SimpleNamespace(
+        id="mintrud-program-1",
+        learn_program_id=learn_program_id,
+        code="PROGRAM-1",
+        title="Mintrud Program 1",
+        schema_version=schema_version,
+        is_active=is_active,
+    )
+
+
 def test_frdo_is_ready_with_minimum_supported_data() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_FRDO,
@@ -317,6 +333,9 @@ def test_incomplete_enrollment_blocks_frdo_readiness() -> None:
 def test_mintrud_external_provider_is_ready_with_complete_data() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -333,6 +352,9 @@ def test_mintrud_external_provider_is_ready_with_complete_data() -> None:
 def test_mintrud_employer_self_training_does_not_require_employer_fields() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -355,6 +377,9 @@ def test_mintrud_employer_self_training_does_not_require_employer_fields() -> No
 def test_mintrud_missing_context_blocks_readiness() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -374,6 +399,9 @@ def test_mintrud_missing_context_blocks_readiness() -> None:
 def test_mintrud_missing_profile_is_reported_with_complete_context() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -429,6 +457,9 @@ def test_mintrud_identity_gaps_are_explicit(
 
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -509,6 +540,9 @@ def test_mintrud_context_gaps_are_explicit(
 ) -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -551,6 +585,9 @@ def test_mintrud_external_provider_requires_sending_employer(
 ) -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -573,6 +610,9 @@ def test_mintrud_external_provider_requires_sending_employer(
 def test_organization_is_not_inferred_as_mintrud_employer() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
+        mintrud_learn_programs=(
+            mintrud_program(),
+        ),
         enrollment=completed_enrollment(),
         course=course(),
         learner=learner(),
@@ -601,6 +641,94 @@ def test_organization_is_not_inferred_as_mintrud_employer() -> None:
         in result.error_codes
     )
 
+
+
+def test_mintrud_missing_learn_program_blocks_readiness() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(),
+        mintrud_learn_programs=(),
+    )
+
+    assert result.is_ready is False
+    assert (
+        "mintrud.learn_program_missing"
+        in result.error_codes
+    )
+
+
+def test_mintrud_inactive_program_does_not_satisfy_readiness() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(),
+        mintrud_learn_programs=(
+            mintrud_program(
+                is_active=False,
+            ),
+        ),
+    )
+
+    assert result.is_ready is False
+    assert (
+        "mintrud.learn_program_missing"
+        in result.error_codes
+    )
+
+
+def test_mintrud_other_schema_program_does_not_satisfy_readiness() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(),
+        mintrud_learn_programs=(
+            mintrud_program(
+                schema_version="1.0.8",
+            ),
+        ),
+    )
+
+    assert result.is_ready is False
+    assert (
+        "mintrud.learn_program_missing"
+        in result.error_codes
+    )
+
+
+def test_frdo_does_not_require_mintrud_learn_program() -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils=None,
+        ),
+        document=document(),
+        mintrud_learn_programs=(),
+    )
+
+    assert result.is_ready is True
+    assert (
+        "mintrud.learn_program_missing"
+        not in result.error_codes
+    )
 
 
 def test_unknown_registry_is_rejected() -> None:

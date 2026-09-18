@@ -22,6 +22,9 @@ from app.services.compliance_registry_readiness import (
     RegistryReadinessResult,
     evaluate_registry_readiness,
 )
+from app.services.mintrud_learn_programs import (
+    load_course_mintrud_learn_programs,
+)
 
 
 LEARNER_PROFILE_READINESS_FIELDS = frozenset(
@@ -237,6 +240,15 @@ async def refresh_registry_readiness_for_user(
                 learner_profile=learner_profile,
                 organization=organization,
                 mintrud_context=mintrud_context,
+                mintrud_learn_programs=(
+                    await load_course_mintrud_learn_programs(
+                        session,
+                        course_id=str(
+                            course.id
+                        ),
+                        active_only=True,
+                    )
+                ),
             )
 
         else:
