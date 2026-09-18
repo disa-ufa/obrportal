@@ -1583,6 +1583,7 @@ def prepare_exported_artifact_attempt(
                     ],
                     transport="file",
                     schema_version=None,
+                    artifact_kind="portal-upload-artifact",
                 )
             )
 
@@ -2563,6 +2564,9 @@ def prepare_attached_approved_attempt(
                     generated_by_user_id=fixture[
                         "user_id"
                     ],
+                    artifact_kind=(
+                        "portal-upload-artifact"
+                    ),
                     transport="file",
                     schema_version=None,
                 )
@@ -3051,6 +3055,7 @@ def test_mark_registry_exported_rejects_non_latest_attempt(
                         generated_by_user_id=fixture[
                             "user_id"
                         ],
+                        artifact_kind="portal-upload-artifact",
                     )
                 )
 
@@ -3079,6 +3084,7 @@ def test_mark_registry_exported_rejects_non_latest_attempt(
                         generated_by_user_id=fixture[
                             "user_id"
                         ],
+                        artifact_kind="portal-upload-artifact",
                     )
                 )
 

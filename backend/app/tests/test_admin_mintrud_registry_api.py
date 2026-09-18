@@ -21,6 +21,11 @@ from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.learner_profile import LearnerProfile
+from app.models.mintrud_learn_program import (
+    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
+    CourseMintrudLearnProgram,
+    MintrudLearnProgram,
+)
 from app.models.mintrud_registry_context import (
     MintrudRegistryContext,
 )
@@ -222,6 +227,51 @@ def create_mintrud_fixture(
 
             await session.flush()
 
+            mintrud_program = MintrudLearnProgram(
+                learn_program_id=(
+                    int(
+                        suffix[:7],
+                        16,
+                    )
+                    + 1
+                ),
+                code=(
+                    "test-mintrud-"
+                    + suffix
+                ),
+                title=(
+                    "Mintrud integration test program "
+                    + suffix[:8]
+                ),
+                schema_version=(
+                    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109
+                ),
+                is_active=True,
+            )
+
+            session.add(
+                mintrud_program
+            )
+
+            await session.flush()
+
+            course_program = (
+                CourseMintrudLearnProgram(
+                    course_id=str(
+                        course.id
+                    ),
+                    mintrud_learn_program_id=str(
+                        mintrud_program.id
+                    ),
+                )
+            )
+
+            session.add(
+                course_program
+            )
+
+            await session.flush()
+
             profile = LearnerProfile(
                 user_id=str(user.id),
                 last_name="Ivanov",
@@ -386,6 +436,9 @@ def create_mintrud_fixture(
                 "course_id": str(
                     course.id
                 ),
+                "mintrud_program_id": str(
+                    mintrud_program.id
+                ),
                 "user_id": str(
                     user.id
                 ),
@@ -491,11 +544,38 @@ def cleanup_mintrud_fixtures(
 
                 await session.execute(
                     delete(
+                        CourseMintrudLearnProgram
+                    ).where(
+                        CourseMintrudLearnProgram.course_id
+                        == fixture[
+                            "course_id"
+                        ],
+                        CourseMintrudLearnProgram
+                        .mintrud_learn_program_id
+                        == fixture[
+                            "mintrud_program_id"
+                        ],
+                    )
+                )
+
+                await session.execute(
+                    delete(
                         Course
                     ).where(
                         Course.id
                         == fixture[
                             "course_id"
+                        ]
+                    )
+                )
+
+                await session.execute(
+                    delete(
+                        MintrudLearnProgram
+                    ).where(
+                        MintrudLearnProgram.id
+                        == fixture[
+                            "mintrud_program_id"
                         ]
                     )
                 )
@@ -1942,6 +2022,9 @@ def prepare_mintrud_exported_attempt(
                     "obligation_id"
                 ],
                 attempt_no=1,
+                artifact_kind=(
+                    "portal-upload-artifact"
+                ),
                 transport="file",
                 schema_version=None,
                 snapshot_json={
@@ -2589,6 +2672,7 @@ def test_mintrud_admin_export_preparation_api() -> None:
     )
 
     artifact_path = None
+    second_artifact_path = None
 
     try:
         admin_token = login(
@@ -2687,6 +2771,13 @@ def test_mintrud_admin_export_preparation_api() -> None:
         assert (
             attempt["transport"]
             == "file"
+        )
+
+        assert (
+            attempt[
+                "artifact_kind"
+            ]
+            == "internal-export-package"
         )
 
         assert (
@@ -2883,7 +2974,7 @@ def test_mintrud_admin_export_preparation_api() -> None:
             == package
         )
 
-        status_code, duplicate = (
+        status_code, second_attempt = (
             request_json(
                 "POST",
                 export_path,
@@ -2891,10 +2982,35 @@ def test_mintrud_admin_export_preparation_api() -> None:
             )
         )
 
-        assert status_code == 409
+        assert status_code == 201
         assert isinstance(
-            duplicate,
+            second_attempt,
             dict,
+        )
+
+        assert (
+            second_attempt[
+                "attempt_no"
+            ]
+            == 2
+        )
+
+        assert (
+            second_attempt[
+                "artifact_kind"
+            ]
+            == "internal-export-package"
+        )
+
+        second_artifact_path = (
+            get_mintrud_attempt_artifact_path(
+                second_attempt["id"]
+            )
+        )
+
+        assert (
+            second_artifact_path
+            is not None
         )
 
         status_code, attempts = (
@@ -2906,7 +3022,29 @@ def test_mintrud_admin_export_preparation_api() -> None:
         )
 
         assert status_code == 200
-        assert len(attempts) == 1
+        assert len(attempts) == 2
+
+        assert (
+            attempts[0][
+                "attempt_no"
+            ]
+            == 2
+        )
+
+        assert (
+            attempts[1][
+                "attempt_no"
+            ]
+            == 1
+        )
+
+        assert all(
+            item[
+                "artifact_kind"
+            ]
+            == "internal-export-package"
+            for item in attempts
+        )
 
         actions = (
             get_mintrud_audit_actions(
@@ -2923,6 +3061,10 @@ def test_mintrud_admin_export_preparation_api() -> None:
     finally:
         delete_mintrud_test_artifact(
             artifact_path
+        )
+
+        delete_mintrud_test_artifact(
+            second_artifact_path
         )
 
         cleanup_mintrud_fixtures(
@@ -3201,4 +3343,217 @@ def test_mintrud_portal_artifact_fail_closed_contract() -> None:
     finally:
         cleanup_mintrud_fixtures(
             fixtures
+        )
+
+
+def test_mintrud_internal_export_rejects_stale_approval() -> None:
+    fixture = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="needs_approval",
+    )
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        obligation_id = fixture[
+            "obligation_id"
+        ]
+
+        approve_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        async def _make_current_data_stale():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    course = await session.scalar(
+                        select(
+                            Course
+                        ).where(
+                            Course.id
+                            == fixture[
+                                "course_id"
+                            ]
+                        )
+                    )
+
+                    assert course is not None
+
+                    course.title = (
+                        course.title
+                        + " stale"
+                    )
+
+                    await session.commit()
+
+            finally:
+                await engine.dispose()
+
+        asyncio.run(
+            _make_current_data_stale()
+        )
+
+        async def _read_registry_state():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    obligation = await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == obligation_id
+                        )
+                    )
+
+                    assert obligation is not None
+
+                    attempt_result = await session.execute(
+                        select(
+                            RegistrySubmissionAttempt.id
+                        ).where(
+                            RegistrySubmissionAttempt
+                            .obligation_id
+                            == obligation_id
+                        )
+                    )
+
+                    attempt_ids = list(
+                        attempt_result.scalars().all()
+                    )
+
+                    return (
+                        obligation.status,
+                        len(
+                            attempt_ids
+                        ),
+                    )
+
+            finally:
+                await engine.dispose()
+
+        (
+            before_status,
+            before_attempt_count,
+        ) = asyncio.run(
+            _read_registry_state()
+        )
+
+        assert (
+            before_status
+            == "approved"
+        )
+
+        assert (
+            before_attempt_count
+            == 0
+        )
+
+        export_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/export"
+        )
+
+        status_code, rejected = (
+            request_json(
+                "POST",
+                export_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            rejected,
+            dict,
+        )
+
+        detail = str(
+            rejected.get(
+                "detail",
+                "",
+            )
+        ).lower()
+
+        assert "stale" in detail
+
+        (
+            after_status,
+            after_attempt_count,
+        ) = asyncio.run(
+            _read_registry_state()
+        )
+
+        assert (
+            after_status
+            == "approved"
+        )
+
+        assert (
+            after_attempt_count
+            == 0
+        )
+
+        actions = get_mintrud_audit_actions(
+            obligation_id
+        )
+
+        assert (
+            "admin.mintrud_registry_"
+            "export_prepared"
+            not in actions
+        )
+
+    finally:
+        cleanup_mintrud_fixtures(
+            [
+                fixture,
+            ]
         )

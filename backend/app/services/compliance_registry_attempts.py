@@ -22,6 +22,12 @@ from app.services.compliance_registry_approval import (
     build_registry_approval_snapshot,
     is_registry_approval_current,
 )
+from app.services.mintrud_learn_programs import (
+    load_course_mintrud_learn_programs,
+)
+from app.services.mintrud_reporting_organization import (
+    resolve_mintrud_reporting_organization,
+)
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_ACCEPTED,
     OBLIGATION_STATUS_APPROVED,
@@ -31,6 +37,11 @@ from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_SUBMITTED,
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
+)
+from app.services.compliance_registry_contract import (
+    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE,
+    REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD,
+    REGISTRY_ARTIFACT_KINDS,
 )
 from app.services.document_storage import (
     delete_private_storage_file,
@@ -131,12 +142,34 @@ def normalize_attempt_schema_version(
     return normalized
 
 
+def normalize_registry_artifact_kind(
+    artifact_kind: str,
+) -> str:
+    normalized = str(
+        artifact_kind
+        or ""
+    ).strip()
+
+    if (
+        normalized
+        not in REGISTRY_ARTIFACT_KINDS
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Unsupported registry artifact kind"
+        )
+
+    return normalized
+
+
 async def create_registry_submission_attempt(
     session: AsyncSession,
     *,
     obligation_id: str,
     snapshot: Mapping[str, Any],
     generated_by_user_id: str | None,
+    artifact_kind: str = (
+        REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE
+    ),
     transport: str = "file",
     schema_version: str | None = None,
 ) -> RegistrySubmissionAttempt:
@@ -153,6 +186,12 @@ async def create_registry_submission_attempt(
     frozen_snapshot = (
         freeze_registry_snapshot(
             snapshot
+        )
+    )
+
+    normalized_artifact_kind = (
+        normalize_registry_artifact_kind(
+            artifact_kind
         )
     )
 
@@ -218,6 +257,9 @@ async def create_registry_submission_attempt(
             ),
             attempt_no=(
                 next_attempt_no
+            ),
+            artifact_kind=(
+                normalized_artifact_kind
             ),
             transport=(
                 normalized_transport
@@ -706,6 +748,15 @@ async def mark_registry_submission(
     )
 
     if (
+        attempt.artifact_kind
+        != REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Only portal upload artifacts "
+            "can be submitted"
+        )
+
+    if (
         attempt.submitted_at is not None
         or attempt.submitted_by_user_id is not None
     ):
@@ -1033,12 +1084,28 @@ async def _build_current_registry_approval_snapshot(
                     "Mintrud approval context is missing"
                 )
 
+            mintrud_learn_programs = (
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            )
+
             return build_registry_approval_snapshot(
                 registry=REGISTRY_MINTRUD,
+                mintrud_reporting_organization=(
+                    resolve_mintrud_reporting_organization()
+                ),
                 enrollment=enrollment,
                 course=course,
                 learner_profile=learner_profile,
                 mintrud_context=mintrud_context,
+                mintrud_learn_programs=(
+                    mintrud_learn_programs
+                ),
             )
 
     raise RegistrySubmissionAttemptError(
@@ -1046,19 +1113,12 @@ async def _build_current_registry_approval_snapshot(
     )
 
 
-async def mark_registry_exported(
+
+async def validate_registry_approval_current(
     session: AsyncSession,
     *,
-    attempt_id: str,
-) -> RegistrySubmissionAttempt:
-    (
-        attempt,
-        obligation,
-    ) = await _load_registry_attempt_and_obligation_for_update(
-        session,
-        attempt_id=attempt_id,
-    )
-
+    obligation: RegistryObligation,
+) -> None:
     if (
         obligation.status
         != OBLIGATION_STATUS_APPROVED
@@ -1081,6 +1141,33 @@ async def mark_registry_exported(
         raise RegistrySubmissionAttemptError(
             "Registry approval is stale and must be reapproved before export"
         )
+
+async def mark_registry_exported(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+) -> RegistrySubmissionAttempt:
+    (
+        attempt,
+        obligation,
+    ) = await _load_registry_attempt_and_obligation_for_update(
+        session,
+        attempt_id=attempt_id,
+    )
+
+    if (
+        attempt.artifact_kind
+        != REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Only portal upload artifacts "
+            "can finalize registry export"
+        )
+
+    await validate_registry_approval_current(
+        session,
+        obligation=obligation,
+    )
 
     if (
         attempt.submitted_at is not None

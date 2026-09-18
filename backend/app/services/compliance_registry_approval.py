@@ -15,6 +15,9 @@ from app.services.compliance_registry_contract import (
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
+from app.services.mintrud_learn_programs import (
+    build_mintrud_learn_program_snapshot,
+)
 
 
 APPROVAL_SNAPSHOT_SCHEMA_VERSION = "registry-approval-v1"
@@ -31,6 +34,9 @@ APPROVAL_INVALIDATION_COURSE_TITLE_CHANGED = (
 APPROVAL_INVALIDATION_MINTRUD_CONTEXT_CHANGED = (
     "mintrud_context_changed"
 )
+APPROVAL_INVALIDATION_MINTRUD_PROGRAMS_CHANGED = (
+    "mintrud_programs_changed"
+)
 
 APPROVAL_INVALIDATION_REASONS = frozenset(
     {
@@ -38,6 +44,7 @@ APPROVAL_INVALIDATION_REASONS = frozenset(
         APPROVAL_INVALIDATION_COMPLETION_DOCUMENT_CHANGED,
         APPROVAL_INVALIDATION_COURSE_TITLE_CHANGED,
         APPROVAL_INVALIDATION_MINTRUD_CONTEXT_CHANGED,
+        APPROVAL_INVALIDATION_MINTRUD_PROGRAMS_CHANGED,
     }
 )
 
@@ -183,6 +190,8 @@ def build_registry_approval_snapshot(
     learner_profile: object | None,
     document: object | None = None,
     mintrud_context: object | None = None,
+    mintrud_learn_programs: tuple[object, ...] = (),
+    mintrud_reporting_organization: object | None = None,
 ) -> dict[str, Any]:
     snapshot: dict[
         str,
@@ -243,6 +252,7 @@ def build_registry_approval_snapshot(
             (
                 "last_name",
                 "first_name",
+                "middle_name",
                 "snils",
             ),
         )
@@ -259,6 +269,24 @@ def build_registry_approval_snapshot(
                 "knowledge_check_result",
                 "knowledge_check_date",
                 "protocol_number",
+            ),
+        )
+
+        snapshot[
+            "mintrud_learn_programs"
+        ] = (
+            build_mintrud_learn_program_snapshot(
+                mintrud_learn_programs
+            )
+        )
+
+        snapshot[
+            "mintrud_reporting_organization"
+        ] = _field_snapshot(
+            mintrud_reporting_organization,
+            (
+                "name",
+                "inn",
             ),
         )
 

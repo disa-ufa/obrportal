@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -159,6 +160,17 @@ class RegistrySubmissionAttempt(
             "attempt_no",
             name="uq_registry_submission_attempt_number",
         ),
+        CheckConstraint(
+            (
+                "artifact_kind IN "
+                "('internal-export-package', "
+                "'portal-upload-artifact')"
+            ),
+            name=(
+                "ck_registry_submission_attempt_"
+                "artifact_kind"
+            ),
+        ),
     )
 
     obligation_id: Mapped[str] = mapped_column(
@@ -172,6 +184,13 @@ class RegistrySubmissionAttempt(
 
     attempt_no: Mapped[int] = mapped_column(
         Integer,
+        nullable=False,
+    )
+
+    artifact_kind: Mapped[str] = mapped_column(
+        String(32),
+        default="internal-export-package",
+        server_default="internal-export-package",
         nullable=False,
     )
 

@@ -130,6 +130,23 @@ def build_mintrud_snapshot():
         snils="000-000-000 00",
     )
 
+    programs = (
+        SimpleNamespace(
+            id="program-2",
+            learn_program_id=2,
+            code="B",
+            title="Program B",
+            schema_version="1.0.9",
+        ),
+        SimpleNamespace(
+            id="program-1",
+            learn_program_id=1,
+            code="A",
+            title="Program A",
+            schema_version="1.0.9",
+        ),
+    )
+
     context = SimpleNamespace(
         reporting_scenario=(
             "external_training_provider"
@@ -155,10 +172,16 @@ def build_mintrud_snapshot():
     snapshot = (
         build_registry_approval_snapshot(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+            ),
             enrollment=enrollment,
             course=course,
             learner_profile=profile,
             mintrud_context=context,
+            mintrud_learn_programs=(
+                programs
+            ),
         )
     )
 
@@ -235,6 +258,7 @@ def test_mintrud_snapshot_contains_exact_approval_inputs():
     ] == {
         "last_name": "Tester",
         "first_name": "Worker",
+        "middle_name": None,
         "snils": "000-000-000 00",
     }
 
@@ -260,6 +284,126 @@ def test_mintrud_snapshot_contains_exact_approval_inputs():
         ),
     }
 
+    assert snapshot[
+        "mintrud_learn_programs"
+    ] == (
+        {
+            "id": "program-1",
+            "learn_program_id": 1,
+            "code": "A",
+            "title": "Program A",
+            "schema_version": "1.0.9",
+        },
+        {
+            "id": "program-2",
+            "learn_program_id": 2,
+            "code": "B",
+            "title": "Program B",
+            "schema_version": "1.0.9",
+        },
+    )
+
+    assert snapshot[
+        "mintrud_reporting_organization"
+    ] == {
+        "name": "Test Reporting Org",
+        "inn": "0274000000",
+    }
+
+
+
+def test_mintrud_program_change_changes_approval_fingerprint():
+    (
+        before,
+        enrollment,
+        course,
+        profile,
+        context,
+    ) = build_mintrud_snapshot()
+
+    changed_programs = (
+        SimpleNamespace(
+            id="program-3",
+            learn_program_id=3,
+            code="C",
+            title="Program C",
+            schema_version="1.0.9",
+        ),
+    )
+
+    after = build_registry_approval_snapshot(
+        registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(name="Test Reporting Org", inn="0274000000")
+        ),
+        enrollment=enrollment,
+        course=course,
+        learner_profile=profile,
+        mintrud_context=context,
+        mintrud_learn_programs=(
+            changed_programs
+        ),
+    )
+
+    assert (
+        fingerprint_registry_approval_snapshot(
+            before
+        )
+        != fingerprint_registry_approval_snapshot(
+            after
+        )
+    )
+
+
+def test_mintrud_reporting_org_changes_approval_fingerprint():
+    (
+        before,
+        enrollment,
+        course,
+        profile,
+        context,
+    ) = build_mintrud_snapshot()
+
+    programs = (
+        SimpleNamespace(
+            id="program-2",
+            learn_program_id=2,
+            code="B",
+            title="Program B",
+            schema_version="1.0.9",
+        ),
+        SimpleNamespace(
+            id="program-1",
+            learn_program_id=1,
+            code="A",
+            title="Program A",
+            schema_version="1.0.9",
+        ),
+    )
+
+    after = build_registry_approval_snapshot(
+        registry=REGISTRY_MINTRUD,
+        enrollment=enrollment,
+        course=course,
+        learner_profile=profile,
+        mintrud_context=context,
+        mintrud_learn_programs=programs,
+        mintrud_reporting_organization=(
+            SimpleNamespace(
+                name="Changed Reporting Org",
+                inn="0274000001",
+            )
+        ),
+    )
+
+    assert (
+        fingerprint_registry_approval_snapshot(
+            before
+        )
+        != fingerprint_registry_approval_snapshot(
+            after
+        )
+    )
 
 def test_canonical_json_and_fingerprint_are_order_independent():
     left = {

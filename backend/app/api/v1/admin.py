@@ -41,10 +41,10 @@ from app.services.compliance_registry_attempts import (
     attach_registry_submission_artifact,
     create_registry_submission_attempt,
     delete_registry_artifact_safely,
-    mark_registry_exported,
     mark_registry_submission,
     record_registry_submission_result,
     validate_registry_attempt_artifact_integrity,
+    validate_registry_approval_current,
 )
 from app.services.compliance_registry_portal_artifacts import (
     RegistryPortalArtifactContractUnavailable,
@@ -65,6 +65,9 @@ from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
     MINTRUD_REPORTING_SCENARIOS,
     MintrudRegistryContext,
+)
+from app.models.mintrud_learn_program import (
+    MintrudLearnProgram,
 )
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
@@ -98,6 +101,9 @@ from app.services.compliance_registry_contract import (
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
+from app.services.compliance_registry_contract import (
+    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE,
+)
 from app.services.compliance_registry_readiness import (
     evaluate_registry_readiness,
 )
@@ -106,10 +112,24 @@ from app.services.compliance_registry_approval import (
     build_registry_approval_snapshot,
 )
 from app.services.compliance_registry_approval_invalidation import (
+    invalidate_mintrud_registry_approvals_for_course,
     invalidate_registry_approval_for_document,
     invalidate_registry_approvals_for_course,
+    lock_mintrud_registry_approvals_for_course,
     lock_registry_approval_for_document,
     lock_registry_approvals_for_course,
+)
+from app.services.mintrud_learn_programs import (
+    MintrudLearnProgramSelectionError,
+    build_mintrud_learn_program_snapshot,
+    load_course_mintrud_learn_programs,
+    load_mintrud_learn_program_catalog,
+    mintrud_learn_program_selection_changed,
+    replace_course_mintrud_learn_programs,
+    resolve_active_mintrud_learn_programs,
+)
+from app.services.mintrud_reporting_organization import (
+    resolve_mintrud_reporting_organization,
 )
 from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
@@ -140,6 +160,7 @@ from app.schemas.admin import (
     AdminCourseCreate,
     AdminCourseDetail,
     AdminCourseItem,
+    AdminCourseMintrudLearnProgramUpdate,
     AdminCourseLessonCreate,
     AdminCourseLessonDetail,
     AdminCourseLessonItem,
@@ -175,6 +196,7 @@ from app.schemas.admin import (
     AdminDocumentItem,
     AdminFrdoObligationItem,
     AdminFrdoObligationValidationResult,
+    AdminMintrudLearnProgramItem,
     AdminMintrudObligationItem,
     AdminMintrudObligationValidationResult,
     AdminMintrudRegistryContext,
@@ -4162,6 +4184,247 @@ async def ensure_course_can_be_deleted(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete course with documents",
         )
+
+
+def build_admin_mintrud_learn_program_item(
+    program: MintrudLearnProgram,
+) -> AdminMintrudLearnProgramItem:
+    return AdminMintrudLearnProgramItem(
+        id=str(
+            program.id
+        ),
+        learn_program_id=(
+            program.learn_program_id
+        ),
+        code=program.code,
+        title=program.title,
+        schema_version=(
+            program.schema_version
+        ),
+        is_active=(
+            program.is_active
+        ),
+    )
+
+
+@router.get(
+    "/mintrud/learn-programs",
+    response_model=list[
+        AdminMintrudLearnProgramItem
+    ],
+)
+async def list_admin_mintrud_learn_programs(
+    _: User = Depends(
+        require_permission(
+            "catalog.write"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[AdminMintrudLearnProgramItem]:
+    programs = (
+        await load_mintrud_learn_program_catalog(
+            session,
+            active_only=True,
+        )
+    )
+
+    return [
+        build_admin_mintrud_learn_program_item(
+            program
+        )
+        for program in programs
+    ]
+
+
+@router.get(
+    "/courses/{course_id}/mintrud-programs",
+    response_model=list[
+        AdminMintrudLearnProgramItem
+    ],
+)
+async def get_admin_course_mintrud_programs(
+    course_id: str,
+    _: User = Depends(
+        require_permission(
+            "catalog.write"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[AdminMintrudLearnProgramItem]:
+    course = await get_admin_course_or_404(
+        course_id,
+        session,
+    )
+
+    programs = (
+        await load_course_mintrud_learn_programs(
+            session,
+            course_id=str(
+                course.id
+            ),
+            active_only=False,
+        )
+    )
+
+    return [
+        build_admin_mintrud_learn_program_item(
+            program
+        )
+        for program in programs
+    ]
+
+
+@router.put(
+    "/courses/{course_id}/mintrud-programs",
+    response_model=list[
+        AdminMintrudLearnProgramItem
+    ],
+)
+async def replace_admin_course_mintrud_programs(
+    course_id: str,
+    payload: AdminCourseMintrudLearnProgramUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "catalog.write"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[AdminMintrudLearnProgramItem]:
+    course = await get_admin_course_or_404(
+        course_id,
+        session,
+    )
+
+    try:
+        selected_programs = (
+            await resolve_active_mintrud_learn_programs(
+                session,
+                program_ids=(
+                    payload
+                    .mintrud_learn_program_ids
+                ),
+            )
+        )
+    except MintrudLearnProgramSelectionError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail={
+                "message": str(
+                    exc
+                ),
+                "invalid_program_ids": list(
+                    exc.invalid_program_ids
+                ),
+            },
+        ) from exc
+
+    current_programs = (
+        await load_course_mintrud_learn_programs(
+            session,
+            course_id=str(
+                course.id
+            ),
+            active_only=False,
+        )
+    )
+
+    changed = (
+        mintrud_learn_program_selection_changed(
+            current_programs,
+            selected_programs,
+        )
+    )
+
+    if not changed:
+        return [
+            build_admin_mintrud_learn_program_item(
+                program
+            )
+            for program in current_programs
+        ]
+
+    before_snapshot = list(
+        build_mintrud_learn_program_snapshot(
+            current_programs
+        )
+    )
+
+    after_snapshot = list(
+        build_mintrud_learn_program_snapshot(
+            selected_programs
+        )
+    )
+
+    await lock_mintrud_registry_approvals_for_course(
+        session,
+        course_id=str(
+            course.id
+        ),
+    )
+
+    try:
+        await replace_course_mintrud_learn_programs(
+            session,
+            course_id=str(
+                course.id
+            ),
+            programs=selected_programs,
+        )
+
+        await invalidate_mintrud_registry_approvals_for_course(
+            session,
+            course_id=str(
+                course.id
+            ),
+            invalidated_at=datetime.now(
+                timezone.utc
+            ),
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.course_mintrud_programs_updated"
+            ),
+            entity_type="course",
+            entity_id=str(
+                course.id
+            ),
+            payload={
+                "course": course_snapshot(
+                    course
+                ),
+                "before": before_snapshot,
+                "after": after_snapshot,
+                "changed_fields": [
+                    "mintrud_learn_program_ids"
+                ],
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    return [
+        build_admin_mintrud_learn_program_item(
+            program
+        )
+        for program in selected_programs
+    ]
 
 
 @router.get("/courses", response_model=list[AdminCourseItem])
@@ -9424,6 +9687,9 @@ async def validate_admin_mintrud_obligation(
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                resolve_mintrud_reporting_organization()
+            ),
             enrollment=enrollment,
             course=course,
             learner=learner,
@@ -9431,6 +9697,15 @@ async def validate_admin_mintrud_obligation(
                 learner_profile
             ),
             organization=organization,
+            mintrud_learn_programs=(
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            ),
             mintrud_context=(
                 mintrud_context
             ),
@@ -9825,6 +10100,9 @@ async def update_admin_mintrud_obligation_context(
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                resolve_mintrud_reporting_organization()
+            ),
             enrollment=enrollment,
             course=course,
             learner=learner,
@@ -9832,6 +10110,15 @@ async def update_admin_mintrud_obligation_context(
                 learner_profile
             ),
             organization=organization,
+            mintrud_learn_programs=(
+                await load_course_mintrud_learn_programs(
+                    session,
+                    course_id=str(
+                        course.id
+                    ),
+                    active_only=True,
+                )
+            ),
             mintrud_context=(
                 mintrud_context
             ),
@@ -10451,9 +10738,26 @@ async def approve_admin_mintrud_obligation(
         .scalar_one_or_none()
     )
 
+    mintrud_learn_programs = (
+        await load_course_mintrud_learn_programs(
+            session,
+            course_id=str(
+                course.id
+            ),
+            active_only=True,
+        )
+    )
+
+    mintrud_reporting_organization = (
+        resolve_mintrud_reporting_organization()
+    )
+
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                mintrud_reporting_organization
+            ),
             enrollment=enrollment,
             course=course,
             learner=learner,
@@ -10461,6 +10765,9 @@ async def approve_admin_mintrud_obligation(
                 learner_profile
             ),
             organization=organization,
+            mintrud_learn_programs=(
+                mintrud_learn_programs
+            ),
             mintrud_context=(
                 mintrud_context
             ),
@@ -10525,6 +10832,9 @@ async def approve_admin_mintrud_obligation(
     approval_snapshot = (
         build_registry_approval_snapshot(
             registry=REGISTRY_MINTRUD,
+            mintrud_reporting_organization=(
+                mintrud_reporting_organization
+            ),
             enrollment=enrollment,
             course=course,
             learner_profile=(
@@ -10532,6 +10842,9 @@ async def approve_admin_mintrud_obligation(
             ),
             mintrud_context=(
                 mintrud_context
+            ),
+            mintrud_learn_programs=(
+                mintrud_learn_programs
             ),
         )
     )
@@ -10646,6 +10959,9 @@ def build_admin_registry_submission_attempt_item(
         ),
         attempt_no=int(
             attempt.attempt_no
+        ),
+        artifact_kind=(
+            attempt.artifact_kind
         ),
         transport=attempt.transport,
         schema_version=(
@@ -11341,6 +11657,11 @@ async def prepare_admin_registry_export_attempt(
     artifact_path_to_cleanup: str | None = None
 
     try:
+        await validate_registry_approval_current(
+            session,
+            obligation=obligation,
+        )
+
         export_package = (
             build_registry_export_package(
                 obligation
@@ -11362,6 +11683,9 @@ async def prepare_admin_registry_export_attempt(
                 snapshot=export_package,
                 generated_by_user_id=str(
                     current_user.id
+                ),
+                artifact_kind=(
+                    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE
                 ),
                 transport="file",
                 schema_version=(
@@ -11385,15 +11709,6 @@ async def prepare_admin_registry_export_attempt(
 
         artifact_path_to_cleanup = (
             attempt.artifact_path
-        )
-
-        attempt = (
-            await mark_registry_exported(
-                session,
-                attempt_id=str(
-                    attempt.id
-                ),
-            )
         )
 
         response_item = (
@@ -11422,6 +11737,9 @@ async def prepare_admin_registry_export_attempt(
                 ),
                 "transport": (
                     attempt.transport
+                ),
+                "artifact_kind": (
+                    attempt.artifact_kind
                 ),
                 "schema_version": (
                     attempt.schema_version

@@ -12,6 +12,7 @@ from app.services.compliance_registry_approval import (
     APPROVAL_INVALIDATION_COMPLETION_DOCUMENT_CHANGED,
     APPROVAL_INVALIDATION_COURSE_TITLE_CHANGED,
     APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED,
+    APPROVAL_INVALIDATION_MINTRUD_PROGRAMS_CHANGED,
     approval_registries_for_learner_profile_fields,
     invalidate_registry_approval,
 )
@@ -157,6 +158,36 @@ async def invalidate_registry_approvals_for_course(
     )
 
 
+async def invalidate_mintrud_registry_approvals_for_course(
+    session: AsyncSession,
+    *,
+    course_id: str,
+    invalidated_at: datetime,
+) -> tuple[RegistryApprovalInvalidation, ...]:
+    result = await session.execute(
+        select(RegistryObligation)
+        .join(
+            Enrollment,
+            Enrollment.id
+            == RegistryObligation.enrollment_id,
+        )
+        .where(
+            Enrollment.course_id == str(course_id),
+            RegistryObligation.registry == REGISTRY_MINTRUD,
+            RegistryObligation.status
+            == OBLIGATION_STATUS_APPROVED,
+        )
+        .order_by(RegistryObligation.id)
+        .with_for_update()
+    )
+
+    return _apply_invalidation_rows(
+        result.scalars().all(),
+        reason=APPROVAL_INVALIDATION_MINTRUD_PROGRAMS_CHANGED,
+        invalidated_at=invalidated_at,
+    )
+
+
 async def invalidate_registry_approval_for_document(
     session: AsyncSession,
     *,
@@ -281,6 +312,35 @@ async def lock_registry_approvals_for_course(
         )
         for obligation
         in result.scalars().all()
+    )
+
+
+async def lock_mintrud_registry_approvals_for_course(
+    session: AsyncSession,
+    *,
+    course_id: str,
+) -> tuple[str, ...]:
+    with session.no_autoflush:
+        result = await session.execute(
+            select(RegistryObligation)
+            .join(
+                Enrollment,
+                Enrollment.id
+                == RegistryObligation.enrollment_id,
+            )
+            .where(
+                Enrollment.course_id == str(course_id),
+                RegistryObligation.registry == REGISTRY_MINTRUD,
+                RegistryObligation.status
+                == OBLIGATION_STATUS_APPROVED,
+            )
+            .order_by(RegistryObligation.id)
+            .with_for_update(of=RegistryObligation)
+        )
+
+    return tuple(
+        str(obligation.id)
+        for obligation in result.scalars().all()
     )
 
 

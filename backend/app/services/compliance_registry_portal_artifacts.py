@@ -3,17 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.services.compliance_registry_contract import (
+    REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE,
+    REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD,
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
-)
-
-
-REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE = (
-    "internal-export-package"
-)
-
-REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD = (
-    "portal-upload-artifact"
 )
 
 PORTAL_ARTIFACT_CONTRACT_STATUS_UNCONFIRMED = (

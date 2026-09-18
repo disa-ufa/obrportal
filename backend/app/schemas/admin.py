@@ -276,6 +276,22 @@ class AdminDocumentGenerationEventItem(BaseModel):
     created_at: datetime
 
 
+class AdminMintrudLearnProgramItem(BaseModel):
+    id: str
+    learn_program_id: int
+    code: str
+    title: str
+    schema_version: str
+    is_active: bool
+
+
+class AdminCourseMintrudLearnProgramUpdate(BaseModel):
+    mintrud_learn_program_ids: list[str] = Field(
+        default_factory=list,
+        max_length=100,
+    )
+
+
 class AdminCourseItem(BaseModel):
     id: str
     slug: str
@@ -778,6 +794,7 @@ class AdminRegistrySubmissionAttemptItem(BaseModel):
     obligation_id: str
     attempt_no: int
 
+    artifact_kind: str
     transport: str
     schema_version: str | None = None
 
