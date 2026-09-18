@@ -1113,28 +1113,12 @@ async def _build_current_registry_approval_snapshot(
     )
 
 
-async def mark_registry_exported(
+
+async def validate_registry_approval_current(
     session: AsyncSession,
     *,
-    attempt_id: str,
-) -> RegistrySubmissionAttempt:
-    (
-        attempt,
-        obligation,
-    ) = await _load_registry_attempt_and_obligation_for_update(
-        session,
-        attempt_id=attempt_id,
-    )
-
-    if (
-        attempt.artifact_kind
-        != REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
-    ):
-        raise RegistrySubmissionAttemptError(
-            "Only portal upload artifacts "
-            "can finalize registry export"
-        )
-
+    obligation: RegistryObligation,
+) -> None:
     if (
         obligation.status
         != OBLIGATION_STATUS_APPROVED
@@ -1157,6 +1141,33 @@ async def mark_registry_exported(
         raise RegistrySubmissionAttemptError(
             "Registry approval is stale and must be reapproved before export"
         )
+
+async def mark_registry_exported(
+    session: AsyncSession,
+    *,
+    attempt_id: str,
+) -> RegistrySubmissionAttempt:
+    (
+        attempt,
+        obligation,
+    ) = await _load_registry_attempt_and_obligation_for_update(
+        session,
+        attempt_id=attempt_id,
+    )
+
+    if (
+        attempt.artifact_kind
+        != REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+    ):
+        raise RegistrySubmissionAttemptError(
+            "Only portal upload artifacts "
+            "can finalize registry export"
+        )
+
+    await validate_registry_approval_current(
+        session,
+        obligation=obligation,
+    )
 
     if (
         attempt.submitted_at is not None

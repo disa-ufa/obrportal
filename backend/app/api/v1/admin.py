@@ -44,6 +44,7 @@ from app.services.compliance_registry_attempts import (
     mark_registry_submission,
     record_registry_submission_result,
     validate_registry_attempt_artifact_integrity,
+    validate_registry_approval_current,
 )
 from app.services.compliance_registry_portal_artifacts import (
     RegistryPortalArtifactContractUnavailable,
@@ -11656,6 +11657,11 @@ async def prepare_admin_registry_export_attempt(
     artifact_path_to_cleanup: str | None = None
 
     try:
+        await validate_registry_approval_current(
+            session,
+            obligation=obligation,
+        )
+
         export_package = (
             build_registry_export_package(
                 obligation

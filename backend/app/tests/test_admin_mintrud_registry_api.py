@@ -3344,3 +3344,216 @@ def test_mintrud_portal_artifact_fail_closed_contract() -> None:
         cleanup_mintrud_fixtures(
             fixtures
         )
+
+
+def test_mintrud_internal_export_rejects_stale_approval() -> None:
+    fixture = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="needs_approval",
+    )
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        obligation_id = fixture[
+            "obligation_id"
+        ]
+
+        approve_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        async def _make_current_data_stale():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    course = await session.scalar(
+                        select(
+                            Course
+                        ).where(
+                            Course.id
+                            == fixture[
+                                "course_id"
+                            ]
+                        )
+                    )
+
+                    assert course is not None
+
+                    course.title = (
+                        course.title
+                        + " stale"
+                    )
+
+                    await session.commit()
+
+            finally:
+                await engine.dispose()
+
+        asyncio.run(
+            _make_current_data_stale()
+        )
+
+        async def _read_registry_state():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    obligation = await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == obligation_id
+                        )
+                    )
+
+                    assert obligation is not None
+
+                    attempt_result = await session.execute(
+                        select(
+                            RegistrySubmissionAttempt.id
+                        ).where(
+                            RegistrySubmissionAttempt
+                            .obligation_id
+                            == obligation_id
+                        )
+                    )
+
+                    attempt_ids = list(
+                        attempt_result.scalars().all()
+                    )
+
+                    return (
+                        obligation.status,
+                        len(
+                            attempt_ids
+                        ),
+                    )
+
+            finally:
+                await engine.dispose()
+
+        (
+            before_status,
+            before_attempt_count,
+        ) = asyncio.run(
+            _read_registry_state()
+        )
+
+        assert (
+            before_status
+            == "approved"
+        )
+
+        assert (
+            before_attempt_count
+            == 0
+        )
+
+        export_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/export"
+        )
+
+        status_code, rejected = (
+            request_json(
+                "POST",
+                export_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            rejected,
+            dict,
+        )
+
+        detail = str(
+            rejected.get(
+                "detail",
+                "",
+            )
+        ).lower()
+
+        assert "stale" in detail
+
+        (
+            after_status,
+            after_attempt_count,
+        ) = asyncio.run(
+            _read_registry_state()
+        )
+
+        assert (
+            after_status
+            == "approved"
+        )
+
+        assert (
+            after_attempt_count
+            == 0
+        )
+
+        actions = get_mintrud_audit_actions(
+            obligation_id
+        )
+
+        assert (
+            "admin.mintrud_registry_"
+            "export_prepared"
+            not in actions
+        )
+
+    finally:
+        cleanup_mintrud_fixtures(
+            [
+                fixture,
+            ]
+        )
