@@ -10,6 +10,10 @@ from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learning_group import LearningGroup
 from app.models.learner_profile import LearnerProfile
 from app.models.mintrud_registry_context import MintrudRegistryContext
+from app.models.mintrud_learn_program import (
+    CourseMintrudLearnProgram,
+    MintrudLearnProgram,
+)
 from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
 from app.models.registry_obligation import (
@@ -35,6 +39,8 @@ __all__ = [
     "LearningGroup",
     "LearnerProfile",
     "MintrudRegistryContext",
+    "MintrudLearnProgram",
+    "CourseMintrudLearnProgram",
     "Organization",
     "RegistryObligation",
     "RegistrySubmissionAttempt",
