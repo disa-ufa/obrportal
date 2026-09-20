@@ -80,6 +80,24 @@ for marker in [
     "markAdminMintrudSubmissionAttemptSubmitted",
     "recordAdminFrdoSubmissionAttemptResult",
     "recordAdminMintrudSubmissionAttemptResult",
+    "ARTIFACT_KIND_LABELS",
+    "internal-export-package",
+    "portal-upload-artifact",
+    "artifact_kind",
+    "isPortalUploadArtifact",
+    "isHistoricalInternalLifecycle",
+    'data-testid="admin-registry-legacy-internal-lifecycle"',
+    "artifactDownloadLabel",
+    "MINTRUD_CONTEXT_TEXT",
+    "MINTRUD_REPORTING_SCENARIO_LABELS",
+    "MINTRUD_KNOWLEDGE_RESULT_LABELS",
+    "getReadinessPresentation",
+    'data-testid="admin-registry-readiness-state"',
+    'data-testid="admin-registries-mintrud-external-employer"',
+    'data-testid="admin-registries-mintrud-self-training-hint"',
+    "mintrud.learn_program_missing",
+    "mintrud.reporting_organization_name_missing",
+    "mintrud.reporting_organization_inn_missing",
 ]:
     require(
         marker in page,
@@ -114,6 +132,26 @@ for name in [
     )
 
 
+for removed_technical_ui in [
+    '<option value="">reporting_scenario</option>',
+    '<option value="external_training_provider">external_training_provider</option>',
+    '<option value="employer_self_training">employer_self_training</option>',
+    '<option value="">knowledge_check_result</option>',
+    '<option value="satisfactory">satisfactory</option>',
+    '<option value="unsatisfactory">unsatisfactory</option>',
+    'placeholder="profession_or_position"',
+    'placeholder="employer_name"',
+    'placeholder="employer_inn"',
+    'placeholder="protocol_number"',
+    '{readiness || "OK"}',
+]:
+    require(
+        removed_technical_ui not in page,
+        "technical registry UI remains: "
+        + removed_technical_ui,
+    )
+
+
 for forbidden_ui in [
     "window.prompt",
     "window.alert",
@@ -122,6 +160,33 @@ for forbidden_ui in [
         forbidden_ui not in page,
         "forbidden UI primitive found: " + forbidden_ui,
     )
+
+
+require(
+    r'exported: "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u043f\u043e\u0440\u0442\u0430\u043b\u0430 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043b\u0435\u043d"'
+    in page,
+    "exported status must describe portal artifact",
+)
+
+require(
+    page.count(
+        "isPortalUploadArtifact(attempt)"
+    )
+    >= 5,
+    "portal artifact lifecycle gates missing",
+)
+
+require(
+    'attempt.has_artifact && !attempt.submitted_at'
+    not in page,
+    "legacy broad submission gate remains",
+)
+
+require(
+    'attempt.submitted_at && !attempt.result_status'
+    not in page,
+    "legacy broad result gate remains",
+)
 
 
 for forbidden in [

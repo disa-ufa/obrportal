@@ -1376,7 +1376,7 @@ def main() -> None:
             "function getCourseStatusTone(course)",
             "function getCourseStatusLabel(course)",
             "function formatCourseApiError(err, fallback)",
-            "function CourseFormFields({ values, onChange, prefix = \"\" })",
+            "function CourseFormFields({",
             "function CourseCard({",
             "export function AdminCoursesPage()",
             "useLocation();",

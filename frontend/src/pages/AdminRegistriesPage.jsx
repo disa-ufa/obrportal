@@ -59,7 +59,7 @@ const STATUS_LABELS = {
   ready: "\u0413\u043e\u0442\u043e\u0432\u043e",
   needs_approval: "\u041d\u0443\u0436\u043d\u043e \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435",
   approved: "\u0423\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u043e",
-  exported: "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043b\u0435\u043d",
+  exported: "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u043f\u043e\u0440\u0442\u0430\u043b\u0430 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043b\u0435\u043d",
   submitted: "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e",
   accepted: "\u041f\u0440\u0438\u043d\u044f\u0442\u043e",
   rejected: "\u041e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e",
@@ -67,6 +67,75 @@ const STATUS_LABELS = {
 };
 
 const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
+
+const INTERNAL_EXPORT_ARTIFACT =
+  "internal-export-package";
+
+const PORTAL_UPLOAD_ARTIFACT =
+  "portal-upload-artifact";
+
+const ARTIFACT_KIND_LABELS = {
+  [INTERNAL_EXPORT_ARTIFACT]:
+    "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON",
+  [PORTAL_UPLOAD_ARTIFACT]:
+    "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u043f\u043e\u0440\u0442\u0430\u043b\u0430",
+};
+
+
+function artifactKindLabel(attempt) {
+  if (!attempt?.has_artifact) {
+    return "\u0424\u0430\u0439\u043b \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442";
+  }
+
+  const kind =
+    `${attempt?.artifact_kind || ""}`;
+
+  return (
+    ARTIFACT_KIND_LABELS[kind]
+    || "\u0424\u0430\u0439\u043b \u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u043e\u0433\u043e \u0442\u0438\u043f\u0430"
+  );
+}
+
+
+function artifactDownloadLabel(attempt) {
+  if (
+    attempt?.artifact_kind
+    === PORTAL_UPLOAD_ARTIFACT
+  ) {
+    return "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0444\u0430\u0439\u043b \u0434\u043b\u044f \u043f\u043e\u0440\u0442\u0430\u043b\u0430";
+  }
+
+  if (
+    attempt?.artifact_kind
+    === INTERNAL_EXPORT_ARTIFACT
+  ) {
+    return "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON";
+  }
+
+  return "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0444\u0430\u0439\u043b";
+}
+
+
+function isPortalUploadArtifact(attempt) {
+  return (
+    attempt?.artifact_kind
+    === PORTAL_UPLOAD_ARTIFACT
+  );
+}
+
+
+function isHistoricalInternalLifecycle(attempt) {
+  return (
+    attempt?.artifact_kind
+    === INTERNAL_EXPORT_ARTIFACT
+    && Boolean(
+      attempt?.submitted_at
+      || attempt?.result_status
+      || attempt?.external_reference
+    )
+  );
+}
+
 
 const READINESS_LABELS = {
   "enrollment.missing": "\u0417\u0430\u043f\u0438\u0441\u044c \u043e \u0437\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u0438\u0438 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442.",
@@ -99,6 +168,10 @@ const READINESS_LABELS = {
   "mintrud.protocol_number_missing": "\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u043d\u043e\u043c\u0435\u0440 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439.",
   "mintrud.employer_name_missing": "\u0414\u043b\u044f \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e \u0443\u043a\u0430\u0437\u0430\u0442\u044c \u043d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f.",
   "mintrud.employer_inn_missing": "\u0414\u043b\u044f \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e \u0443\u043a\u0430\u0437\u0430\u0442\u044c \u0418\u041d\u041d \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f.",
+  "mintrud.learn_program_missing": "\u0414\u043b\u044f \u043a\u0443\u0440\u0441\u0430 \u043d\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0441\u0445\u0435\u043c\u044b 1.0.9.",
+  "mintrud.reporting_organization_name_missing": "\u041d\u0435 \u0437\u0430\u0434\u0430\u043d\u043e \u043d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438, \u043e\u0442 \u0438\u043c\u0435\u043d\u0438 \u043a\u043e\u0442\u043e\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u0430\u044e\u0442\u0441\u044f \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0432 \u041c\u0438\u043d\u0442\u0440\u0443\u0434.",
+  "mintrud.reporting_organization_inn_missing": "\u041d\u0435 \u0437\u0430\u0434\u0430\u043d \u0418\u041d\u041d \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438, \u043e\u0442 \u0438\u043c\u0435\u043d\u0438 \u043a\u043e\u0442\u043e\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u0430\u044e\u0442\u0441\u044f \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0432 \u041c\u0438\u043d\u0442\u0440\u0443\u0434.",
+
 };
 
 function formatReadinessIssue(item) {
@@ -118,6 +191,64 @@ function formatReadinessIssue(item) {
 
   return `${item.message || item.msg || code || ""}`.trim();
 }
+
+function getReadinessPresentation(
+  obligation
+) {
+  const issues = (
+    obligation?.readiness_errors
+    || []
+  )
+    .map((item) => (
+      formatReadinessIssue(item)
+    ))
+    .filter(Boolean);
+
+  if (issues.length) {
+    return {
+      kind: "issues",
+      text: issues.join("; "),
+    };
+  }
+
+  const status =
+    `${obligation?.status || ""}`;
+
+  if (status === "pending_data") {
+    return {
+      kind: "pending",
+      text: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u0435\u0449\u0451 \u043d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0430. \u0417\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0443 \u043f\u043e \u0442\u0435\u043a\u0443\u0449\u0438\u043c \u0434\u0430\u043d\u043d\u044b\u043c.",
+    };
+  }
+
+  if (
+    status === "ready"
+    || status === "needs_approval"
+  ) {
+    return {
+      kind: "review",
+      text: "\u041f\u043e \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u043e\u0439 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0435 \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u0439 \u043d\u0435\u0442. \u041f\u0435\u0440\u0435\u0434 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435\u043c \u0441\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 \u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435.",
+    };
+  }
+
+  if (
+    status === "approved"
+    || status === "exported"
+    || status === "submitted"
+    || status === "accepted"
+  ) {
+    return {
+      kind: "confirmed",
+      text: "\u0413\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u0431\u044b\u043b\u0430 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0430 \u043d\u0430 \u044d\u0442\u0430\u043f\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f.",
+    };
+  }
+
+  return {
+    kind: "neutral",
+    text: "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0445 \u0437\u0430\u043c\u0435\u0447\u0430\u043d\u0438\u0439 \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u0438 \u043d\u0435\u0442.",
+  };
+}
+
 
 function formatApiDetail(detail) {
   if (!detail) {
@@ -238,23 +369,83 @@ function formatApiError(error) {
 }
 
 
+const MINTRUD_REPORTING_SCENARIO_LABELS = {
+  external_training_provider:
+    "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0432\u043e\u0434\u0438\u0442 \u0432\u043d\u0435\u0448\u043d\u044f\u044f \u043e\u0431\u0443\u0447\u0430\u044e\u0449\u0430\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+  employer_self_training:
+    "\u0420\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044c \u043e\u0431\u0443\u0447\u0430\u0435\u0442 \u0441\u0430\u043c\u043e\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u043e",
+};
+
+const MINTRUD_KNOWLEDGE_RESULT_LABELS = {
+  satisfactory:
+    "\u0423\u0434\u043e\u0432\u043b\u0435\u0442\u0432\u043e\u0440\u0438\u0442\u0435\u043b\u044c\u043d\u043e",
+  unsatisfactory:
+    "\u041d\u0435\u0443\u0434\u043e\u0432\u043b\u0435\u0442\u0432\u043e\u0440\u0438\u0442\u0435\u043b\u044c\u043d\u043e",
+};
+
+const MINTRUD_CONTEXT_TEXT = {
+  title:
+    "\u0414\u0430\u043d\u043d\u044b\u0435 \u0434\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
+  description:
+    "\u042d\u0442\u0438 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0435 \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u0438 \u0437\u0430\u043f\u0438\u0441\u0438 \u043a \u043f\u0435\u0440\u0435\u0434\u0430\u0447\u0435 \u0432 \u041c\u0438\u043d\u0442\u0440\u0443\u0434.",
+  reportingScenario:
+    "\u0421\u0446\u0435\u043d\u0430\u0440\u0438\u0439 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
+  chooseScenario:
+    "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u0439",
+  profession:
+    "\u041f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u044f / \u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u044c \u0440\u0430\u0431\u043e\u0442\u043d\u0438\u043a\u0430",
+  employerName:
+    "\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f",
+  employerInn:
+    "\u0418\u041d\u041d \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f",
+  knowledgeResult:
+    "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439",
+  chooseKnowledgeResult:
+    "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
+  knowledgeDate:
+    "\u0414\u0430\u0442\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0437\u043d\u0430\u043d\u0438\u0439",
+  protocolNumber:
+    "\u041d\u043e\u043c\u0435\u0440 \u043f\u0440\u043e\u0442\u043e\u043a\u043e\u043b\u0430",
+  externalEmployerHint:
+    "\u041f\u0440\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u043c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438 \u0443\u043a\u0430\u0436\u0438\u0442\u0435 \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f \u043e\u0431\u0443\u0447\u0435\u043d\u043d\u043e\u0433\u043e \u0440\u0430\u0431\u043e\u0442\u043d\u0438\u043a\u0430.",
+  selfTrainingHint:
+    "\u041f\u0440\u0438 \u0441\u0430\u043c\u043e\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u043e\u043c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438 \u043e\u0442\u0447\u0451\u0442\u043d\u0430\u044f \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u0438 \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044c \u0431\u0435\u0440\u0443\u0442\u0441\u044f \u0438\u0437 \u0446\u0435\u043d\u0442\u0440\u0430\u043b\u044c\u043d\u044b\u0445 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438. \u041f\u043e\u043b\u044f \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0440\u0430\u0431\u043e\u0442\u043e\u0434\u0430\u0442\u0435\u043b\u044f \u043d\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u044e\u0442\u0441\u044f.",
+};
+
+
 function MintrudContextForm({
   obligation,
   busy,
   onSave,
   onCancel,
 }) {
-  const context = obligation.mintrud_context || {};
+  const context =
+    obligation.mintrud_context || {};
 
   const [form, setForm] = useState({
-    reporting_scenario: context.reporting_scenario || "",
-    profession_or_position: context.profession_or_position || "",
-    employer_name: context.employer_name || "",
-    employer_inn: context.employer_inn || "",
-    knowledge_check_result: context.knowledge_check_result || "",
-    knowledge_check_date: context.knowledge_check_date || "",
-    protocol_number: context.protocol_number || "",
+    reporting_scenario:
+      context.reporting_scenario || "",
+    profession_or_position:
+      context.profession_or_position || "",
+    employer_name:
+      context.employer_name || "",
+    employer_inn:
+      context.employer_inn || "",
+    knowledge_check_result:
+      context.knowledge_check_result || "",
+    knowledge_check_date:
+      context.knowledge_check_date || "",
+    protocol_number:
+      context.protocol_number || "",
   });
+
+  const isExternalProvider =
+    form.reporting_scenario
+    === "external_training_provider";
+
+  const isSelfTraining =
+    form.reporting_scenario
+    === "employer_self_training";
 
   function update(key, value) {
     setForm((current) => ({
@@ -267,11 +458,21 @@ function MintrudContextForm({
     event.preventDefault();
 
     const payload = Object.fromEntries(
-      Object.entries(form).map(([key, value]) => [
-        key,
-        value.trim() || null,
-      ])
+      Object.entries(form).map(
+        ([key, value]) => [
+          key,
+          value.trim() || null,
+        ]
+      )
     );
+
+    if (
+      payload.reporting_scenario
+      === "employer_self_training"
+    ) {
+      payload.employer_name = null;
+      payload.employer_inn = null;
+    }
 
     await onSave(payload);
   }
@@ -280,64 +481,194 @@ function MintrudContextForm({
     <form
       data-testid="admin-registries-mintrud-context-form"
       onSubmit={submit}
-      className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-4 md:grid-cols-2"
+      className="mt-4 rounded-2xl bg-slate-50 p-4"
     >
-      <select
-        className={INPUT}
-        value={form.reporting_scenario}
-        onChange={(event) => update("reporting_scenario", event.target.value)}
-      >
-        <option value="">reporting_scenario</option>
-        <option value="external_training_provider">external_training_provider</option>
-        <option value="employer_self_training">employer_self_training</option>
-      </select>
+      <div>
+        <div className="text-sm font-bold text-slate-900">
+          {MINTRUD_CONTEXT_TEXT.title}
+        </div>
 
-      <input
-        className={INPUT}
-        value={form.profession_or_position}
-        placeholder="profession_or_position"
-        onChange={(event) => update("profession_or_position", event.target.value)}
-      />
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          {MINTRUD_CONTEXT_TEXT.description}
+        </p>
+      </div>
 
-      <input
-        className={INPUT}
-        value={form.employer_name}
-        placeholder="employer_name"
-        onChange={(event) => update("employer_name", event.target.value)}
-      />
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+          <span>
+            {MINTRUD_CONTEXT_TEXT.reportingScenario}
+          </span>
 
-      <input
-        className={INPUT}
-        value={form.employer_inn}
-        placeholder="employer_inn"
-        onChange={(event) => update("employer_inn", event.target.value)}
-      />
+          <select
+            className={INPUT}
+            value={form.reporting_scenario}
+            onChange={(event) =>
+              update(
+                "reporting_scenario",
+                event.target.value
+              )
+            }
+          >
+            <option value="">
+              {MINTRUD_CONTEXT_TEXT.chooseScenario}
+            </option>
 
-      <select
-        className={INPUT}
-        value={form.knowledge_check_result}
-        onChange={(event) => update("knowledge_check_result", event.target.value)}
-      >
-        <option value="">knowledge_check_result</option>
-        <option value="satisfactory">satisfactory</option>
-        <option value="unsatisfactory">unsatisfactory</option>
-      </select>
+            {Object.entries(
+              MINTRUD_REPORTING_SCENARIO_LABELS
+            ).map(([value, label]) => (
+              <option
+                key={value}
+                value={value}
+              >
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <input
-        type="date"
-        className={INPUT}
-        value={form.knowledge_check_date}
-        onChange={(event) => update("knowledge_check_date", event.target.value)}
-      />
+        <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+          <span>
+            {MINTRUD_CONTEXT_TEXT.profession}
+          </span>
 
-      <input
-        className={INPUT}
-        value={form.protocol_number}
-        placeholder="protocol_number"
-        onChange={(event) => update("protocol_number", event.target.value)}
-      />
+          <input
+            className={INPUT}
+            value={form.profession_or_position}
+            onChange={(event) =>
+              update(
+                "profession_or_position",
+                event.target.value
+              )
+            }
+          />
+        </label>
 
-      <div className="flex flex-wrap gap-2">
+        <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+          <span>
+            {MINTRUD_CONTEXT_TEXT.knowledgeResult}
+          </span>
+
+          <select
+            className={INPUT}
+            value={form.knowledge_check_result}
+            onChange={(event) =>
+              update(
+                "knowledge_check_result",
+                event.target.value
+              )
+            }
+          >
+            <option value="">
+              {MINTRUD_CONTEXT_TEXT.chooseKnowledgeResult}
+            </option>
+
+            {Object.entries(
+              MINTRUD_KNOWLEDGE_RESULT_LABELS
+            ).map(([value, label]) => (
+              <option
+                key={value}
+                value={value}
+              >
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+          <span>
+            {MINTRUD_CONTEXT_TEXT.knowledgeDate}
+          </span>
+
+          <input
+            type="date"
+            className={INPUT}
+            value={form.knowledge_check_date}
+            onChange={(event) =>
+              update(
+                "knowledge_check_date",
+                event.target.value
+              )
+            }
+          />
+        </label>
+
+        <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+          <span>
+            {MINTRUD_CONTEXT_TEXT.protocolNumber}
+          </span>
+
+          <input
+            className={INPUT}
+            value={form.protocol_number}
+            onChange={(event) =>
+              update(
+                "protocol_number",
+                event.target.value
+              )
+            }
+          />
+        </label>
+      </div>
+
+      {isExternalProvider ? (
+        <div
+          data-testid="admin-registries-mintrud-external-employer"
+          className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+        >
+          <p className="text-xs leading-5 text-slate-600">
+            {MINTRUD_CONTEXT_TEXT.externalEmployerHint}
+          </p>
+
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+              <span>
+                {MINTRUD_CONTEXT_TEXT.employerName}
+              </span>
+
+              <input
+                className={INPUT}
+                value={form.employer_name}
+                onChange={(event) =>
+                  update(
+                    "employer_name",
+                    event.target.value
+                  )
+                }
+              />
+            </label>
+
+            <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+              <span>
+                {MINTRUD_CONTEXT_TEXT.employerInn}
+              </span>
+
+              <input
+                className={INPUT}
+                value={form.employer_inn}
+                inputMode="numeric"
+                onChange={(event) =>
+                  update(
+                    "employer_inn",
+                    event.target.value
+                  )
+                }
+              />
+            </label>
+          </div>
+        </div>
+      ) : null}
+
+      {isSelfTraining ? (
+        <div
+          data-testid="admin-registries-mintrud-self-training-hint"
+          className="mt-4 rounded-2xl bg-blue-50 p-4 text-xs leading-5 text-blue-900 ring-1 ring-blue-100"
+        >
+          {MINTRUD_CONTEXT_TEXT.selfTrainingHint}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="submit"
           className={BLUE}
@@ -450,7 +781,7 @@ function AttemptList({
     >
       {!attempts.length ? (
         <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-          No export attempts yet.
+          {"\u041f\u043e\u043f\u044b\u0442\u043e\u043a \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0438 \u0444\u0430\u0439\u043b\u043e\u0432 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442."}
         </div>
       ) : null}
 
@@ -473,8 +804,14 @@ function AttemptList({
 
             <div className="flex flex-wrap gap-2">
               <StatusBadge tone={attempt.has_artifact ? "green" : "gray"}>
-                {attempt.has_artifact ? "artifact" : "no artifact"}
+                {artifactKindLabel(attempt)}
               </StatusBadge>
+
+              {isHistoricalInternalLifecycle(attempt) ? (
+                <StatusBadge tone="amber">
+                  {"\u0418\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u0437\u0430\u043f\u0438\u0441\u044c"}
+                </StatusBadge>
+              ) : null}
 
               {attempt.result_status ? (
                 <StatusBadge tone={statusTone(attempt.result_status)}>
@@ -489,8 +826,21 @@ function AttemptList({
           </div>
 
           <div className="mt-3 text-xs text-slate-500">
-            external_reference: {attempt.external_reference || "\u2014"}
+            {isHistoricalInternalLifecycle(attempt)
+              ? "\u0418\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440"
+              : "\u0412\u043d\u0435\u0448\u043d\u0438\u0439 \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440"}:
+            {" "}
+            {attempt.external_reference || "\u2014"}
           </div>
+
+          {isHistoricalInternalLifecycle(attempt) ? (
+            <div
+              data-testid="admin-registry-legacy-internal-lifecycle"
+              className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200"
+            >
+              {"\u042d\u0442\u043e \u0438\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u0437\u0430\u043f\u0438\u0441\u044c, \u0441\u043e\u0437\u0434\u0430\u043d\u043d\u0430\u044f \u0434\u043e \u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u044f \u0436\u0438\u0437\u043d\u0435\u043d\u043d\u043e\u0433\u043e \u0446\u0438\u043a\u043b\u0430 \u0430\u0440\u0442\u0435\u0444\u0430\u043a\u0442\u043e\u0432. \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0435 \u0441\u0442\u0430\u0442\u0443\u0441 \u0438 \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u043d\u0435 \u044f\u0432\u043b\u044f\u044e\u0442\u0441\u044f \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435\u043c \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0440\u0435\u0435\u0441\u0442\u0440."}
+            </div>
+          ) : null}
 
           {attempt.errors_json?.length ? (
             <div className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">
@@ -506,11 +856,13 @@ function AttemptList({
                 disabled={busy}
                 onClick={() => onDownload(attempt)}
               >
-                {T.download}
+                {artifactDownloadLabel(attempt)}
               </button>
             ) : null}
 
-            {attempt.has_artifact && !attempt.submitted_at ? (
+            {isPortalUploadArtifact(attempt)
+            && attempt.has_artifact
+            && !attempt.submitted_at ? (
               <button
                 type="button"
                 className={BLUE}
@@ -521,7 +873,9 @@ function AttemptList({
               </button>
             ) : null}
 
-            {attempt.submitted_at && !attempt.result_status ? (
+            {isPortalUploadArtifact(attempt)
+            && attempt.submitted_at
+            && !attempt.result_status ? (
               <button
                 type="button"
                 className={PRIMARY}
@@ -533,7 +887,8 @@ function AttemptList({
             ) : null}
           </div>
 
-          {submissionAttemptId === attempt.id ? (
+          {isPortalUploadArtifact(attempt)
+          && submissionAttemptId === attempt.id ? (
             <form
               data-testid="admin-registry-submission-form"
               className="mt-4 grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
@@ -577,7 +932,8 @@ function AttemptList({
             </form>
           ) : null}
 
-          {resultAttemptId === attempt.id ? (
+          {isPortalUploadArtifact(attempt)
+          && resultAttemptId === attempt.id ? (
             <form
               data-testid="admin-registry-result-form"
               className="mt-4 grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
@@ -1254,15 +1610,10 @@ export function AdminRegistriesPage() {
                       obligation.status
                     );
 
-                    const readiness = (
-                      obligation.readiness_errors
-                      || []
-                    )
-                      .map((item) => (
-                        formatReadinessIssue(item)
-                      ))
-                      .filter(Boolean)
-                      .join("; ");
+                    const readiness =
+                      getReadinessPresentation(
+                        obligation
+                      );
 
                     return (
                       <tr
@@ -1311,7 +1662,20 @@ export function AdminRegistriesPage() {
                             </div>
 
                             <div className="px-4 py-4 text-xs leading-5 text-slate-600">
-                              {readiness || "OK"}
+                              <div
+                                data-testid="admin-registry-readiness-state"
+                                className={
+                                  readiness.kind === "issues"
+                                    ? "text-red-700"
+                                    : readiness.kind === "pending"
+                                      ? "text-amber-800"
+                                      : readiness.kind === "confirmed"
+                                        ? "text-emerald-700"
+                                        : "text-slate-600"
+                                }
+                              >
+                                {readiness.text}
+                              </div>
 
                               {obligation.last_error ? (
                                 <div className="mt-2 text-red-700">
