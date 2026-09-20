@@ -45,6 +45,9 @@ FUNCTIONS = [
     "downloadAdminMintrudSubmissionAttempt",
     "markAdminMintrudSubmissionAttemptSubmitted",
     "recordAdminMintrudSubmissionAttemptResult",
+    "getAdminMintrudLearnPrograms",
+    "getAdminCourseMintrudPrograms",
+    "updateAdminCourseMintrudPrograms",
 ]
 
 
@@ -93,6 +96,8 @@ ROUTE_FRAGMENTS = [
     "/api/v1/admin/mintrud/obligations/${obligationId}/context",
     "/api/v1/admin/mintrud/obligations/${obligationId}/approve",
     "/api/v1/admin/mintrud/obligations/${obligationId}/attempts",
+    "/api/v1/admin/mintrud/learn-programs",
+    "/api/v1/admin/courses/${courseId}/mintrud-programs",
     "/attempts/${attemptId}/submitted",
     "/attempts/${attemptId}/result",
     "/attempts/${attemptId}/download",
@@ -128,6 +133,18 @@ require(
 )
 
 require(
+    'method: "PUT"'
+    in source,
+    "Mintrud course mapping PUT missing",
+)
+
+require(
+    "mintrud_learn_program_ids"
+    in source,
+    "Mintrud course mapping payload missing",
+)
+
+require(
     (
         "downloadAdminRegistrySubmissionAttempt"
         in source
@@ -138,8 +155,8 @@ require(
 require(
     (
         '"Accept": '
-        '"application/xml, text/xml, '
-        'application/octet-stream"'
+        '"application/json, application/xml, '
+        'text/xml, application/octet-stream"'
     )
     in source,
     "registry download Accept missing",

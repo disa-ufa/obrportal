@@ -857,6 +857,34 @@ export async function downloadAdminDocument(documentId) {
 }
 
 
+export async function getAdminMintrudLearnPrograms() {
+  return request("/api/v1/admin/mintrud/learn-programs");
+}
+
+
+export async function getAdminCourseMintrudPrograms(courseId) {
+  return request(
+    `/api/v1/admin/courses/${courseId}/mintrud-programs`
+  );
+}
+
+
+export async function updateAdminCourseMintrudPrograms(
+  courseId,
+  mintrudLearnProgramIds
+) {
+  return request(
+    `/api/v1/admin/courses/${courseId}/mintrud-programs`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        mintrud_learn_program_ids: mintrudLearnProgramIds,
+      }),
+    }
+  );
+}
+
+
 export async function getAdminCourses(filters = {}) {
   const params = new URLSearchParams();
 
@@ -1211,7 +1239,7 @@ async function downloadAdminRegistrySubmissionAttempt(
     {
       method: "GET",
       headers: {
-        "Accept": "application/json, application/octet-stream",
+        "Accept": "application/json, application/xml, text/xml, application/octet-stream",
         ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       },
     }

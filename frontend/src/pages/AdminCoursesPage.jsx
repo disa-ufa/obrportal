@@ -1,5 +1,5 @@
 import { getApiErrorMessage, getApiErrorStatus, getSafeApiErrorMessage } from "../utils/apiErrors";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   activateAdminCourse,
@@ -13,9 +13,12 @@ import {
   deleteAdminCourseLesson,
   deleteAdminCourseModule,
   getAdminCourseLessons,
+  getAdminCourseMintrudPrograms,
   getAdminCourseModules,
   getAdminCourses,
+  getAdminMintrudLearnPrograms,
   updateAdminCourse,
+  updateAdminCourseMintrudPrograms,
   uploadAdminCourseCover,
   updateAdminCourseLesson,
   updateAdminCourseModule,
@@ -743,7 +746,555 @@ function CourseCoverField({
 }
 
 
-function CourseFormFields({ values, onChange, prefix = "" }) {
+const MINTRUD_MAPPING_TEXT = {
+  title: "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
+  description: "\u0414\u043b\u044f \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u0438 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u0439 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043a\u0443\u0440\u0441\u0443 \u0434\u043e\u043b\u0436\u043d\u0430 \u0431\u044b\u0442\u044c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0430 \u043c\u0438\u043d\u0438\u043c\u0443\u043c \u043e\u0434\u043d\u0430 \u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044e\u0449\u0435\u0439 \u0441\u0445\u0435\u043c\u044b.",
+  classifyFirst: "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u043a\u043b\u0430\u0441\u0441\u0438\u0444\u0438\u0446\u0438\u0440\u0443\u0439\u0442\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0443. \u0412 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435 \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e\u0441\u0442\u044c \u043f\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u0439 \u0432 \u041c\u0438\u043d\u0442\u0440\u0443\u0434, \u043f\u043e\u043a\u0430 \u0442\u0438\u043f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d.",
+  catalogLoading: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430...",
+  catalogEmpty: "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d. \u041e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a \u0434\u0430\u043d\u043d\u044b\u0445 \u043d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d. \u041d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u0438 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u0439 \u0434\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b.",
+  catalogCount: "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0441\u0445\u0435\u043c\u044b:",
+  currentAssignment: "\u0422\u0435\u043a\u0443\u0449\u0430\u044f \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0430 \u043a\u0443\u0440\u0441\u0430",
+  assignedLoading: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430...",
+  assignedEmpty: "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0430. \u0411\u0435\u0437 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u0438 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043d\u0435 \u0431\u0443\u0434\u0435\u0442 \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u0430.",
+  inactive: "\u0410\u0440\u0445\u0438\u0432\u043d\u0430\u044f / \u043d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u0430\u044f",
+  active: "\u0410\u043a\u0442\u0438\u0432\u043d\u0430\u044f",
+  createHint: "\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0431\u0443\u0434\u0443\u0442 \u043f\u0440\u0438\u0432\u044f\u0437\u0430\u043d\u044b \u0441\u0440\u0430\u0437\u0443 \u043f\u043e\u0441\u043b\u0435 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430. \u041f\u0443\u0441\u0442\u043e\u0439 \u0432\u044b\u0431\u043e\u0440 \u043d\u0435 \u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0435\u0442 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u0435, \u043d\u043e \u0433\u043e\u0442\u043e\u0432\u043d\u043e\u0441\u0442\u044c \u0434\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043d\u0435 \u0431\u0443\u0434\u0435\u0442 \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u0430.",
+  createPartial: "\u041a\u0443\u0440\u0441 \u0441\u043e\u0437\u0434\u0430\u043d, \u043d\u043e \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0443 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c.",
+  catalogLoadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
+  assignedLoadFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0434\u043b\u044f \u043a\u0443\u0440\u0441\u0430.",
+  selectionTitle: "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u043a\u0443\u0440\u0441\u0430",
+  selectionHint: "\u041e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u043e\u0434\u043d\u0443 \u0438\u043b\u0438 \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c. \u0418\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0435 \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f \u0432\u043c\u0435\u0441\u0442\u0435 \u0441 \u043a\u0443\u0440\u0441\u043e\u043c.",
+  searchPlaceholder: "\u041f\u043e\u0438\u0441\u043a \u043f\u043e ID, \u043a\u043e\u0434\u0443 \u0438\u043b\u0438 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b",
+  searchEmpty: "\u041f\u043e \u0437\u0430\u0434\u0430\u043d\u043d\u043e\u043c\u0443 \u0437\u0430\u043f\u0440\u043e\u0441\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
+  unsavedSelection: "\u041f\u0440\u0438\u0432\u044f\u0437\u043a\u0430 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0430 \u0438 \u0435\u0449\u0451 \u043d\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430.",
+  inactiveReplaceWarning: "\u041f\u0440\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0438 \u043d\u043e\u0432\u043e\u0433\u043e \u0432\u044b\u0431\u043e\u0440\u0430 \u0430\u0440\u0445\u0438\u0432\u043d\u044b\u0435 / \u043d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0438 \u0431\u0443\u0434\u0443\u0442 \u0437\u0430\u043c\u0435\u043d\u0435\u043d\u044b \u0442\u0435\u043a\u0443\u0449\u0438\u043c \u043d\u0430\u0431\u043e\u0440\u043e\u043c \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c.",
+  saveFailed: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0443 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
+  editPartial: "\u0414\u0430\u043d\u043d\u044b\u0435 \u043a\u0443\u0440\u0441\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b, \u043d\u043e \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0443 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c.",
+  selectedLabel: "\u0412\u044b\u0431\u0440\u0430\u043d\u043e:",
+  catalogLabel: "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a:",
+  codeLabel: "\u041a\u043e\u0434:",
+  schemaLabel: "\u0441\u0445\u0435\u043c\u0430",
+  historicalTitle: "\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0430\u044f \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0430 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
+  historicalHint: "\u0421\u0435\u0439\u0447\u0430\u0441 \u043f\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u0439 \u0432 \u041c\u0438\u043d\u0442\u0440\u0443\u0434 \u0434\u043b\u044f \u043a\u0443\u0440\u0441\u0430 \u043d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f. \u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0430\u044f \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0430 \u043f\u043e\u043a\u0430\u0437\u0430\u043d\u0430 \u043a\u0430\u043a \u0438\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0438 \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u044f\u0435\u0442\u0441\u044f \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438.",
+};
+
+
+function getMintrudRequirementUiState(values) {
+  const requirementMode =
+    values?.mintrud_requirement_mode || "auto";
+
+  if (requirementMode === "required") {
+    return "required";
+  }
+
+  if (requirementMode === "not_required") {
+    return "not_required";
+  }
+
+  const regulatoryProgramType =
+    values?.regulatory_program_type || "unspecified";
+
+  if (
+    regulatoryProgramType
+    === "occupational_safety_training"
+  ) {
+    return "required";
+  }
+
+  if (regulatoryProgramType === "unspecified") {
+    return "undetermined";
+  }
+
+  return "not_required";
+}
+
+
+function getActiveMintrudProgramIds(programs) {
+  if (!Array.isArray(programs)) {
+    return [];
+  }
+
+  return programs
+    .filter(
+      (program) =>
+        program
+        && program.id
+        && program.is_active !== false
+    )
+    .map((program) => program.id);
+}
+
+
+function haveSameMintrudProgramSelection(
+  left,
+  right
+) {
+  const leftSet =
+    new Set(Array.isArray(left) ? left : []);
+
+  const rightSet =
+    new Set(Array.isArray(right) ? right : []);
+
+  if (leftSet.size !== rightSet.size) {
+    return false;
+  }
+
+  for (const value of leftSet) {
+    if (!rightSet.has(value)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+function MintrudProgramMappingState({
+  values,
+  prefix = "",
+  catalog = [],
+  catalogLoading = false,
+  catalogError = "",
+  assignedPrograms = [],
+  assignedLoading = false,
+  assignedError = "",
+  selectedProgramIds = [],
+  selectionDirty = false,
+  onToggleProgram = null,
+  isExistingCourse = true,
+}) {
+  const requirementState =
+    getMintrudRequirementUiState(values);
+
+  const normalizedCatalog =
+    Array.isArray(catalog)
+      ? catalog
+      : [];
+
+  const normalizedAssigned =
+    Array.isArray(assignedPrograms)
+      ? assignedPrograms
+      : [];
+
+  const normalizedSelectedProgramIds =
+    Array.isArray(selectedProgramIds)
+      ? selectedProgramIds
+      : [];
+
+  const sortedCatalog =
+    [...normalizedCatalog].sort(
+      (left, right) => {
+        const leftId =
+          Number(left?.learn_program_id) || 0;
+
+        const rightId =
+          Number(right?.learn_program_id) || 0;
+
+        if (leftId !== rightId) {
+          return leftId - rightId;
+        }
+
+        return `${left?.title || left?.code || ""}`.localeCompare(
+          `${right?.title || right?.code || ""}`,
+          "ru"
+        );
+      }
+    );
+
+  const [
+    programSearch,
+    setProgramSearch,
+  ] = useState("");
+
+  const normalizedProgramSearch =
+    programSearch
+      .trim()
+      .toLocaleLowerCase("ru");
+
+  const filteredCatalog =
+    normalizedProgramSearch
+      ? sortedCatalog.filter((program) => {
+          const searchableText = [
+            program?.learn_program_id,
+            program?.code,
+            program?.title,
+          ]
+            .filter(
+              (value) =>
+                value !== null
+                && value !== undefined
+            )
+            .join(" ")
+            .toLocaleLowerCase("ru");
+
+          return searchableText.includes(
+            normalizedProgramSearch
+          );
+        })
+      : sortedCatalog;
+
+
+  const hasHistoricalAssignment =
+    isExistingCourse
+    && normalizedAssigned.length > 0;
+
+  const hasInactiveHistoricalAssignment =
+    normalizedAssigned.some(
+      (program) =>
+        program?.is_active === false
+    );
+
+  const selectionDisabled =
+    assignedLoading
+    || Boolean(assignedError)
+    || typeof onToggleProgram !== "function";
+
+  if (
+    requirementState === "not_required"
+    && !hasHistoricalAssignment
+  ) {
+    return null;
+  }
+
+  if (requirementState === "undetermined") {
+    return (
+      <div
+        data-testid={`${prefix}course-mintrud-program-mapping-state`}
+        className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4"
+      >
+        <div className="text-sm font-black text-amber-950">
+          {MINTRUD_MAPPING_TEXT.title}
+        </div>
+
+        <p className="mt-2 text-xs leading-5 text-amber-900">
+          {MINTRUD_MAPPING_TEXT.classifyFirst}
+        </p>
+      </div>
+    );
+  }
+
+  const historicalOnly =
+    requirementState === "not_required";
+
+  return (
+    <div
+      data-testid={`${prefix}course-mintrud-program-mapping-state`}
+      className="mt-4 rounded-2xl border border-blue-200 bg-white p-4"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-black text-slate-950">
+            {historicalOnly
+              ? MINTRUD_MAPPING_TEXT.historicalTitle
+              : MINTRUD_MAPPING_TEXT.title}
+          </div>
+
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            {historicalOnly
+              ? MINTRUD_MAPPING_TEXT.historicalHint
+              : MINTRUD_MAPPING_TEXT.description}
+          </p>
+        </div>
+
+        {!historicalOnly
+        && !catalogLoading
+        && !catalogError ? (
+          <StatusBadge
+            tone={
+              normalizedCatalog.length
+                ? "blue"
+                : "amber"
+            }
+          >
+            {MINTRUD_MAPPING_TEXT.catalogLabel}{" "}
+            {normalizedCatalog.length}
+          </StatusBadge>
+        ) : null}
+      </div>
+
+      {!historicalOnly && catalogLoading ? (
+        <div
+          data-testid={`${prefix}course-mintrud-program-catalog-loading`}
+          className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+        >
+          {MINTRUD_MAPPING_TEXT.catalogLoading}
+        </div>
+      ) : null}
+
+      {!historicalOnly
+      && !catalogLoading
+      && catalogError ? (
+        <div
+          data-testid={`${prefix}course-mintrud-program-catalog-error`}
+          className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-xs leading-5 text-red-800 ring-1 ring-red-200"
+        >
+          {catalogError}
+        </div>
+      ) : null}
+
+      {!historicalOnly
+      && !catalogLoading
+      && !catalogError
+      && normalizedCatalog.length === 0 ? (
+        <div
+          data-testid={`${prefix}course-mintrud-program-catalog-empty`}
+          className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200"
+        >
+          {MINTRUD_MAPPING_TEXT.catalogEmpty}
+        </div>
+      ) : null}
+
+      {!historicalOnly
+      && !catalogLoading
+      && !catalogError
+      && normalizedCatalog.length > 0 ? (
+        <div className="mt-4 text-xs font-semibold text-slate-600">
+          {MINTRUD_MAPPING_TEXT.catalogCount}{" "}
+          {normalizedCatalog.length}
+        </div>
+      ) : null}
+
+      {!historicalOnly
+      && !catalogLoading
+      && !catalogError
+      && sortedCatalog.length > 0 ? (
+        <div
+          data-testid={`${prefix}course-mintrud-program-selection`}
+          className="mt-4 border-t border-slate-100 pt-4"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                {MINTRUD_MAPPING_TEXT.selectionTitle}
+              </div>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {MINTRUD_MAPPING_TEXT.selectionHint}
+              </p>
+            </div>
+
+            <StatusBadge
+              tone={selectionDirty ? "amber" : "green"}
+            >
+              {MINTRUD_MAPPING_TEXT.selectedLabel}{" "}
+              {normalizedSelectedProgramIds.length}
+            </StatusBadge>
+          </div>
+
+          <div className="mt-3">
+            <input
+              type="search"
+              value={programSearch}
+              onChange={(event) =>
+                setProgramSearch(
+                  event.target.value
+                )
+              }
+              placeholder={
+                MINTRUD_MAPPING_TEXT.searchPlaceholder
+              }
+              data-testid={`${prefix}course-mintrud-program-search`}
+              className={INPUT}
+            />
+          </div>
+
+          {filteredCatalog.length === 0 ? (
+            <div
+              data-testid={`${prefix}course-mintrud-program-search-empty`}
+              className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600 ring-1 ring-slate-200"
+            >
+              {MINTRUD_MAPPING_TEXT.searchEmpty}
+            </div>
+          ) : null}
+
+          <div className="mt-3 grid gap-2">
+            {filteredCatalog.map((program) => {
+              const checked =
+                normalizedSelectedProgramIds.includes(
+                  program.id
+                );
+
+              return (
+                <label
+                  key={program.id}
+                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-xs transition ${
+                    checked
+                      ? "border-blue-200 bg-blue-50/70"
+                      : "border-slate-200 bg-slate-50"
+                  } ${
+                    selectionDisabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={selectionDisabled}
+                    onChange={() =>
+                      onToggleProgram?.(
+                        program.id
+                      )
+                    }
+                    data-testid={`${prefix}course-mintrud-program-option-${program.id}`}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                  />
+
+                  <span className="min-w-0">
+                    <span className="block font-bold text-slate-900">
+                      {program.learn_program_id}.{" "}
+                      {program.title
+                        || program.code
+                        || program.id}
+                    </span>
+
+                    <span className="mt-1 block text-[11px] text-slate-500">
+                      {MINTRUD_MAPPING_TEXT.codeLabel}{" "}
+                      {program.code || "\u2014"}{" "}
+                      {"\u00b7"}{" "}
+                      {MINTRUD_MAPPING_TEXT.schemaLabel}{" "}
+                      {program.schema_version || "\u2014"}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {selectionDirty ? (
+            <div
+              data-testid={`${prefix}course-mintrud-program-selection-dirty`}
+              className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200"
+            >
+              {MINTRUD_MAPPING_TEXT.unsavedSelection}
+            </div>
+          ) : null}
+
+          {selectionDirty
+          && hasInactiveHistoricalAssignment ? (
+            <div
+              data-testid={`${prefix}course-mintrud-inactive-replacement-warning`}
+              className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200"
+            >
+              {MINTRUD_MAPPING_TEXT.inactiveReplaceWarning}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!isExistingCourse
+      && !historicalOnly ? (
+        <div
+          data-testid={`${prefix}course-mintrud-create-hint`}
+          className="mt-4 rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-900 ring-1 ring-blue-100"
+        >
+          {MINTRUD_MAPPING_TEXT.createHint}
+        </div>
+      ) : null}
+
+      {isExistingCourse ? (
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            {MINTRUD_MAPPING_TEXT.currentAssignment}
+          </div>
+
+          {assignedLoading ? (
+            <div
+              data-testid={`${prefix}course-mintrud-assigned-loading`}
+              className="mt-3 text-xs text-slate-500"
+            >
+              {MINTRUD_MAPPING_TEXT.assignedLoading}
+            </div>
+          ) : null}
+
+          {!assignedLoading && assignedError ? (
+            <div
+              data-testid={`${prefix}course-mintrud-assigned-error`}
+              className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-xs leading-5 text-red-800 ring-1 ring-red-200"
+            >
+              {assignedError}
+            </div>
+          ) : null}
+
+          {!historicalOnly
+          && !assignedLoading
+          && !assignedError
+          && normalizedAssigned.length === 0 ? (
+            <div
+              data-testid={`${prefix}course-mintrud-assigned-empty`}
+              className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-200"
+            >
+              {MINTRUD_MAPPING_TEXT.assignedEmpty}
+            </div>
+          ) : null}
+
+          {!assignedLoading
+          && !assignedError
+          && normalizedAssigned.length > 0 ? (
+            <div
+              data-testid={`${prefix}course-mintrud-assigned-list`}
+              className="mt-3 space-y-2"
+            >
+              {normalizedAssigned.map((program) => (
+                <div
+                  key={program.id}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200"
+                >
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900">
+                      {program.learn_program_id}.{" "}
+                      {program.title
+                        || program.code
+                        || program.id}
+                    </div>
+
+                    <div className="mt-1 text-[11px] text-slate-500">
+                      {MINTRUD_MAPPING_TEXT.codeLabel}{" "}
+                      {program.code || "\u2014"}{" "}
+                      {"\u00b7"}{" "}
+                      {MINTRUD_MAPPING_TEXT.schemaLabel}{" "}
+                      {program.schema_version || "\u2014"}
+                    </div>
+                  </div>
+
+                  <StatusBadge
+                    tone={
+                      program.is_active === false
+                        ? "amber"
+                        : "green"
+                    }
+                  >
+                    {program.is_active === false
+                      ? MINTRUD_MAPPING_TEXT.inactive
+                      : MINTRUD_MAPPING_TEXT.active}
+                  </StatusBadge>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
+function CourseFormFields({
+  values,
+  onChange,
+  prefix = "",
+  showMintrudProgramMapping = false,
+  mintrudProgramCatalog = [],
+  mintrudProgramCatalogLoading = false,
+  mintrudProgramCatalogError = "",
+  mintrudAssignedPrograms = [],
+  mintrudAssignedProgramsLoading = false,
+  mintrudAssignedProgramsError = "",
+  mintrudSelectedProgramIds = [],
+  mintrudProgramsDirty = false,
+  onMintrudProgramToggle = null,
+  isExistingCourse = true,
+}) {
   return (
     <div className="space-y-5">
       <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200">
@@ -1014,6 +1565,23 @@ function CourseFormFields({ values, onChange, prefix = "" }) {
             <p className="mt-3 text-xs leading-5 text-slate-500">
               В режиме «Автоматически» решение определяется типом программы. Явное значение «Требуется» или «Не требуется» имеет приоритет.
             </p>
+
+            {showMintrudProgramMapping ? (
+              <MintrudProgramMappingState
+                values={values}
+                prefix={prefix}
+                catalog={mintrudProgramCatalog}
+                catalogLoading={mintrudProgramCatalogLoading}
+                catalogError={mintrudProgramCatalogError}
+                assignedPrograms={mintrudAssignedPrograms}
+                assignedLoading={mintrudAssignedProgramsLoading}
+                assignedError={mintrudAssignedProgramsError}
+                selectedProgramIds={mintrudSelectedProgramIds}
+                selectionDirty={mintrudProgramsDirty}
+                onToggleProgram={onMintrudProgramToggle}
+                isExistingCourse={isExistingCourse}
+              />
+            ) : null}
           </div>
         </div>
 
@@ -3294,6 +3862,15 @@ function CourseStructureTree({
   editingCourseId,
   actionCourseId,
   editForm,
+  mintrudProgramCatalog,
+  mintrudProgramCatalogLoading,
+  mintrudProgramCatalogError,
+  editMintrudPrograms,
+  editMintrudProgramsLoading,
+  editMintrudProgramsError,
+  editMintrudSelectedProgramIds,
+  editMintrudProgramsDirty,
+  onEditMintrudProgramToggle,
   onEditFieldChange,
   onStartEdit,
   onEditSubmit,
@@ -3649,6 +4226,17 @@ function CourseStructureTree({
                               values={editForm}
                               onChange={onEditFieldChange}
                               prefix={`table-course-${course.id}-edit-`}
+                              showMintrudProgramMapping
+                              mintrudProgramCatalog={mintrudProgramCatalog}
+                              mintrudProgramCatalogLoading={mintrudProgramCatalogLoading}
+                              mintrudProgramCatalogError={mintrudProgramCatalogError}
+                              mintrudAssignedPrograms={editMintrudPrograms}
+                              mintrudAssignedProgramsLoading={editMintrudProgramsLoading}
+                              mintrudAssignedProgramsError={editMintrudProgramsError}
+                              mintrudSelectedProgramIds={editMintrudSelectedProgramIds}
+                              mintrudProgramsDirty={editMintrudProgramsDirty}
+                              onMintrudProgramToggle={onEditMintrudProgramToggle}
+                              isExistingCourse
                             />
 
                             <div className="flex flex-wrap justify-end gap-3">
@@ -4716,6 +5304,59 @@ export function AdminCoursesPage() {
   const [form, setForm] = useState(EMPTY_COURSE_FORM);
   const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
 
+  const [
+    createMintrudSelectedProgramIds,
+    setCreateMintrudSelectedProgramIds,
+  ] = useState([]);
+
+  const [
+    mintrudProgramCatalog,
+    setMintrudProgramCatalog,
+  ] = useState([]);
+
+  const [
+    mintrudProgramCatalogLoading,
+    setMintrudProgramCatalogLoading,
+  ] = useState(true);
+
+  const [
+    mintrudProgramCatalogError,
+    setMintrudProgramCatalogError,
+  ] = useState("");
+
+  const [
+    editMintrudPrograms,
+    setEditMintrudPrograms,
+  ] = useState([]);
+
+  const [
+    editMintrudProgramsLoading,
+    setEditMintrudProgramsLoading,
+  ] = useState(false);
+
+  const [
+    editMintrudProgramsError,
+    setEditMintrudProgramsError,
+  ] = useState("");
+
+  const [
+    editMintrudInitialActiveProgramIds,
+    setEditMintrudInitialActiveProgramIds,
+  ] = useState([]);
+
+  const [
+    editMintrudSelectedProgramIds,
+    setEditMintrudSelectedProgramIds,
+  ] = useState([]);
+
+  const editMintrudLoadIdRef = useRef(0);
+
+  const editMintrudProgramsDirty =
+    !haveSameMintrudProgramSelection(
+      editMintrudInitialActiveProgramIds,
+      editMintrudSelectedProgramIds
+    );
+
   const activeCourseFilterItems = useMemo(() => {
     const items = [];
 
@@ -4904,6 +5545,52 @@ export function AdminCoursesPage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadMintrudProgramCatalog() {
+      setMintrudProgramCatalogLoading(true);
+      setMintrudProgramCatalogError("");
+
+      try {
+        const programs =
+          await getAdminMintrudLearnPrograms();
+
+        if (cancelled) {
+          return;
+        }
+
+        setMintrudProgramCatalog(
+          Array.isArray(programs)
+            ? programs
+            : []
+        );
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        setMintrudProgramCatalog([]);
+        setMintrudProgramCatalogError(
+          formatCourseApiError(
+            err,
+            MINTRUD_MAPPING_TEXT.catalogLoadFailed
+          )
+        );
+      } finally {
+        if (!cancelled) {
+          setMintrudProgramCatalogLoading(false);
+        }
+      }
+    }
+
+    loadMintrudProgramCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const nextFilters = getCourseFiltersFromSearch(location.search);
     const params = new URLSearchParams(location.search);
 
@@ -4949,8 +5636,28 @@ export function AdminCoursesPage() {
     }));
   }
 
+  function handleCreateMintrudProgramToggle(
+    programId
+  ) {
+    setCreateMintrudSelectedProgramIds(
+      (current) => {
+        if (current.includes(programId)) {
+          return current.filter(
+            (value) => value !== programId
+          );
+        }
+
+        return [
+          ...current,
+          programId,
+        ];
+      }
+    );
+  }
+
   function resetForm() {
     setForm(EMPTY_COURSE_FORM);
+    setCreateMintrudSelectedProgramIds([]);
   }
 
   function closeCreateForm() {
@@ -4978,8 +5685,14 @@ export function AdminCoursesPage() {
   }
 
   function resetEditState() {
+    editMintrudLoadIdRef.current += 1;
     setEditingCourseId("");
     setEditForm(EMPTY_EDIT_FORM);
+    setEditMintrudPrograms([]);
+    setEditMintrudProgramsLoading(false);
+    setEditMintrudProgramsError("");
+    setEditMintrudInitialActiveProgramIds([]);
+    setEditMintrudSelectedProgramIds([]);
   }
 
   function buildPayload(values) {
@@ -5017,8 +5730,29 @@ export function AdminCoursesPage() {
       setError("");
       setSuccessMessage("");
 
-      const created = await createAdminCourse(buildPayload(form));
+      const created =
+        await createAdminCourse(
+          buildPayload(form)
+        );
+
+      const shouldCreateMintrudMapping =
+        createMintrudSelectedProgramIds.length > 0
+        && getMintrudRequirementUiState(form) === "required";
+
+      let mintrudMappingError = null;
       let coverUploadError = null;
+
+      if (shouldCreateMintrudMapping) {
+        try {
+          await updateAdminCourseMintrudPrograms(
+            created.id,
+            createMintrudSelectedProgramIds
+          );
+        } catch (mappingErr) {
+          mintrudMappingError =
+            mappingErr;
+        }
+      }
 
       if (form.cover_file) {
         try {
@@ -5027,21 +5761,51 @@ export function AdminCoursesPage() {
             form.cover_file
           );
         } catch (coverErr) {
-          coverUploadError = coverErr;
+          coverUploadError =
+            coverErr;
         }
       }
 
-      const nextActiveFilter = created.is_active ? "true" : "false";
-      const nextFilters = { q: "", is_active: nextActiveFilter };
-      const params = new URLSearchParams();
+      const nextActiveFilter =
+        created.is_active
+          ? "true"
+          : "false";
 
-      params.set("is_active", nextActiveFilter);
-      params.set("focus_course_id", created.id);
+      const nextFilters = {
+        q: "",
+        is_active: nextActiveFilter,
+      };
 
-      setSuccessMessage(`${RU.createdMessage}: ${created.title}`);
+      const params =
+        new URLSearchParams();
+
+      params.set(
+        "is_active",
+        nextActiveFilter
+      );
+
+      params.set(
+        "focus_course_id",
+        created.id
+      );
+
+      setSuccessMessage(
+        `${RU.createdMessage}: ${created.title}`
+      );
+
+      const partialErrors = [];
+
+      if (mintrudMappingError) {
+        partialErrors.push(
+          `${MINTRUD_MAPPING_TEXT.createPartial} ${formatCourseApiError(
+            mintrudMappingError,
+            MINTRUD_MAPPING_TEXT.saveFailed
+          )}`
+        );
+      }
 
       if (coverUploadError) {
-        setError(
+        partialErrors.push(
           `${COURSE_COVER_TEXT.createPartial} ${formatCourseApiError(
             coverUploadError,
             COURSE_COVER_TEXT.operationFailed
@@ -5049,25 +5813,133 @@ export function AdminCoursesPage() {
         );
       }
 
+      if (partialErrors.length > 0) {
+        setError(
+          partialErrors.join(" ")
+        );
+      }
+
       setShowCreateForm(false);
       resetForm();
       setFilterQuery("");
       setFilterActive(nextActiveFilter);
-      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
-      await refreshCoursesFastPath(nextFilters);
+
+      navigate(
+        `${location.pathname}?${params.toString()}`,
+        { replace: true }
+      );
+
+      await refreshCoursesFastPath(
+        nextFilters
+      );
     } catch (err) {
-      setError(formatCourseApiError(err, RU.createFailed));
+      setError(
+        formatCourseApiError(
+          err,
+          RU.createFailed
+        )
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  function handleStartEdit(course) {
+
+  async function handleStartEdit(course) {
+    const requestId =
+      editMintrudLoadIdRef.current + 1;
+
+    editMintrudLoadIdRef.current =
+      requestId;
+
     setError("");
     setSuccessMessage("");
     setEditingCourseId(course.id);
     setEditForm(buildEditForm(course));
+    setEditMintrudPrograms([]);
+    setEditMintrudProgramsError("");
+    setEditMintrudProgramsLoading(true);
+    setEditMintrudInitialActiveProgramIds([]);
+    setEditMintrudSelectedProgramIds([]);
+
+    try {
+      const programs =
+        await getAdminCourseMintrudPrograms(
+          course.id
+        );
+
+      if (
+        editMintrudLoadIdRef.current
+        !== requestId
+      ) {
+        return;
+      }
+
+      const normalizedPrograms =
+        Array.isArray(programs)
+          ? programs
+          : [];
+
+      const activeProgramIds =
+        getActiveMintrudProgramIds(
+          normalizedPrograms
+        );
+
+      setEditMintrudPrograms(
+        normalizedPrograms
+      );
+
+      setEditMintrudInitialActiveProgramIds(
+        activeProgramIds
+      );
+
+      setEditMintrudSelectedProgramIds(
+        activeProgramIds
+      );
+    } catch (err) {
+      if (
+        editMintrudLoadIdRef.current
+        !== requestId
+      ) {
+        return;
+      }
+
+      setEditMintrudPrograms([]);
+      setEditMintrudProgramsError(
+        formatCourseApiError(
+          err,
+          MINTRUD_MAPPING_TEXT.assignedLoadFailed
+        )
+      );
+    } finally {
+      if (
+        editMintrudLoadIdRef.current
+        === requestId
+      ) {
+        setEditMintrudProgramsLoading(false);
+      }
+    }
   }
+
+  function handleEditMintrudProgramToggle(
+    programId
+  ) {
+    setEditMintrudSelectedProgramIds(
+      (current) => {
+        if (current.includes(programId)) {
+          return current.filter(
+            (value) => value !== programId
+          );
+        }
+
+        return [
+          ...current,
+          programId,
+        ];
+      }
+    );
+  }
+
 
   async function handleEditSubmit(event, courseId) {
     event.preventDefault();
@@ -5087,8 +5959,53 @@ export function AdminCoursesPage() {
       setError("");
       setSuccessMessage("");
 
-      const updated = await updateAdminCourse(courseId, buildPayload(editForm));
+      const updated =
+        await updateAdminCourse(
+          courseId,
+          buildPayload(editForm)
+        );
+
+      const shouldUpdateMintrudPrograms =
+        editMintrudProgramsDirty
+        && getMintrudRequirementUiState(editForm) === "required";
+
+      let mintrudMappingError = null;
       let coverMutationError = null;
+
+      if (shouldUpdateMintrudPrograms) {
+        try {
+          const savedPrograms =
+            await updateAdminCourseMintrudPrograms(
+              courseId,
+              editMintrudSelectedProgramIds
+            );
+
+          const normalizedPrograms =
+            Array.isArray(savedPrograms)
+              ? savedPrograms
+              : [];
+
+          const activeProgramIds =
+            getActiveMintrudProgramIds(
+              normalizedPrograms
+            );
+
+          setEditMintrudPrograms(
+            normalizedPrograms
+          );
+
+          setEditMintrudInitialActiveProgramIds(
+            activeProgramIds
+          );
+
+          setEditMintrudSelectedProgramIds(
+            activeProgramIds
+          );
+        } catch (mappingErr) {
+          mintrudMappingError =
+            mappingErr;
+        }
+      }
 
       try {
         if (editForm.cover_file) {
@@ -5100,36 +6017,75 @@ export function AdminCoursesPage() {
           editForm.cover_remove
           && editForm.cover_image_url
         ) {
-          await deleteAdminCourseCover(courseId);
+          await deleteAdminCourseCover(
+            courseId
+          );
         }
       } catch (coverErr) {
-        coverMutationError = coverErr;
+        coverMutationError =
+          coverErr;
       }
 
-      if (coverMutationError) {
+      if (
+        mintrudMappingError
+        || coverMutationError
+      ) {
         setSuccessMessage(
           `${RU.updatedMessage}: ${updated.title}`
         );
+
+        const partialErrors = [];
+
+        if (mintrudMappingError) {
+          partialErrors.push(
+            `${MINTRUD_MAPPING_TEXT.editPartial} ${formatCourseApiError(
+              mintrudMappingError,
+              MINTRUD_MAPPING_TEXT.saveFailed
+            )}`
+          );
+        }
+
+        if (coverMutationError) {
+          partialErrors.push(
+            `${COURSE_COVER_TEXT.editPartial} ${formatCourseApiError(
+              coverMutationError,
+              COURSE_COVER_TEXT.operationFailed
+            )}`
+          );
+        }
+
         setError(
-          `${COURSE_COVER_TEXT.editPartial} ${formatCourseApiError(
-            coverMutationError,
-            COURSE_COVER_TEXT.operationFailed
-          )}`
+          partialErrors.join(" ")
         );
 
-        await refreshCoursesFastPath(buildFilters());
+        await refreshCoursesFastPath(
+          buildFilters()
+        );
+
         return;
       }
 
-      setSuccessMessage(`${RU.updatedMessage}: ${updated.title}`);
+      setSuccessMessage(
+        `${RU.updatedMessage}: ${updated.title}`
+      );
+
       resetEditState();
-      await refreshCoursesFastPath(buildFilters());
+
+      await refreshCoursesFastPath(
+        buildFilters()
+      );
     } catch (err) {
-      setError(formatCourseApiError(err, RU.updateFailed));
+      setError(
+        formatCourseApiError(
+          err,
+          RU.updateFailed
+        )
+      );
     } finally {
       setActionCourseId("");
     }
   }
+
 
   async function handleToggleActive(course) {
     try {
@@ -5598,6 +6554,17 @@ export function AdminCoursesPage() {
               values={form}
               onChange={updateField}
               prefix="create-"
+              showMintrudProgramMapping
+              mintrudProgramCatalog={mintrudProgramCatalog}
+              mintrudProgramCatalogLoading={mintrudProgramCatalogLoading}
+              mintrudProgramCatalogError={mintrudProgramCatalogError}
+              mintrudAssignedPrograms={[]}
+              mintrudAssignedProgramsLoading={false}
+              mintrudAssignedProgramsError=""
+              mintrudSelectedProgramIds={createMintrudSelectedProgramIds}
+              mintrudProgramsDirty={createMintrudSelectedProgramIds.length > 0}
+              onMintrudProgramToggle={handleCreateMintrudProgramToggle}
+              isExistingCourse={false}
             />
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
@@ -5682,6 +6649,15 @@ export function AdminCoursesPage() {
             editingCourseId={editingCourseId}
             actionCourseId={actionCourseId}
             editForm={editForm}
+            mintrudProgramCatalog={mintrudProgramCatalog}
+            mintrudProgramCatalogLoading={mintrudProgramCatalogLoading}
+            mintrudProgramCatalogError={mintrudProgramCatalogError}
+            editMintrudPrograms={editMintrudPrograms}
+            editMintrudProgramsLoading={editMintrudProgramsLoading}
+            editMintrudProgramsError={editMintrudProgramsError}
+            editMintrudSelectedProgramIds={editMintrudSelectedProgramIds}
+            editMintrudProgramsDirty={editMintrudProgramsDirty}
+            onEditMintrudProgramToggle={handleEditMintrudProgramToggle}
             onEditFieldChange={updateEditField}
             onStartEdit={handleStartEdit}
             onEditSubmit={handleEditSubmit}
