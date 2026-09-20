@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from types import SimpleNamespace
 from uuid import uuid4
 
 from sqlalchemy import func, select
@@ -12,6 +13,7 @@ from app.models.learner_profile import LearnerProfile
 from app.models.role import Role, UserRole
 from app.models.user import User
 from app.models.user_password_token import UserPasswordToken
+from app.services import public_registration as service
 from app.services.public_registration import (
     PUBLIC_REGISTRATION_OUTCOME_EXISTING_ACTIVE_USER,
     PUBLIC_REGISTRATION_OUTCOME_EXISTING_INACTIVE_USER,
@@ -397,3 +399,285 @@ def test_prepare_public_registration_is_idempotent_for_inactive_user() -> None:
             await session.rollback()
 
     run_database_scenario(scenario)
+
+def test_prepare_public_registration_existing_profile_middle_name_runs_approval_lifecycle(
+    monkeypatch,
+) -> None:
+    async def scenario() -> None:
+        user_id = "existing-public-middle-name-user"
+        email = "existing-middle-name@example.org"
+        phone = "+79990000001"
+
+        user = User(
+            id=user_id,
+            email=email,
+            phone=phone,
+            full_name="Existing Learner",
+            hashed_password="hash",
+            is_active=False,
+            is_email_verified=False,
+            mfa_enabled=False,
+        )
+
+        profile = LearnerProfile(
+            id="existing-public-middle-name-profile",
+            user_id=user_id,
+            last_name="Existing",
+            first_name="Learner",
+            middle_name=None,
+            phone=phone,
+            email=email,
+            source="learner_import",
+            personal_data_basis="import",
+        )
+
+        data = normalize_public_registration_data(
+            last_name="Must Not Replace",
+            first_name="Must Not Replace",
+            middle_name="Ivanovich",
+            email=email,
+            phone=phone,
+        )
+
+        class FakeSession:
+            def __init__(self):
+                self.flush_count = 0
+
+            async def flush(self):
+                self.flush_count += 1
+
+            def add(self, instance):
+                raise AssertionError(
+                    "Existing profile flow "
+                    "must not add a new profile"
+                )
+
+        session = FakeSession()
+
+        learner_role = SimpleNamespace(
+            id="learner-role"
+        )
+
+        existing_assignment = SimpleNamespace(
+            id="learner-assignment"
+        )
+
+        lifecycle_calls = []
+
+        async def get_user_by_email(
+            current_session,
+            *,
+            email,
+        ):
+            assert current_session is session
+            assert email == user.email
+            return user
+
+        async def get_phone_owner(
+            current_session,
+            *,
+            phone,
+        ):
+            assert current_session is session
+            assert phone == user.phone
+            return user
+
+        async def get_role(
+            current_session,
+        ):
+            assert current_session is session
+            return learner_role
+
+        async def get_profile(
+            current_session,
+            *,
+            user_id,
+        ):
+            assert current_session is session
+            assert str(user_id) == str(user.id)
+            return profile
+
+        async def get_assignment(
+            current_session,
+            *,
+            user_id,
+            role_id,
+        ):
+            assert current_session is session
+            assert str(user_id) == str(user.id)
+            assert role_id == learner_role.id
+            return existing_assignment
+
+        async def ensure_assignment(
+            current_session,
+            *,
+            user_id,
+            role,
+        ):
+            assert current_session is session
+            assert str(user_id) == str(user.id)
+            assert role is learner_role
+            return False
+
+        async def create_token(
+            current_session,
+            *,
+            user,
+            delivery_target_email,
+            **kwargs,
+        ):
+            del kwargs
+
+            assert current_session is session
+            assert user is not None
+            assert delivery_target_email == email
+
+            return SimpleNamespace(
+                record=SimpleNamespace(
+                    id="token-record"
+                )
+            )
+
+        async def lock_approvals(
+            current_session,
+            *,
+            user_id,
+            changed_fields,
+        ):
+            assert current_session is session
+
+            lifecycle_calls.append(
+                (
+                    "lock",
+                    str(user_id),
+                    tuple(changed_fields),
+                )
+            )
+
+            return ()
+
+        async def invalidate_approvals(
+            current_session,
+            *,
+            user_id,
+            changed_fields,
+            invalidated_at,
+        ):
+            assert current_session is session
+            assert invalidated_at is not None
+
+            lifecycle_calls.append(
+                (
+                    "invalidate",
+                    str(user_id),
+                    tuple(changed_fields),
+                )
+            )
+
+            return ()
+
+        async def unexpected_readiness_refresh(
+            current_session,
+            *,
+            user_id,
+        ):
+            del current_session, user_id
+
+            raise AssertionError(
+                "middle_name must not trigger "
+                "registry readiness refresh"
+            )
+
+        monkeypatch.setattr(
+            service,
+            "_get_user_by_email",
+            get_user_by_email,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "_get_phone_owner",
+            get_phone_owner,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "_get_learner_role",
+            get_role,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "_get_learner_profile",
+            get_profile,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "_get_global_learner_assignment",
+            get_assignment,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "_ensure_global_learner_assignment",
+            ensure_assignment,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "create_user_password_token",
+            create_token,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "lock_registry_approvals_for_learner_profile",
+            lock_approvals,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "invalidate_registry_approvals_for_learner_profile",
+            invalidate_approvals,
+        )
+
+        monkeypatch.setattr(
+            service,
+            "refresh_registry_readiness_for_user",
+            unexpected_readiness_refresh,
+        )
+
+        result = await service.prepare_public_registration(
+            session,
+            data=data,
+        )
+
+        assert result.outcome == (
+            PUBLIC_REGISTRATION_OUTCOME_EXISTING_INACTIVE_USER
+        )
+
+        assert result.user is user
+        assert result.profile is profile
+        assert profile.middle_name == "Ivanovich"
+
+        assert lifecycle_calls == [
+            (
+                "lock",
+                user_id,
+                (
+                    "middle_name",
+                ),
+            ),
+            (
+                "invalidate",
+                user_id,
+                (
+                    "middle_name",
+                ),
+            ),
+        ]
+
+    asyncio.run(
+        scenario()
+    )

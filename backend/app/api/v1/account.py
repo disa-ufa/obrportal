@@ -419,14 +419,11 @@ async def update_account_learner_profile(
             profile,
         )
 
-    if set(changed_fields).intersection(
-        LEARNER_PROFILE_READINESS_FIELDS
-    ):
-        await lock_registry_approvals_for_learner_profile(
-            session,
-            user_id=str(current_user.id),
-            changed_fields=changed_fields,
-        )
+    await lock_registry_approvals_for_learner_profile(
+        session,
+        user_id=str(current_user.id),
+        changed_fields=changed_fields,
+    )
 
     if profile is None:
         profile = LearnerProfile(
@@ -445,18 +442,18 @@ async def update_account_learner_profile(
     try:
         await session.flush()
 
+        await invalidate_registry_approvals_for_learner_profile(
+            session,
+            user_id=str(current_user.id),
+            changed_fields=changed_fields,
+            invalidated_at=datetime.now(
+                timezone.utc
+            ),
+        )
+
         if set(changed_fields).intersection(
             LEARNER_PROFILE_READINESS_FIELDS
         ):
-            await invalidate_registry_approvals_for_learner_profile(
-                session,
-                user_id=str(current_user.id),
-                changed_fields=changed_fields,
-                invalidated_at=datetime.now(
-                    timezone.utc
-                ),
-            )
-
             await refresh_registry_readiness_for_user(
                 session,
                 user_id=str(current_user.id),

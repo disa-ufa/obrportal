@@ -12,6 +12,14 @@ from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization  # noqa: F401
 from app.models.role import Role, UserRole
 from app.models.user import User
+from app.services.compliance_registry_approval_invalidation import (
+    invalidate_registry_approvals_for_learner_profile,
+    lock_registry_approvals_for_learner_profile,
+)
+from app.services.compliance_registry_readiness_propagation import (
+    LEARNER_PROFILE_READINESS_FIELDS,
+    refresh_registry_readiness_for_user,
+)
 from app.services.learner_profile_fields import (
     normalize_learner_email,
     normalize_learner_name,
@@ -232,6 +240,36 @@ async def _ensure_global_learner_assignment(
     return True
 
 
+def _profile_lifecycle_fields_to_fill(
+    profile: LearnerProfile,
+    *,
+    data: NormalizedPublicRegistrationData,
+) -> tuple[str, ...]:
+    changed_fields: list[str] = []
+
+    if not profile.last_name:
+        changed_fields.append(
+            "last_name"
+        )
+
+    if not profile.first_name:
+        changed_fields.append(
+            "first_name"
+        )
+
+    if (
+        not profile.middle_name
+        and data.middle_name
+    ):
+        changed_fields.append(
+            "middle_name"
+        )
+
+    return tuple(
+        changed_fields
+    )
+
+
 def _fill_empty_profile_fields(
     profile: LearnerProfile,
     *,
@@ -373,6 +411,22 @@ async def prepare_public_registration(
         existing_user.phone = data.phone
 
     if profile is None:
+        profile_lifecycle_fields = (
+            "last_name",
+            "first_name",
+        )
+
+        if data.middle_name:
+            profile_lifecycle_fields += (
+                "middle_name",
+            )
+
+        await lock_registry_approvals_for_learner_profile(
+            session,
+            user_id=str(existing_user.id),
+            changed_fields=profile_lifecycle_fields,
+        )
+
         profile = LearnerProfile(
             user_id=existing_user.id,
             last_name=data.last_name,
@@ -389,11 +443,41 @@ async def prepare_public_registration(
         session.add(profile)
         await session.flush()
     else:
+        profile_lifecycle_fields = (
+            _profile_lifecycle_fields_to_fill(
+                profile,
+                data=data,
+            )
+        )
+
+        await lock_registry_approvals_for_learner_profile(
+            session,
+            user_id=str(existing_user.id),
+            changed_fields=profile_lifecycle_fields,
+        )
+
         _fill_empty_profile_fields(
             profile,
             data=data,
         )
         await session.flush()
+
+    await invalidate_registry_approvals_for_learner_profile(
+        session,
+        user_id=str(existing_user.id),
+        changed_fields=profile_lifecycle_fields,
+        invalidated_at=utcnow(),
+    )
+
+    if set(
+        profile_lifecycle_fields
+    ).intersection(
+        LEARNER_PROFILE_READINESS_FIELDS
+    ):
+        await refresh_registry_readiness_for_user(
+            session,
+            user_id=str(existing_user.id),
+        )
 
     learner_role_assigned = (
         await _ensure_global_learner_assignment(

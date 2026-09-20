@@ -845,13 +845,21 @@ def test_shared_name_change_affects_both_registries():
     )
 
 
+def test_middle_name_change_affects_mintrud_only():
+    assert (
+        approval_registries_for_learner_profile_fields(
+            {"middle_name"}
+        )
+        == (REGISTRY_MINTRUD,)
+    )
+
+
 def test_unrelated_profile_change_affects_no_registry():
     assert (
         approval_registries_for_learner_profile_fields(
             {
                 "phone",
                 "email",
-                "middle_name",
             }
         )
         == ()

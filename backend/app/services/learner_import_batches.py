@@ -11,11 +11,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.security import get_password_hash
+from app.models.base import utcnow
 from app.models.enrollment import Enrollment
 from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learner_profile import LearnerProfile
 from app.models.role import Role, UserRole
 from app.models.user import User
+from app.services.compliance_registry_approval_invalidation import (
+    invalidate_registry_approvals_for_learner_profile,
+    lock_registry_approvals_for_learner_profile,
+)
+from app.services.compliance_registry_readiness_propagation import (
+    LEARNER_PROFILE_READINESS_FIELDS,
+    refresh_registry_readiness_for_user,
+)
 from app.services.learner_import_parser import ParsedLearnerImportResult
 
 
@@ -671,31 +680,52 @@ def import_user_will_update(
     )
 
 
-def import_profile_will_update(
+LEARNER_IMPORT_PROFILE_MUTABLE_FIELDS = (
+    "last_name",
+    "first_name",
+    "middle_name",
+    "phone",
+    "email",
+    "snils",
+)
+
+
+def learner_import_profile_changed_fields(
     profile: LearnerProfile,
     data: dict,
-) -> bool:
-    field_map = {
-        "last_name": "last_name",
-        "first_name": "first_name",
-        "middle_name": "middle_name",
-        "phone": "phone",
-        "email": "email",
-        "snils": "snils",
-    }
+) -> tuple[str, ...]:
+    changed_fields: list[str] = []
 
-    for source_key, target_attr in field_map.items():
+    for field_name in (
+        LEARNER_IMPORT_PROFILE_MUTABLE_FIELDS
+    ):
         value = normalize_import_text(
-            data.get(source_key)
+            data.get(field_name)
         )
 
         if value and not getattr(
             profile,
-            target_attr,
+            field_name,
         ):
-            return True
+            changed_fields.append(
+                field_name
+            )
 
-    return False
+    return tuple(
+        changed_fields
+    )
+
+
+def import_profile_will_update(
+    profile: LearnerProfile,
+    data: dict,
+) -> bool:
+    return bool(
+        learner_import_profile_changed_fields(
+            profile,
+            data,
+        )
+    )
 
 
 def import_enrollment_will_update(
@@ -1296,20 +1326,27 @@ async def assign_learner_role_if_available(
     return True
 
 
-def apply_profile_data(profile: LearnerProfile, data: dict) -> None:
-    field_map = {
-        "last_name": "last_name",
-        "first_name": "first_name",
-        "middle_name": "middle_name",
-        "phone": "phone",
-        "email": "email",
-        "snils": "snils",
-    }
+def apply_profile_data(
+    profile: LearnerProfile,
+    data: dict,
+) -> tuple[str, ...]:
+    changed_fields = (
+        learner_import_profile_changed_fields(
+            profile,
+            data,
+        )
+    )
 
-    for source_key, target_attr in field_map.items():
-        value = normalize_import_text(data.get(source_key))
-        if value and not getattr(profile, target_attr):
-            setattr(profile, target_attr, value)
+    for field_name in changed_fields:
+        setattr(
+            profile,
+            field_name,
+            normalize_import_text(
+                data.get(field_name)
+            ),
+        )
+
+    return changed_fields
 
 
 def mark_import_row_error(row: ImportRow, message: str) -> None:
@@ -1565,10 +1602,58 @@ async def apply_learner_import_batch(
                     profile,
                     data,
                 ):
-                    apply_profile_data(
-                        profile,
-                        data,
+                    profile_changed_fields = (
+                        learner_import_profile_changed_fields(
+                            profile,
+                            data,
+                        )
                     )
+
+                    await lock_registry_approvals_for_learner_profile(
+                        db,
+                        user_id=user_id,
+                        changed_fields=(
+                            profile_changed_fields
+                        ),
+                    )
+
+                    applied_profile_changed_fields = (
+                        apply_profile_data(
+                            profile,
+                            data,
+                        )
+                    )
+
+                    if (
+                        applied_profile_changed_fields
+                        != profile_changed_fields
+                    ):
+                        raise RuntimeError(
+                            "Learner import profile change "
+                            "set changed during apply."
+                        )
+
+                    await db.flush()
+
+                    await invalidate_registry_approvals_for_learner_profile(
+                        db,
+                        user_id=user_id,
+                        changed_fields=(
+                            profile_changed_fields
+                        ),
+                        invalidated_at=utcnow(),
+                    )
+
+                    if set(
+                        profile_changed_fields
+                    ).intersection(
+                        LEARNER_PROFILE_READINESS_FIELDS
+                    ):
+                        await refresh_registry_readiness_for_user(
+                            db,
+                            user_id=user_id,
+                        )
+
                     row_counts[
                         "updated_profiles_count"
                     ] = 1
