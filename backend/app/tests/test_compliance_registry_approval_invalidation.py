@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from app.services.compliance_registry_approval import (
     APPROVAL_INVALIDATION_COURSE_TITLE_CHANGED,
+    APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED,
 )
 from app.services.compliance_registry_approval_invalidation import (
     invalidate_registry_approvals_for_course,
@@ -82,13 +83,68 @@ def test_unrelated_profile_change_skips_session_query():
             user_id="user-1",
             changed_fields={
                 "phone",
-                "middle_name",
+                "email",
             },
             invalidated_at=INVALIDATED_AT,
         )
     )
 
     assert result == ()
+
+
+def test_middle_name_change_invalidates_mintrud_approval():
+    mintrud = build_approved_obligation(
+        "obligation-mintrud",
+        REGISTRY_MINTRUD,
+    )
+
+    session = FakeSession(
+        [
+            mintrud,
+        ]
+    )
+
+    result = asyncio.run(
+        invalidate_registry_approvals_for_learner_profile(
+            session,
+            user_id="user-1",
+            changed_fields={
+                "middle_name",
+            },
+            invalidated_at=INVALIDATED_AT,
+        )
+    )
+
+    assert session.execute_count == 1
+
+    assert [
+        (
+            item.obligation_id,
+            item.registry,
+            item.reason,
+        )
+        for item in result
+    ] == [
+        (
+            "obligation-mintrud",
+            REGISTRY_MINTRUD,
+            APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED,
+        ),
+    ]
+
+    assert mintrud.status == (
+        OBLIGATION_STATUS_NEEDS_APPROVAL
+    )
+
+    assert (
+        mintrud.approval_invalidated_at
+        == INVALIDATED_AT
+    )
+
+    assert (
+        mintrud.approval_invalidation_reason
+        == APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED
+    )
 
 
 def test_course_change_invalidates_all_approved_registry_rows():

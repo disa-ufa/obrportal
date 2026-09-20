@@ -702,6 +702,7 @@ MINTRUD_APPROVAL_LEARNER_PROFILE_FIELDS = frozenset(
     {
         "last_name",
         "first_name",
+        "middle_name",
         "snils",
     }
 )

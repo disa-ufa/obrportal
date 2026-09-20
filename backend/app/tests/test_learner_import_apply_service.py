@@ -1500,3 +1500,151 @@ async def test_find_learner_import_role_requires_seeded_role(
         await service.find_learner_import_role(
             Session(),
         )
+
+@pytest.mark.asyncio
+async def test_apply_existing_profile_middle_name_runs_approval_lifecycle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    email = "middle-name-existing@example.org"
+    user_id = "middle-name-existing-user"
+
+    user = make_user(
+        user_id=user_id,
+        email=email,
+        is_active=False,
+    )
+
+    profile = make_profile(
+        user_id=user_id,
+        email=email,
+    )
+
+    assert profile.middle_name is None
+
+    batch = make_batch(email)
+
+    batch.rows[
+        0
+    ].normalized_data_json[
+        "middle_name"
+    ] = "Ivanovich"
+
+    enrollment = make_enrollment(
+        user_id=user_id
+    )
+
+    db = FakeApplySession()
+
+    configure_apply_lookups(
+        monkeypatch,
+        users={
+            email: user,
+        },
+        profiles={
+            user_id: profile,
+        },
+        enrollments={
+            user_id: enrollment,
+        },
+    )
+
+    lifecycle_calls = []
+
+    async def lock_approvals(
+        session,
+        *,
+        user_id,
+        changed_fields,
+    ):
+        assert session is db
+
+        lifecycle_calls.append(
+            (
+                "lock",
+                str(user_id),
+                tuple(changed_fields),
+            )
+        )
+
+        return ()
+
+    async def invalidate_approvals(
+        session,
+        *,
+        user_id,
+        changed_fields,
+        invalidated_at,
+    ):
+        assert session is db
+        assert invalidated_at is not None
+
+        lifecycle_calls.append(
+            (
+                "invalidate",
+                str(user_id),
+                tuple(changed_fields),
+            )
+        )
+
+        return ()
+
+    async def unexpected_readiness_refresh(
+        session,
+        *,
+        user_id,
+    ):
+        del session, user_id
+
+        raise AssertionError(
+            "middle_name must not trigger "
+            "registry readiness refresh"
+        )
+
+    monkeypatch.setattr(
+        service,
+        "lock_registry_approvals_for_learner_profile",
+        lock_approvals,
+    )
+
+    monkeypatch.setattr(
+        service,
+        "invalidate_registry_approvals_for_learner_profile",
+        invalidate_approvals,
+    )
+
+    monkeypatch.setattr(
+        service,
+        "refresh_registry_readiness_for_user",
+        unexpected_readiness_refresh,
+    )
+
+    result = (
+        await service.apply_learner_import_batch(
+            db,
+            batch=batch,
+        )
+    )
+
+    assert profile.middle_name == "Ivanovich"
+
+    assert (
+        result.updated_profiles_count
+        == 1
+    )
+
+    assert lifecycle_calls == [
+        (
+            "lock",
+            user_id,
+            (
+                "middle_name",
+            ),
+        ),
+        (
+            "invalidate",
+            user_id,
+            (
+                "middle_name",
+            ),
+        ),
+    ]
