@@ -20,6 +20,7 @@ ALLOW_UNCOVERED = {
     "backend/app/db/seed.py",
     "backend/app/db/seed_admin.py",
     "backend/app/db/seed_demo_learning.py",
+    "backend/app/db/seed_mintrud_learn_programs.py",
     "backend/app/db/seed_demo_organization.py",
     "backend/app/db/seed_demo_user.py",
     "backend/app/db/seed_org.py",
