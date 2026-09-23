@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.models.mintrud_learn_program import (
+from app.mintrud_learn_program_catalog import (
+    MINTRUD_LEARN_PROGRAM_IDS_V109,
     MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
 )
 from app.models.mintrud_registry_context import (
@@ -432,7 +433,10 @@ def _has_current_active_mintrud_learn_program(
         )
 
         try:
-            if int(learn_program_id) > 0:
+            if (
+                int(learn_program_id)
+                in MINTRUD_LEARN_PROGRAM_IDS_V109
+            ):
                 return True
         except (
             TypeError,

@@ -690,6 +690,47 @@ def test_mintrud_missing_learn_program_blocks_readiness() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "learn_program_id",
+    [
+        5,
+        30,
+        999999,
+    ],
+)
+def test_mintrud_program_outside_v109_domain_does_not_satisfy_readiness(
+    learn_program_id,
+) -> None:
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_MINTRUD,
+        mintrud_reporting_organization=(
+            SimpleNamespace(
+                name="Test Reporting Org",
+                inn="0274000000",
+            )
+        ),
+        enrollment=completed_enrollment(),
+        course=course(),
+        learner=learner(),
+        learner_profile=profile(
+            snils="112-233-445 95",
+        ),
+        mintrud_context=mintrud_context(),
+        mintrud_learn_programs=(
+            mintrud_program(
+                learn_program_id=learn_program_id,
+            ),
+        ),
+    )
+
+    assert result.is_ready is False
+    assert (
+        "mintrud.learn_program_missing"
+        in result.error_codes
+    )
+
+
+
 def test_mintrud_inactive_program_does_not_satisfy_readiness() -> None:
     result = evaluate_registry_readiness(
         registry=REGISTRY_MINTRUD,
