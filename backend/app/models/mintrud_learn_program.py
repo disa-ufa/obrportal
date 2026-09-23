@@ -8,14 +8,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.mintrud_learn_program_catalog import (
+    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
+)
 from app.models.base import (
     Base,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
 )
-
-
-MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109 = "1.0.9"
 
 
 class MintrudLearnProgram(
@@ -47,6 +47,20 @@ class MintrudLearnProgram(
             name=(
                 "ck_mintrud_learn_program_"
                 "positive_program_id"
+            ),
+        ),
+        CheckConstraint(
+            (
+                "schema_version <> '1.0.9' "
+                "OR learn_program_id IN "
+                "(1, 2, 3, 4, 6, 7, 8, 9, 10, 11, "
+                "12, 13, 14, 15, 16, 17, 18, 19, "
+                "20, 21, 22, 23, 24, 25, 26, 27, "
+                "28, 29)"
+            ),
+            name=(
+                "ck_mintrud_learn_program_"
+                "v109_program_id"
             ),
         ),
     )

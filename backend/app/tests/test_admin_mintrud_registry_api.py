@@ -227,33 +227,21 @@ def create_mintrud_fixture(
 
             await session.flush()
 
-            mintrud_program = MintrudLearnProgram(
-                learn_program_id=(
-                    int(
-                        suffix[:7],
-                        16,
-                    )
-                    + 1
-                ),
-                code=(
-                    "test-mintrud-"
-                    + suffix
-                ),
-                title=(
-                    "Mintrud integration test program "
-                    + suffix[:8]
-                ),
-                schema_version=(
-                    MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109
-                ),
-                is_active=True,
+            mintrud_program = await session.scalar(
+                select(
+                    MintrudLearnProgram
+                ).where(
+                    MintrudLearnProgram.schema_version
+                    == MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
+                    MintrudLearnProgram.learn_program_id
+                    == 1,
+                    MintrudLearnProgram.is_active.is_(
+                        True
+                    ),
+                )
             )
 
-            session.add(
-                mintrud_program
-            )
-
-            await session.flush()
+            assert mintrud_program is not None
 
             course_program = (
                 CourseMintrudLearnProgram(
@@ -569,16 +557,7 @@ def cleanup_mintrud_fixtures(
                     )
                 )
 
-                await session.execute(
-                    delete(
-                        MintrudLearnProgram
-                    ).where(
-                        MintrudLearnProgram.id
-                        == fixture[
-                            "mintrud_program_id"
-                        ]
-                    )
-                )
+
 
                 await session.execute(
                     delete(

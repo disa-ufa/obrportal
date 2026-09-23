@@ -8,6 +8,9 @@ from app.db.session import AsyncSessionLocal
 from app.models.organization import Organization  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.role import Permission, Role, RolePermission
+from app.services.mintrud_learn_programs import (
+    sync_mintrud_learn_program_catalog_v109,
+)
 
 
 ROLES = [
@@ -327,9 +330,22 @@ async def seed() -> None:
             for permission in selected_permissions:
                 await ensure_role_permission(session, role, permission)
 
+        mintrud_sync_result = (
+            await sync_mintrud_learn_program_catalog_v109(
+                session
+            )
+        )
+
         await session.commit()
 
     print("Seed completed: roles, permissions and role-permission links are ready.")
+    print(
+        "Mintrud learn program catalog v1.0.9 synced: "
+        f"created={mintrud_sync_result.created}, "
+        f"updated={mintrud_sync_result.updated}, "
+        f"unchanged={mintrud_sync_result.unchanged}, "
+        f"deactivated={mintrud_sync_result.deactivated}"
+    )
 
 
 if __name__ == "__main__":

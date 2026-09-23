@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.mintrud_learn_program import (
+from app.mintrud_learn_program_catalog import (
+    MINTRUD_LEARN_PROGRAM_CATALOG_V109,
     MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109,
+)
+from app.models.mintrud_learn_program import (
     CourseMintrudLearnProgram,
     MintrudLearnProgram,
 )
@@ -321,3 +325,170 @@ async def replace_course_mintrud_learn_programs(
         )
 
     await session.flush()
+
+class MintrudLearnProgramCatalogSyncError(
+    ValueError
+):
+    pass
+
+
+@dataclass(frozen=True)
+class MintrudLearnProgramCatalogSyncResult:
+    created: int
+    updated: int
+    unchanged: int
+    deactivated: int
+
+
+async def sync_mintrud_learn_program_catalog_v109(
+    session: AsyncSession,
+) -> MintrudLearnProgramCatalogSyncResult:
+    result = await session.execute(
+        select(
+            MintrudLearnProgram
+        ).where(
+            MintrudLearnProgram.schema_version
+            == MINTRUD_LEARN_PROGRAM_SCHEMA_VERSION_V109
+        )
+    )
+
+    existing = tuple(
+        result.scalars().all()
+    )
+
+    existing_by_program_id: dict[
+        int,
+        MintrudLearnProgram,
+    ] = {}
+
+    for program in existing:
+        program_id = int(
+            program.learn_program_id
+        )
+
+        if program_id in existing_by_program_id:
+            raise MintrudLearnProgramCatalogSyncError(
+                "Duplicate Mintrud learn_program_id "
+                f"for schema 1.0.9: {program_id}"
+            )
+
+        existing_by_program_id[
+            program_id
+        ] = program
+
+    canonical_by_program_id = {
+        item.learn_program_id: item
+        for item in MINTRUD_LEARN_PROGRAM_CATALOG_V109
+    }
+
+    unexpected_program_ids = tuple(
+        sorted(
+            set(existing_by_program_id)
+            - set(canonical_by_program_id)
+        )
+    )
+
+    if unexpected_program_ids:
+        raise MintrudLearnProgramCatalogSyncError(
+            "Unexpected Mintrud learn_program_id "
+            "values for schema 1.0.9: "
+            + ", ".join(
+                str(program_id)
+                for program_id in unexpected_program_ids
+            )
+        )
+
+    canonical_program_id_by_code = {
+        item.code: item.learn_program_id
+        for item in MINTRUD_LEARN_PROGRAM_CATALOG_V109
+    }
+
+    for program in existing:
+        expected_program_id = (
+            canonical_program_id_by_code.get(
+                str(
+                    program.code
+                    or ""
+                )
+            )
+        )
+
+        if (
+            expected_program_id is not None
+            and expected_program_id
+            != int(
+                program.learn_program_id
+            )
+        ):
+            raise MintrudLearnProgramCatalogSyncError(
+                "Canonical Mintrud code conflict "
+                f"for schema 1.0.9: code={program.code!r}, "
+                f"stored_id={program.learn_program_id}, "
+                f"expected_id={expected_program_id}"
+            )
+
+    created = 0
+    updated = 0
+    unchanged = 0
+    deactivated = 0
+
+    for canonical in (
+        MINTRUD_LEARN_PROGRAM_CATALOG_V109
+    ):
+        program = existing_by_program_id.get(
+            canonical.learn_program_id
+        )
+
+        if program is None:
+            session.add(
+                MintrudLearnProgram(
+                    learn_program_id=(
+                        canonical.learn_program_id
+                    ),
+                    code=canonical.code,
+                    title=canonical.title,
+                    schema_version=(
+                        canonical.schema_version
+                    ),
+                    is_active=True,
+                )
+            )
+            created += 1
+            continue
+
+        changed = False
+
+        if program.code != canonical.code:
+            program.code = canonical.code
+            changed = True
+
+        if program.title != canonical.title:
+            program.title = canonical.title
+            changed = True
+
+        if (
+            program.schema_version
+            != canonical.schema_version
+        ):
+            program.schema_version = (
+                canonical.schema_version
+            )
+            changed = True
+
+        if program.is_active is not True:
+            program.is_active = True
+            changed = True
+
+        if changed:
+            updated += 1
+        else:
+            unchanged += 1
+
+    await session.flush()
+
+    return MintrudLearnProgramCatalogSyncResult(
+        created=created,
+        updated=updated,
+        unchanged=unchanged,
+        deactivated=deactivated,
+    )
