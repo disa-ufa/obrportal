@@ -69,12 +69,12 @@ def test_artifact_kinds_are_canonical_contract_values():
 
     assert (
         "REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE"
-        in portal_text
+        not in portal_text
     )
 
     assert (
         "REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD"
-        in portal_text
+        not in portal_text
     )
 
 
@@ -230,7 +230,7 @@ def test_admin_attempt_api_exposes_artifact_kind():
     )
 
 
-def test_portal_endpoint_remains_fail_closed():
+def test_mintrud_portal_endpoint_uses_official_xml_lifecycle():
     source = function_source(
         "app/api/v1/admin.py",
         "prepare_admin_mintrud_portal_artifact",
@@ -240,19 +240,78 @@ def test_portal_endpoint_remains_fail_closed():
         "require_registry_portal_artifact_contract"
         in source
     )
-
+    assert (
+        "validate_registry_approval_current"
+        in source
+    )
+    assert (
+        "obligation.approval_snapshot_json"
+        in source
+    )
+    assert (
+        "serialize_mintrud_eisot_xml_v109"
+        in source
+    )
+    assert (
+        "validate_mintrud_eisot_xml_v109"
+        in source
+    )
+    assert (
+        "REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD"
+        in source
+    )
+    assert (
+        "create_registry_submission_attempt"
+        in source
+    )
+    assert (
+        "attach_registry_submission_artifact"
+        in source
+    )
+    assert (
+        "mark_registry_exported"
+        in source
+    )
+    assert (
+        "build_registry_export_package"
+        not in source
+    )
     assert (
         "HTTP_501_NOT_IMPLEMENTED"
-        in source
+        not in source
     )
 
 
-def test_no_official_xml_serializer_was_added():
+def test_portal_contract_service_does_not_implement_xml_processing():
     service = read(
         "app/services/"
         "compliance_registry_portal_artifacts.py"
     )
 
     assert "ElementTree" not in service
-    assert "lxml" not in service
+    assert "from lxml" not in service
     assert "xmlschema" not in service
+    assert (
+        "serialize_mintrud_eisot_xml_v109"
+        not in service
+    )
+    assert (
+        "validate_mintrud_eisot_xml_v109"
+        not in service
+    )
+
+
+def test_mintrud_portal_endpoint_never_auto_submits():
+    source = function_source(
+        "app/api/v1/admin.py",
+        "prepare_admin_mintrud_portal_artifact",
+    )
+
+    assert (
+        "mark_registry_submission"
+        not in source
+    )
+    assert (
+        '"external_registry_io": False'
+        in source
+    )
