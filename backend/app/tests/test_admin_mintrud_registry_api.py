@@ -3209,15 +3209,19 @@ def count_mintrud_registry_submission_attempts(
     )
 
 
-def test_mintrud_portal_artifact_fail_closed_contract() -> None:
-    approved = create_mintrud_fixture(
-        with_context=True,
-        obligation_status="approved",
+def test_mintrud_portal_artifact_official_xml_contract() -> None:
+    from xml.etree import ElementTree as ET
+
+    from app.services.mintrud_eisot_xsd import (
+        validate_mintrud_eisot_xml_v109,
     )
 
-    fixtures = [
-        approved,
-    ]
+    fixture = create_mintrud_fixture(
+        with_context=True,
+        obligation_status="needs_approval",
+    )
+
+    artifact_path = None
 
     try:
         admin_token = login(
@@ -3230,56 +3234,67 @@ def test_mintrud_portal_artifact_fail_closed_contract() -> None:
             LEARNER_PASSWORD,
         )
 
+        obligation_id = fixture[
+            "obligation_id"
+        ]
+
         before_count = (
             count_mintrud_registry_submission_attempts(
-                approved["obligation_id"]
+                obligation_id
             )
         )
 
         assert before_count == 0
 
-        status_code, conflict = request_json(
-            "POST",
-            (
-                "/api/v1/admin/mintrud/obligations/"
-                + approved["obligation_id"]
-                + "/portal-artifact"
-            ),
-            token=admin_token,
+        approve_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/approve"
         )
 
-        after_count = (
-            count_mintrud_registry_submission_attempts(
-                approved["obligation_id"]
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
             )
         )
 
-        assert after_count == before_count
-
-        assert status_code == 409
+        assert status_code == 200
         assert isinstance(
-            conflict,
+            approved,
             dict,
         )
         assert (
-            "Official portal upload artifact "
-            "contract is not confirmed for mintrud"
-            in str(
-                conflict.get(
-                    "detail",
-                    "",
-                )
+            approved["status"]
+            == "approved"
+        )
+
+        approval_fingerprint = (
+            get_mintrud_obligation_approval_fingerprint(
+                obligation_id
             )
         )
 
-        status_code, forbidden = request_json(
-            "POST",
-            (
-                "/api/v1/admin/mintrud/obligations/"
-                + approved["obligation_id"]
-                + "/portal-artifact"
-            ),
-            token=learner_token,
+        assert approval_fingerprint is not None
+        assert len(
+            approval_fingerprint
+        ) == 64
+
+        portal_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/portal-artifact"
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "POST",
+                portal_path,
+                token=learner_token,
+            )
         )
 
         assert status_code == 403
@@ -3290,38 +3305,348 @@ def test_mintrud_portal_artifact_fail_closed_contract() -> None:
 
         assert (
             count_mintrud_registry_submission_attempts(
-                approved["obligation_id"]
+                obligation_id
             )
-            == before_count
+            == 0
         )
 
-        status_code, missing = request_json(
-            "POST",
-            (
-                "/api/v1/admin/mintrud/obligations/"
-                "00000000-0000-0000-"
-                "0000-000000000000/"
-                "portal-artifact"
-            ),
-            token=admin_token,
+        status_code, attempt = (
+            request_json(
+                "POST",
+                portal_path,
+                token=admin_token,
+            )
         )
 
-        assert status_code == 404
+        assert status_code == 201
         assert isinstance(
-            missing,
+            attempt,
             dict,
         )
 
         assert (
-            count_mintrud_registry_submission_attempts(
-                approved["obligation_id"]
+            attempt[
+                "obligation_id"
+            ]
+            == obligation_id
+        )
+
+        assert (
+            attempt[
+                "attempt_no"
+            ]
+            == 1
+        )
+
+        assert (
+            attempt[
+                "artifact_kind"
+            ]
+            == "portal-upload-artifact"
+        )
+
+        assert (
+            attempt[
+                "transport"
+            ]
+            == "file"
+        )
+
+        assert (
+            attempt[
+                "schema_version"
+            ]
+            == "1.0.9"
+        )
+
+        assert (
+            attempt[
+                "has_artifact"
+            ]
+            is True
+        )
+
+        artifact_sha256 = attempt[
+            "artifact_sha256"
+        ]
+
+        assert isinstance(
+            artifact_sha256,
+            str,
+        )
+
+        assert len(
+            artifact_sha256
+        ) == 64
+
+        assert (
+            attempt[
+                "submitted_at"
+            ]
+            is None
+        )
+
+        assert (
+            attempt[
+                "result_status"
+            ]
+            is None
+        )
+
+        snapshot = attempt[
+            "snapshot_json"
+        ]
+
+        assert isinstance(
+            snapshot,
+            dict,
+        )
+
+        assert (
+            snapshot[
+                "schema_version"
+            ]
+            == "registry-approval-v1"
+        )
+
+        assert (
+            snapshot[
+                "registry"
+            ]
+            == "mintrud"
+        )
+
+        artifact_path = (
+            get_mintrud_attempt_artifact_path(
+                attempt["id"]
             )
-            == before_count
+        )
+
+        assert artifact_path is not None
+        assert artifact_path.endswith(
+            ".xml"
+        )
+
+        download_path = (
+            "/api/v1/admin/"
+            "mintrud/obligations/"
+            + obligation_id
+            + "/attempts/"
+            + attempt["id"]
+            + "/download"
+        )
+
+        (
+            download_status,
+            xml_content,
+            headers,
+        ) = request_bytes(
+            "GET",
+            download_path,
+            token=admin_token,
+        )
+
+        assert download_status == 200
+        assert isinstance(
+            xml_content,
+            bytes,
+        )
+        assert xml_content
+
+        disposition = next(
+            (
+                value
+                for key, value
+                in headers.items()
+                if key.lower()
+                == "content-disposition"
+            ),
+            "",
+        )
+
+        assert (
+            "attachment"
+            in disposition.lower()
+        )
+
+        assert (
+            ".xml"
+            in disposition.lower()
+        )
+
+        validate_mintrud_eisot_xml_v109(
+            xml_content
+        )
+
+        root = ET.fromstring(
+            xml_content
+        )
+
+        assert root.tag == "RegistrySet"
+
+        records = root.findall(
+            "RegistryRecord"
+        )
+
+        assert len(records) == 1
+
+        worker = records[
+            0
+        ].find(
+            "Worker"
+        )
+
+        assert worker is not None
+
+        assert (
+            worker.findtext(
+                "LastName"
+            )
+            == "Ivanov"
+        )
+
+        assert (
+            worker.findtext(
+                "FirstName"
+            )
+            == "Ivan"
+        )
+
+        assert (
+            worker.findtext(
+                "MiddleName"
+            )
+            == "Ivanovich"
+        )
+
+        assert (
+            worker.findtext(
+                "Position"
+            )
+            == "engineer"
+        )
+
+        assert (
+            worker.findtext(
+                "EmployerInn"
+            )
+            == "0274000000"
+        )
+
+        test_node = records[
+            0
+        ].find(
+            "Test"
+        )
+
+        assert test_node is not None
+
+        assert (
+            test_node.attrib[
+                "isPassed"
+            ]
+            == "1"
+        )
+
+        assert (
+            test_node.attrib[
+                "learnProgramId"
+            ]
+            == "1"
+        )
+
+        assert (
+            test_node.findtext(
+                "Date"
+            )
+            == "2026-09-05"
+        )
+
+        protocol_number = (
+            test_node.findtext(
+                "ProtocolNumber"
+            )
+        )
+
+        assert isinstance(
+            protocol_number,
+            str,
+        )
+
+        assert protocol_number.startswith(
+            "OT-"
+        )
+
+        assert (
+            count_mintrud_registry_submission_attempts(
+                obligation_id
+            )
+            == 1
+        )
+
+        async def _read_status():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    obligation = (
+                        await session.scalar(
+                            select(
+                                RegistryObligation
+                            ).where(
+                                RegistryObligation.id
+                                == obligation_id
+                            )
+                        )
+                    )
+
+                    assert obligation is not None
+
+                    return (
+                        obligation.status
+                    )
+
+            finally:
+                await engine.dispose()
+
+        assert (
+            asyncio.run(
+                _read_status()
+            )
+            == "exported"
+        )
+
+        actions = (
+            get_mintrud_audit_actions(
+                obligation_id
+            )
+        )
+
+        assert (
+            "admin.mintrud_portal_artifact_prepared"
+            in actions
         )
 
     finally:
+        delete_mintrud_test_artifact(
+            artifact_path
+        )
+
         cleanup_mintrud_fixtures(
-            fixtures
+            [
+                fixture,
+            ]
         )
 
 

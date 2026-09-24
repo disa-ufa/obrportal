@@ -41,6 +41,7 @@ from app.services.compliance_registry_attempts import (
     attach_registry_submission_artifact,
     create_registry_submission_attempt,
     delete_registry_artifact_safely,
+    mark_registry_exported,
     mark_registry_submission,
     record_registry_submission_result,
     validate_registry_attempt_artifact_integrity,
@@ -103,6 +104,7 @@ from app.services.compliance_registry_contract import (
 )
 from app.services.compliance_registry_contract import (
     REGISTRY_ARTIFACT_KIND_INTERNAL_EXPORT_PACKAGE,
+    REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD,
 )
 from app.services.compliance_registry_readiness import (
     evaluate_registry_readiness,
@@ -130,6 +132,14 @@ from app.services.mintrud_learn_programs import (
 )
 from app.services.mintrud_reporting_organization import (
     resolve_mintrud_reporting_organization,
+)
+from app.services.mintrud_eisot_xml import (
+    MintrudEisotXmlError,
+    serialize_mintrud_eisot_xml_v109,
+)
+from app.services.mintrud_eisot_xsd import (
+    MintrudEisotXsdValidationError,
+    validate_mintrud_eisot_xml_v109,
 )
 from app.services.lesson_blocks import (
     build_synthetic_legacy_lesson_blocks,
@@ -11887,6 +11897,7 @@ async def prepare_admin_frdo_registry_export(
 )
 async def prepare_admin_mintrud_portal_artifact(
     obligation_id: str,
+    request: Request,
     current_user: User = Depends(
         require_permission(
             "mintrud.export"
@@ -11904,11 +11915,174 @@ async def prepare_admin_mintrud_portal_artifact(
         )
     )
 
+    artifact_path_to_cleanup: str | None = None
+
     try:
-        require_registry_portal_artifact_contract(
-            obligation.registry
+        contract = (
+            require_registry_portal_artifact_contract(
+                obligation.registry
+            )
         )
-    except RegistryPortalArtifactContractUnavailable as exc:
+
+        await validate_registry_approval_current(
+            session,
+            obligation=obligation,
+        )
+
+        approval_snapshot = dict(
+            obligation.approval_snapshot_json
+            or {}
+        )
+
+        export_content = (
+            serialize_mintrud_eisot_xml_v109(
+                approval_snapshot
+            )
+        )
+
+        validate_mintrud_eisot_xml_v109(
+            export_content
+        )
+
+        if (
+            not contract.extension
+            or not contract.contract_version
+        ):
+            raise (
+                RegistryPortalArtifactContractUnavailable(
+                    "Official portal upload artifact "
+                    "contract metadata is incomplete for "
+                    + obligation.registry
+                )
+            )
+
+        attempt = (
+            await create_registry_submission_attempt(
+                session,
+                obligation_id=str(
+                    obligation.id
+                ),
+                snapshot=approval_snapshot,
+                generated_by_user_id=str(
+                    current_user.id
+                ),
+                artifact_kind=(
+                    REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+                ),
+                transport="file",
+                schema_version=(
+                    contract.contract_version
+                ),
+            )
+        )
+
+        attempt = (
+            await attach_registry_submission_artifact(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                content=export_content,
+                extension=(
+                    contract.extension
+                ),
+            )
+        )
+
+        artifact_path_to_cleanup = (
+            attempt.artifact_path
+        )
+
+        attempt = (
+            await mark_registry_exported(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+            )
+        )
+
+        response_item = (
+            build_admin_registry_submission_attempt_item(
+                attempt
+            )
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.mintrud_portal_artifact_prepared"
+            ),
+            entity_type="registry_obligation",
+            entity_id=str(
+                obligation.id
+            ),
+            payload={
+                "registry": (
+                    obligation.registry
+                ),
+                "attempt_id": str(
+                    attempt.id
+                ),
+                "attempt_no": int(
+                    attempt.attempt_no
+                ),
+                "transport": (
+                    attempt.transport
+                ),
+                "artifact_kind": (
+                    attempt.artifact_kind
+                ),
+                "schema_version": (
+                    attempt.schema_version
+                ),
+                "artifact_sha256": (
+                    attempt.artifact_sha256
+                ),
+                "approval_fingerprint": (
+                    obligation.approval_fingerprint
+                ),
+                "portal_contract": {
+                    "source_reference": (
+                        contract.source_reference
+                    ),
+                    "source_sha256": (
+                        contract.source_sha256
+                    ),
+                    "contract_version": (
+                        contract.contract_version
+                    ),
+                    "file_format": (
+                        contract.file_format
+                    ),
+                    "mime_type": (
+                        contract.mime_type
+                    ),
+                    "extension": (
+                        contract.extension
+                    ),
+                },
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except (
+        RegistryPortalArtifactContractUnavailable,
+        RegistrySubmissionAttemptError,
+        MintrudEisotXmlError,
+        MintrudEisotXsdValidationError,
+    ) as exc:
+        await session.rollback()
+
+        if artifact_path_to_cleanup:
+            delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+
         raise HTTPException(
             status_code=(
                 status.HTTP_409_CONFLICT
@@ -11916,16 +12090,17 @@ async def prepare_admin_mintrud_portal_artifact(
             detail=str(exc),
         ) from exc
 
-    raise HTTPException(
-        status_code=(
-            status.HTTP_501_NOT_IMPLEMENTED
-        ),
-        detail=(
-            "Portal upload artifact formatter "
-            "is unavailable for the "
-            "confirmed contract"
-        ),
-    )
+    except Exception:
+        await session.rollback()
+
+        if artifact_path_to_cleanup:
+            delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+
+        raise
+
+    return response_item
 
 
 @router.post(
