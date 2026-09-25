@@ -21,6 +21,7 @@ jobs:
       SEED_DEMO_EMAIL: learner@obrportal.local
       SEED_DEMO_PASSWORD: Learner123Local2026!
       SEED_DEMO_ROLE: learner_fl
+      COMPOSE_FILE: "docker-compose.yml:.github/compose.ci.yml"
 
     steps:
       - name: Checkout
