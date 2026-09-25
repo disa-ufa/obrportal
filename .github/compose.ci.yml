@@ -1,0 +1,14 @@
+services:
+  minio:
+    image: obrportal-minio-ci:release-2025-10-15
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: .github/docker/minio-ci.Dockerfile
+      args:
+        MINIO_REF: RELEASE.2025-10-15T17-29-55Z
+        MINIO_COMMIT: 9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1
