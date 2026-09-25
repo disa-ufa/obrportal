@@ -1489,6 +1489,18 @@ export async function prepareAdminMintrudRegistryExport(
 }
 
 
+export async function prepareAdminMintrudPortalArtifact(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/mintrud/obligations/${obligationId}/portal-artifact`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
 export async function getAdminMintrudSubmissionAttempts(
   obligationId
 ) {

@@ -4,7 +4,7 @@ import {
   approveAdminFrdoObligation,
   approveAdminMintrudObligation,
   prepareAdminFrdoRegistryExport,
-  prepareAdminMintrudRegistryExport,
+  prepareAdminMintrudPortalArtifact,
   reopenAdminFrdoObligation,
   reopenAdminMintrudObligation,
   downloadAdminFrdoSubmissionAttempt,
@@ -38,6 +38,7 @@ const T = {
   validate: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c",
   approve: "\u0423\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c",
   prepareExport: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON",
+  prepareMintrudPortalArtifact: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422",
   reopen: "\u041d\u0430\u0447\u0430\u0442\u044c \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435",
   attempts: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438",
   context: "\u0414\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
@@ -48,6 +49,9 @@ const T = {
   result: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
   noRows: "\u0417\u0430\u043f\u0438\u0441\u0438 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
   warning: "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u0442 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0439 \u0441\u043d\u0438\u043c\u043e\u043a \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0441\u043a\u043e\u0439 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0438 \u0430\u0443\u0434\u0438\u0442\u0430. \u042d\u0442\u043e \u043d\u0435 \u0444\u0430\u0439\u043b \u0434\u043b\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0438\u043b\u0438 \u041c\u0438\u043d\u0442\u0440\u0443\u0434 \u0438 \u043d\u0435 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0440\u0435\u0435\u0441\u0442\u0440\u0430.",
+  mintrudWarning: "\u0414\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 XML \u043f\u043e \u0441\u0445\u0435\u043c\u0435 educated_person_import v1.0.9. \u0424\u0430\u0439\u043b \u043f\u0440\u0435\u0434\u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422; \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0441\u0438\u0441\u0442\u0435\u043c\u043e\u0439 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f.",
+  mintrudPortalAvailableTitle: "XML \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+  mintrudPortalAvailable: "\u041f\u043e\u0441\u043b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422\u00bb. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442 XML v1.0.9 \u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 \u0435\u0433\u043e \u043f\u043e XSD. \u0417\u0430\u0442\u0435\u043c \u0441\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043b, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0435\u0433\u043e \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0432\u0440\u0443\u0447\u043d\u0443\u044e \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0432 \u041e\u0431\u0440\u041f\u043e\u0440\u0442\u0430\u043b\u0435.",
   portalUnavailableTitle: "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
   portalUnavailable: "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u043f\u043e\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442 \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u043d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u0451\u0442 \u0442\u0430\u043a\u043e\u0439 \u0444\u0430\u0439\u043b \u0438 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442 \u0432\u043d\u0435\u0448\u043d\u044e\u044e \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u0434\u043e \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u0438 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u0430.",
 };
@@ -1058,7 +1062,7 @@ export function AdminRegistriesPage() {
         list: getAdminMintrudObligations,
         validate: validateAdminMintrudObligation,
         approve: approveAdminMintrudObligation,
-        prepareExport: prepareAdminMintrudRegistryExport,
+        prepareExport: prepareAdminMintrudPortalArtifact,
         reopen: reopenAdminMintrudObligation,
         attempts: getAdminMintrudSubmissionAttempts,
         download: downloadAdminMintrudSubmissionAttempt,
@@ -1436,21 +1440,38 @@ export function AdminRegistriesPage() {
         </div>
 
         <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
-          {T.warning}
+          {activeRegistry === "mintrud"
+            ? T.mintrudWarning
+            : T.warning}
         </div>
 
-        <div
-          data-testid="admin-registries-portal-unavailable"
-          className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
-        >
-          <div className="font-semibold text-slate-900">
-            {T.portalUnavailableTitle}
-          </div>
+        {activeRegistry === "frdo" ? (
+          <div
+            data-testid="admin-registries-portal-unavailable"
+            className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+          >
+            <div className="font-semibold text-slate-900">
+              {T.portalUnavailableTitle}
+            </div>
 
-          <div className="mt-1">
-            {T.portalUnavailable}
+            <div className="mt-1">
+              {T.portalUnavailable}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            data-testid="admin-registries-mintrud-portal-available"
+            className="mt-3 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-900 ring-1 ring-emerald-200"
+          >
+            <div className="font-semibold text-emerald-950">
+              {T.mintrudPortalAvailableTitle}
+            </div>
+
+            <div className="mt-1">
+              {T.mintrudPortalAvailable}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -1715,7 +1736,9 @@ export function AdminRegistriesPage() {
                                     disabled={Boolean(busyKey)}
                                     onClick={() => prepareExport(obligation)}
                                   >
-                                    {T.prepareExport}
+                                    {activeRegistry === "mintrud"
+                                      ? T.prepareMintrudPortalArtifact
+                                      : T.prepareExport}
                                   </button>
                                 ) : null}
 
