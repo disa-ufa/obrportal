@@ -1501,6 +1501,103 @@ export async function prepareAdminMintrudPortalArtifact(
 }
 
 
+
+export async function prepareAdminMintrudSubmissionBatch(
+  obligationIds
+) {
+  return request(
+    "/api/v1/admin/mintrud/batches",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        obligation_ids: obligationIds,
+      }),
+    }
+  );
+}
+
+
+export async function downloadAdminMintrudSubmissionBatch(
+  batchId
+) {
+  const token = getStoredToken();
+
+  const response = await fetch(
+    buildApiUrl(
+      `/api/v1/admin/mintrud/batches/${batchId}/download`
+    ),
+    {
+      method: "GET",
+      headers: {
+        "Accept": "application/xml, text/xml, application/octet-stream",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = text
+        ? JSON.parse(text)
+        : null;
+    } catch {
+      data = null;
+    }
+
+    const message = (
+      data?.detail
+      || text
+      || `HTTP ${response.status}`
+    );
+
+    const error = new Error(
+      typeof message === "string"
+        ? message
+        : JSON.stringify(message)
+    );
+
+    error.status = response.status;
+    error.payload = data;
+
+    throw error;
+  }
+
+  const blob = await response.blob();
+
+  const filename = normalizeDownloadedFilename(
+    extractDownloadFilename(
+      response,
+      `mintrud-eisot-batch-${batchId}.xml`
+    ),
+    blob
+  );
+
+  const objectUrl =
+    window.URL.createObjectURL(blob);
+
+  try {
+    const link =
+      document.createElement("a");
+
+    link.href = objectUrl;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(
+        objectUrl
+      );
+    }, 0);
+  }
+}
+
+
 export async function getAdminMintrudSubmissionAttempts(
   obligationId
 ) {

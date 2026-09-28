@@ -532,3 +532,161 @@ def test_serializer_rejects_more_than_5000_records():
         serialize_mintrud_eisot_xml_v109(
             snapshot
         )
+
+
+def test_batch_serializer_one_snapshot_matches_single_serializer():
+    from app.services.mintrud_eisot_xml import (
+        serialize_mintrud_eisot_batch_xml_v109,
+        serialize_mintrud_eisot_xml_v109,
+    )
+
+    snapshot = make_snapshot()
+
+    assert (
+        serialize_mintrud_eisot_batch_xml_v109(
+            [snapshot]
+        )
+        == serialize_mintrud_eisot_xml_v109(
+            snapshot
+        )
+    )
+
+
+def test_batch_serializer_preserves_snapshot_then_program_order():
+    from copy import deepcopy
+    import xml.etree.ElementTree as ET
+
+    from app.services.mintrud_eisot_xml import (
+        serialize_mintrud_eisot_batch_xml_v109,
+    )
+
+    first = deepcopy(
+        make_snapshot()
+    )
+
+    second = deepcopy(
+        make_snapshot()
+    )
+
+    first[
+        "learner_profile"
+    ][
+        "last_name"
+    ] = "FirstBatchWorker"
+
+    second[
+        "learner_profile"
+    ][
+        "last_name"
+    ] = "SecondBatchWorker"
+
+    first_count = len(
+        first[
+            "mintrud_learn_programs"
+        ]
+    )
+
+    second_count = len(
+        second[
+            "mintrud_learn_programs"
+        ]
+    )
+
+    xml_bytes = (
+        serialize_mintrud_eisot_batch_xml_v109(
+            [
+                first,
+                second,
+            ]
+        )
+    )
+
+    root = ET.fromstring(
+        xml_bytes
+    )
+
+    records = root.findall(
+        "RegistryRecord"
+    )
+
+    assert len(records) == (
+        first_count
+        + second_count
+    )
+
+    worker_last_names = [
+        record.findtext(
+            "Worker/LastName"
+        )
+        for record in records
+    ]
+
+    assert worker_last_names == (
+        [
+            "FirstBatchWorker"
+        ]
+        * first_count
+        + [
+            "SecondBatchWorker"
+        ]
+        * second_count
+    )
+
+
+def test_batch_serializer_rejects_empty_snapshot_sequence():
+    import pytest
+
+    from app.services.mintrud_eisot_xml import (
+        MintrudEisotXmlError,
+        serialize_mintrud_eisot_batch_xml_v109,
+    )
+
+    with pytest.raises(
+        MintrudEisotXmlError,
+        match=(
+            "At least one approved Mintrud snapshot "
+            "is required"
+        ),
+    ):
+        serialize_mintrud_eisot_batch_xml_v109(
+            []
+        )
+
+
+def test_batch_serializer_rejects_global_record_overflow():
+    from copy import deepcopy
+
+    import pytest
+
+    from app.services.mintrud_eisot_xml import (
+        MINTRUD_EISOT_XML_MAX_RECORDS,
+        MintrudEisotXmlError,
+        serialize_mintrud_eisot_batch_xml_v109,
+    )
+
+    snapshot = deepcopy(
+        make_snapshot()
+    )
+
+    snapshot[
+        "mintrud_learn_programs"
+    ] = [
+        snapshot[
+            "mintrud_learn_programs"
+        ][0]
+    ]
+
+    snapshots = [
+        snapshot
+    ] * (
+        MINTRUD_EISOT_XML_MAX_RECORDS
+        + 1
+    )
+
+    with pytest.raises(
+        MintrudEisotXmlError,
+        match="more than 5000",
+    ):
+        serialize_mintrud_eisot_batch_xml_v109(
+            snapshots
+        )

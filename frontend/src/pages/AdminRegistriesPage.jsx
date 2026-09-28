@@ -5,6 +5,8 @@ import {
   approveAdminMintrudObligation,
   prepareAdminFrdoRegistryExport,
   prepareAdminMintrudPortalArtifact,
+  prepareAdminMintrudSubmissionBatch,
+  downloadAdminMintrudSubmissionBatch,
   reopenAdminFrdoObligation,
   reopenAdminMintrudObligation,
   downloadAdminFrdoSubmissionAttempt,
@@ -39,6 +41,13 @@ const T = {
   approve: "\u0423\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c",
   prepareExport: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON",
   prepareMintrudPortalArtifact: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422",
+  mintrudBatchPrepareDownload: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0438 \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u043f\u0430\u043a\u0435\u0442 XML",
+  mintrudBatchSelected: "\u0412\u044b\u0431\u0440\u0430\u043d\u043e \u0434\u043b\u044f \u043f\u0430\u043a\u0435\u0442\u0430",
+  mintrudBatchSelect: "\u0412 \u043f\u0430\u043a\u0435\u0442",
+  mintrudBatchSelectAll: "\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u0432\u0441\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0435",
+  mintrudBatchClear: "\u041e\u0447\u0438\u0441\u0442\u0438\u0442\u044c \u0432\u044b\u0431\u043e\u0440",
+  mintrudBatchNeedSelection: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u043d\u0443 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u0443\u044e \u0437\u0430\u043f\u0438\u0441\u044c \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
+  mintrudBatchHint: "\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043f\u043e\u043f\u0430\u0434\u0443\u0442 \u0432 \u043e\u0434\u0438\u043d XML \u0432 \u043f\u043e\u0440\u044f\u0434\u043a\u0435 \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u0441\u043f\u0438\u0441\u043a\u0430. \u041f\u043e\u0441\u043b\u0435 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422 \u0432\u0440\u0443\u0447\u043d\u0443\u044e. \u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f.",
   reopen: "\u041d\u0430\u0447\u0430\u0442\u044c \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435",
   attempts: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438",
   context: "\u0414\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
@@ -1055,6 +1064,57 @@ export function AdminRegistriesPage() {
   const [expandedId, setExpandedId] = useState("");
   const [editingContextId, setEditingContextId] = useState("");
   const [attemptsById, setAttemptsById] = useState({});
+  const [
+    selectedMintrudIds,
+    setSelectedMintrudIds,
+  ] = useState([]);
+
+  const selectedMintrudIdSet = useMemo(
+    () => new Set(
+      selectedMintrudIds
+    ),
+    [selectedMintrudIds]
+  );
+
+  const selectableMintrudIds = useMemo(
+    () => obligations
+      .filter((obligation) => (
+        obligation.status === "approved"
+      ))
+      .map((obligation) => (
+        obligation.id
+      )),
+    [obligations]
+  );
+
+  const selectedMintrudIdsInVisibleOrder = useMemo(
+    () => obligations
+      .filter((obligation) => (
+        obligation.status === "approved"
+        && selectedMintrudIdSet.has(
+          obligation.id
+        )
+      ))
+      .map((obligation) => (
+        obligation.id
+      )),
+    [
+      obligations,
+      selectedMintrudIdSet,
+    ]
+  );
+
+  const allSelectableMintrudSelected = (
+    selectableMintrudIds.length > 0
+    && selectableMintrudIds.every(
+      (obligationId) => (
+        selectedMintrudIdSet.has(
+          obligationId
+        )
+      )
+    )
+  );
+
 
   const api = useMemo(() => {
     if (activeRegistry === "mintrud") {
@@ -1225,6 +1285,77 @@ export function AdminRegistriesPage() {
       }
     );
   }
+
+  function toggleMintrudBatchSelection(
+    obligationId
+  ) {
+    setSelectedMintrudIds(
+      (current) => (
+        current.includes(
+          obligationId
+        )
+          ? current.filter(
+            (item) => (
+              item !== obligationId
+            )
+          )
+          : [
+            ...current,
+            obligationId,
+          ]
+      )
+    );
+  }
+
+  function selectAllMintrudBatch() {
+    setSelectedMintrudIds([
+      ...selectableMintrudIds,
+    ]);
+  }
+
+  function clearMintrudBatchSelection() {
+    setSelectedMintrudIds([]);
+  }
+
+  async function prepareMintrudBatch() {
+    const obligationIds = [
+      ...selectedMintrudIdsInVisibleOrder,
+    ];
+
+    if (!obligationIds.length) {
+      setError(
+        T.mintrudBatchNeedSelection
+      );
+
+      return;
+    }
+
+    await withAction(
+      "mintrud-batch",
+      async () => {
+        const batch = await (
+          prepareAdminMintrudSubmissionBatch(
+            obligationIds
+          )
+        );
+
+        if (!batch?.id) {
+          throw new Error(
+            "Batch id is missing in API response."
+          );
+        }
+
+        await (
+          downloadAdminMintrudSubmissionBatch(
+            batch.id
+          )
+        );
+
+        setSelectedMintrudIds([]);
+      }
+    );
+  }
+
 
   async function prepareExport(obligation) {
     await withAction(
@@ -1420,7 +1551,10 @@ export function AdminRegistriesPage() {
                 ? BLUE
                 : SECONDARY
             }
-            onClick={() => setActiveRegistry("frdo")}
+            onClick={() => {
+              setSelectedMintrudIds([]);
+              setActiveRegistry("frdo");
+            }}
           >
             {T.frdo}
           </button>
@@ -1433,7 +1567,10 @@ export function AdminRegistriesPage() {
                 ? BLUE
                 : SECONDARY
             }
-            onClick={() => setActiveRegistry("mintrud")}
+            onClick={() => {
+              setSelectedMintrudIds([]);
+              setActiveRegistry("mintrud");
+            }}
           >
             {T.mintrud}
           </button>
@@ -1473,6 +1610,68 @@ export function AdminRegistriesPage() {
           </div>
         )}
       </section>
+
+      {activeRegistry === "mintrud" ? (
+        <section
+          data-testid="admin-registries-mintrud-batch"
+          className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-3xl">
+              <div className="text-sm font-bold text-slate-900">
+                {T.mintrudBatchSelected}:{" "}
+                {selectedMintrudIdsInVisibleOrder.length}
+              </div>
+
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                {T.mintrudBatchHint}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-testid="admin-registries-mintrud-batch-select-all"
+                className={SECONDARY}
+                disabled={
+                  Boolean(busyKey)
+                  || selectableMintrudIds.length === 0
+                  || allSelectableMintrudSelected
+                }
+                onClick={selectAllMintrudBatch}
+              >
+                {T.mintrudBatchSelectAll}
+              </button>
+
+              <button
+                type="button"
+                data-testid="admin-registries-mintrud-batch-clear"
+                className={SECONDARY}
+                disabled={
+                  Boolean(busyKey)
+                  || selectedMintrudIdsInVisibleOrder.length === 0
+                }
+                onClick={clearMintrudBatchSelection}
+              >
+                {T.mintrudBatchClear}
+              </button>
+
+              <button
+                type="button"
+                data-testid="admin-registries-mintrud-batch-download"
+                className={PRIMARY}
+                disabled={
+                  Boolean(busyKey)
+                  || selectedMintrudIdsInVisibleOrder.length === 0
+                }
+                onClick={prepareMintrudBatch}
+              >
+                {T.mintrudBatchPrepareDownload}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <form
@@ -1647,6 +1846,33 @@ export function AdminRegistriesPage() {
                         >
                           <div className="grid min-w-[1050px] grid-cols-[1.1fr_1.3fr_1fr_0.9fr_1.5fr_1.7fr]">
                             <div className="px-4 py-4">
+                              {activeRegistry === "mintrud" ? (
+                                <label className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                  <input
+                                    data-testid={`admin-registries-mintrud-batch-select-${obligation.id}`}
+                                    type="checkbox"
+                                    checked={
+                                      selectedMintrudIdSet.has(
+                                        obligation.id
+                                      )
+                                    }
+                                    disabled={
+                                      !canExport
+                                      || Boolean(busyKey)
+                                    }
+                                    onChange={() => (
+                                      toggleMintrudBatchSelection(
+                                        obligation.id
+                                      )
+                                    )}
+                                  />
+
+                                  <span>
+                                    {T.mintrudBatchSelect}
+                                  </span>
+                                </label>
+                              ) : null}
+
                               <div className="font-semibold text-slate-900">
                                 {obligation.user_full_name || "\u2014"}
                               </div>

@@ -3861,3 +3861,582 @@ def test_mintrud_internal_export_rejects_stale_approval() -> None:
                 fixture,
             ]
         )
+
+def test_mintrud_batch_api_routes_and_schema_contract():
+    import pytest
+
+    from pydantic import ValidationError
+
+    from app.api.v1.admin import router
+    from app.schemas.admin import (
+        AdminMintrudSubmissionBatchCreate,
+        AdminMintrudSubmissionBatchItem,
+    )
+
+    route_pairs = {
+        (
+            method,
+            route.path,
+        )
+        for route in router.routes
+        for method in (
+            route.methods
+            or set()
+        )
+    }
+
+    assert (
+        "POST",
+        router.prefix
+        + "/mintrud/batches",
+    ) in route_pairs
+
+    assert (
+        "GET",
+        router.prefix
+        + "/mintrud/batches/{batch_id}/download",
+    ) in route_pairs
+
+    payload = (
+        AdminMintrudSubmissionBatchCreate(
+            obligation_ids=[
+                "obligation-1",
+                "obligation-2",
+            ]
+        )
+    )
+
+    assert payload.obligation_ids == [
+        "obligation-1",
+        "obligation-2",
+    ]
+
+    with pytest.raises(
+        ValidationError
+    ):
+        AdminMintrudSubmissionBatchCreate(
+            obligation_ids=[]
+        )
+
+    assert (
+        AdminMintrudSubmissionBatchItem
+        is not None
+    )
+
+
+def test_mintrud_batch_create_route_commits_and_audits(
+    monkeypatch,
+):
+    from datetime import (
+        datetime,
+        timezone,
+    )
+    from types import SimpleNamespace
+
+    import app.api.v1.admin as admin_api
+    from app.schemas.admin import (
+        AdminMintrudSubmissionBatchCreate,
+    )
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    batch = SimpleNamespace(
+        id="batch-success",
+        registry="mintrud",
+        status="exported",
+        artifact_kind=(
+            "portal-upload-artifact"
+        ),
+        transport="file",
+        schema_version="1.0.9",
+        obligation_count=2,
+        record_count=3,
+        artifact_path=(
+            "generated/registry/mintrud/"
+            "batches/batch-success.xml"
+        ),
+        artifact_sha256=(
+            "a" * 64
+        ),
+        generated_by_user_id=(
+            "admin-user"
+        ),
+        generated_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+
+    calls = {
+        "create": None,
+        "audit": None,
+    }
+
+    class FakeSession:
+        def __init__(self):
+            self.commit_count = 0
+            self.rollback_count = 0
+
+        async def commit(self):
+            self.commit_count += 1
+
+        async def rollback(self):
+            self.rollback_count += 1
+
+    async def fake_create(
+        session,
+        *,
+        obligation_ids,
+        generated_by_user_id,
+    ):
+        calls["create"] = {
+            "obligation_ids": list(
+                obligation_ids
+            ),
+            "generated_by_user_id": (
+                generated_by_user_id
+            ),
+        }
+
+        return batch
+
+    async def fake_audit(
+        session,
+        **kwargs,
+    ):
+        calls["audit"] = kwargs
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_mintrud_registry_submission_batch",
+        fake_create,
+    )
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_admin_audit_event",
+        fake_audit,
+    )
+
+    session = FakeSession()
+
+    response_item = asyncio.run(
+        admin_api.prepare_admin_mintrud_submission_batch(
+            payload=(
+                AdminMintrudSubmissionBatchCreate(
+                    obligation_ids=[
+                        "obligation-1",
+                        "obligation-2",
+                    ]
+                )
+            ),
+            request=SimpleNamespace(),
+            current_user=SimpleNamespace(
+                id="admin-user"
+            ),
+            session=session,
+        )
+    )
+
+    assert response_item.id == (
+        "batch-success"
+    )
+
+    assert response_item.obligation_count == 2
+    assert response_item.record_count == 3
+    assert response_item.has_artifact is True
+    assert response_item.artifact_sha256 == (
+        "a" * 64
+    )
+
+    assert calls["create"] == {
+        "obligation_ids": [
+            "obligation-1",
+            "obligation-2",
+        ],
+        "generated_by_user_id": (
+            "admin-user"
+        ),
+    }
+
+    assert (
+        calls["audit"][
+            "action"
+        ]
+        == (
+            "admin.mintrud_"
+            "submission_batch_prepared"
+        )
+    )
+
+    assert (
+        calls["audit"][
+            "entity_type"
+        ]
+        == "registry_submission_batch"
+    )
+
+    assert (
+        calls["audit"][
+            "payload"
+        ][
+            "external_registry_io"
+        ]
+        is False
+    )
+
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+
+
+def test_mintrud_batch_create_route_rolls_back_and_cleans(
+    monkeypatch,
+):
+    import pytest
+
+    from datetime import (
+        datetime,
+        timezone,
+    )
+    from types import SimpleNamespace
+
+    import app.api.v1.admin as admin_api
+    from app.schemas.admin import (
+        AdminMintrudSubmissionBatchCreate,
+    )
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    artifact_path = (
+        "generated/registry/mintrud/"
+        "batches/batch-failure.xml"
+    )
+
+    batch = SimpleNamespace(
+        id="batch-failure",
+        registry="mintrud",
+        status="exported",
+        artifact_kind=(
+            "portal-upload-artifact"
+        ),
+        transport="file",
+        schema_version="1.0.9",
+        obligation_count=1,
+        record_count=1,
+        artifact_path=artifact_path,
+        artifact_sha256=(
+            "b" * 64
+        ),
+        generated_by_user_id=(
+            "admin-user"
+        ),
+        generated_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+
+    deleted = []
+
+    class FakeSession:
+        def __init__(self):
+            self.commit_count = 0
+            self.rollback_count = 0
+
+        async def commit(self):
+            self.commit_count += 1
+
+        async def rollback(self):
+            self.rollback_count += 1
+
+    async def fake_create(
+        session,
+        *,
+        obligation_ids,
+        generated_by_user_id,
+    ):
+        return batch
+
+    async def fail_audit(
+        session,
+        **kwargs,
+    ):
+        raise RuntimeError(
+            "forced audit failure"
+        )
+
+    def fake_delete(
+        storage_path,
+    ):
+        deleted.append(
+            storage_path
+        )
+
+        return True
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_mintrud_registry_submission_batch",
+        fake_create,
+    )
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_admin_audit_event",
+        fail_audit,
+    )
+
+    monkeypatch.setattr(
+        admin_api,
+        "delete_registry_submission_batch_artifact_safely",
+        fake_delete,
+    )
+
+    session = FakeSession()
+
+    with pytest.raises(
+        RuntimeError,
+        match="forced audit failure",
+    ):
+        asyncio.run(
+            admin_api.prepare_admin_mintrud_submission_batch(
+                payload=(
+                    AdminMintrudSubmissionBatchCreate(
+                        obligation_ids=[
+                            "obligation-1",
+                        ]
+                    )
+                ),
+                request=SimpleNamespace(),
+                current_user=SimpleNamespace(
+                    id="admin-user"
+                ),
+                session=session,
+            )
+        )
+
+    assert session.commit_count == 0
+    assert session.rollback_count == 1
+    assert deleted == [
+        artifact_path
+    ]
+
+
+def test_mintrud_batch_create_route_maps_domain_error_to_409(
+    monkeypatch,
+):
+    import pytest
+
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    import app.api.v1.admin as admin_api
+    from app.schemas.admin import (
+        AdminMintrudSubmissionBatchCreate,
+    )
+
+    class FakeSession:
+        def __init__(self):
+            self.commit_count = 0
+            self.rollback_count = 0
+
+        async def commit(self):
+            self.commit_count += 1
+
+        async def rollback(self):
+            self.rollback_count += 1
+
+    async def fail_create(
+        session,
+        *,
+        obligation_ids,
+        generated_by_user_id,
+    ):
+        raise (
+            admin_api.RegistrySubmissionBatchError(
+                "batch validation failed"
+            )
+        )
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_mintrud_registry_submission_batch",
+        fail_create,
+    )
+
+    session = FakeSession()
+
+    with pytest.raises(
+        HTTPException
+    ) as exc_info:
+        asyncio.run(
+            admin_api.prepare_admin_mintrud_submission_batch(
+                payload=(
+                    AdminMintrudSubmissionBatchCreate(
+                        obligation_ids=[
+                            "obligation-1",
+                        ]
+                    )
+                ),
+                request=SimpleNamespace(),
+                current_user=SimpleNamespace(
+                    id="admin-user"
+                ),
+                session=session,
+            )
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == (
+        "batch validation failed"
+    )
+
+    assert session.commit_count == 0
+    assert session.rollback_count == 1
+
+
+def test_mintrud_batch_download_route_contract(
+    monkeypatch,
+):
+    import pytest
+
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    import app.api.v1.admin as admin_api
+
+    batch = SimpleNamespace(
+        id="batch-download",
+        registry="mintrud",
+        schema_version="1.0.9",
+        artifact_path=(
+            "generated/registry/mintrud/"
+            "batches/batch-download.xml"
+        ),
+        artifact_sha256=(
+            "c" * 64
+        ),
+    )
+
+    content = (
+        b'<?xml version="1.0" '
+        b'encoding="utf-8"?>'
+        b"<RegistrySet />"
+    )
+
+    class FakeSession:
+        def __init__(
+            self,
+            scalar_value,
+        ):
+            self.scalar_value = (
+                scalar_value
+            )
+
+        async def scalar(
+            self,
+            statement,
+        ):
+            return self.scalar_value
+
+    monkeypatch.setattr(
+        admin_api,
+        "read_registry_submission_batch_artifact",
+        lambda value: content,
+    )
+
+    response = asyncio.run(
+        admin_api.download_admin_mintrud_submission_batch(
+            batch_id=(
+                "batch-download"
+            ),
+            _=SimpleNamespace(
+                id="admin-user"
+            ),
+            session=FakeSession(
+                batch
+            ),
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.body == content
+    assert response.media_type == (
+        "application/xml"
+    )
+
+    assert (
+        "mintrud-eisot-v1.0.9-"
+        "batch-batch-download.xml"
+        in response.headers[
+            "content-disposition"
+        ]
+    )
+
+    with pytest.raises(
+        HTTPException
+    ) as missing_exc:
+        asyncio.run(
+            admin_api.download_admin_mintrud_submission_batch(
+                batch_id=(
+                    "missing-batch"
+                ),
+                _=SimpleNamespace(
+                    id="admin-user"
+                ),
+                session=FakeSession(
+                    None
+                ),
+            )
+        )
+
+    assert (
+        missing_exc.value.status_code
+        == 404
+    )
+
+    def fail_read(
+        value,
+    ):
+        raise (
+            admin_api.RegistrySubmissionBatchError(
+                "checksum mismatch"
+            )
+        )
+
+    monkeypatch.setattr(
+        admin_api,
+        "read_registry_submission_batch_artifact",
+        fail_read,
+    )
+
+    with pytest.raises(
+        HTTPException
+    ) as integrity_exc:
+        asyncio.run(
+            admin_api.download_admin_mintrud_submission_batch(
+                batch_id=(
+                    "batch-download"
+                ),
+                _=SimpleNamespace(
+                    id="admin-user"
+                ),
+                session=FakeSession(
+                    batch
+                ),
+            )
+        )
+
+    assert (
+        integrity_exc.value.status_code
+        == 409
+    )
+
+    assert (
+        integrity_exc.value.detail
+        == "checksum mismatch"
+    )
