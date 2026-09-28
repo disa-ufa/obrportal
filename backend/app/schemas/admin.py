@@ -789,6 +789,34 @@ class AdminRegistryReadinessIssue(BaseModel):
     message: str
 
 
+class AdminMintrudSubmissionBatchCreate(BaseModel):
+    obligation_ids: list[str] = Field(
+        min_length=1,
+        max_length=5000,
+    )
+
+
+class AdminMintrudSubmissionBatchItem(BaseModel):
+    id: str
+    registry: str
+    status: str
+
+    artifact_kind: str
+    transport: str
+    schema_version: str
+
+    obligation_count: int
+    record_count: int
+
+    has_artifact: bool = False
+    artifact_sha256: str
+
+    generated_by_user_id: str | None = None
+    generated_at: datetime
+
+    created_at: datetime
+    updated_at: datetime
+
 class AdminRegistrySubmissionAttemptItem(BaseModel):
     id: str
     obligation_id: str

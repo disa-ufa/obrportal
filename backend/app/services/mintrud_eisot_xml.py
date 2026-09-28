@@ -271,10 +271,11 @@ def _append_text(
     return element
 
 
-def serialize_mintrud_eisot_xml_v109(
+def _append_mintrud_eisot_records_v109(
+    root: ET.Element,
     approval_snapshot: Mapping,
-) -> bytes:
-    """Serialize one approved Mintrud snapshot to EISOT XML v1.0.9."""
+) -> int:
+    """Append one approved snapshot's RegistryRecord elements."""
 
     snapshot = _require_mapping(
         approval_snapshot,
@@ -485,10 +486,6 @@ def serialize_mintrud_eisot_xml_v109(
             )
         )
 
-    root = ET.Element(
-        "RegistrySet"
-    )
-
     for (
         learn_program_id,
         learn_program_title,
@@ -591,9 +588,142 @@ def serialize_mintrud_eisot_xml_v109(
             learn_program_title,
         )
 
+    return len(normalized_programs)
+
+def _require_approval_snapshots(
+    value: object,
+) -> list[Mapping]:
+    if (
+        not isinstance(value, Sequence)
+        or isinstance(
+            value,
+            (
+                str,
+                bytes,
+                bytearray,
+            ),
+        )
+    ):
+        raise MintrudEisotXmlError(
+            "approval_snapshots must be a sequence"
+        )
+
+    snapshots = list(value)
+
+    if not snapshots:
+        raise MintrudEisotXmlError(
+            "At least one approved Mintrud snapshot is required"
+        )
+
+    normalized: list[Mapping] = []
+    total_records = 0
+
+    for index, value_item in enumerate(
+        snapshots
+    ):
+        snapshot = _require_mapping(
+            value_item,
+            field=(
+                "approval_snapshots["
+                + str(index)
+                + "]"
+            ),
+        )
+
+        programs = _require_programs(
+            snapshot.get(
+                "mintrud_learn_programs"
+            )
+        )
+
+        total_records += len(programs)
+
+        if (
+            total_records
+            > MINTRUD_EISOT_XML_MAX_RECORDS
+        ):
+            raise MintrudEisotXmlError(
+                "Mintrud XML cannot contain more than "
+                + str(
+                    MINTRUD_EISOT_XML_MAX_RECORDS
+                )
+                + " RegistryRecord elements"
+            )
+
+        normalized.append(
+            snapshot
+        )
+
+    return normalized
+
+
+def _serialize_registry_set(
+    root: ET.Element,
+) -> bytes:
     return ET.tostring(
         root,
         encoding="utf-8",
         xml_declaration=True,
         short_empty_elements=True,
+    )
+
+
+def serialize_mintrud_eisot_xml_v109(
+    approval_snapshot: Mapping,
+) -> bytes:
+    """Serialize one approved Mintrud snapshot to EISOT XML v1.0.9."""
+
+    root = ET.Element(
+        "RegistrySet"
+    )
+
+    _append_mintrud_eisot_records_v109(
+        root,
+        approval_snapshot,
+    )
+
+    return _serialize_registry_set(
+        root
+    )
+
+
+def serialize_mintrud_eisot_batch_xml_v109(
+    approval_snapshots: Sequence[Mapping],
+) -> bytes:
+    """Serialize multiple approved snapshots into one EISOT RegistrySet."""
+
+    snapshots = (
+        _require_approval_snapshots(
+            approval_snapshots
+        )
+    )
+
+    root = ET.Element(
+        "RegistrySet"
+    )
+
+    record_count = 0
+
+    for snapshot in snapshots:
+        record_count += (
+            _append_mintrud_eisot_records_v109(
+                root,
+                snapshot,
+            )
+        )
+
+    if (
+        record_count
+        > MINTRUD_EISOT_XML_MAX_RECORDS
+    ):
+        raise MintrudEisotXmlError(
+            "Mintrud XML cannot contain more than "
+            + str(
+                MINTRUD_EISOT_XML_MAX_RECORDS
+            )
+            + " RegistryRecord elements"
+        )
+
+    return _serialize_registry_set(
+        root
     )

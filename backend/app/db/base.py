@@ -20,6 +20,10 @@ from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
 )
+from app.models.registry_submission_batch import (
+    RegistrySubmissionBatch,
+    RegistrySubmissionBatchItem,
+)
 from app.models.role import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.models.user_password_token import UserPasswordToken
@@ -44,6 +48,8 @@ __all__ = [
     "Organization",
     "RegistryObligation",
     "RegistrySubmissionAttempt",
+    "RegistrySubmissionBatch",
+    "RegistrySubmissionBatchItem",
     "Permission",
     "Role",
     "RolePermission",
