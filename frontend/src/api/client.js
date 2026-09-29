@@ -1517,6 +1517,39 @@ export async function prepareAdminMintrudSubmissionBatch(
 }
 
 
+export async function getAdminMintrudSubmissionBatches() {
+  return request(
+    "/api/v1/admin/mintrud/batches"
+  );
+}
+
+
+export async function markAdminMintrudSubmissionBatchImported(
+  batchId
+) {
+  return request(
+    `/api/v1/admin/mintrud/batches/${batchId}/imported`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function markAdminMintrudSubmissionBatchSubmitted(
+  batchId,
+  payload = {}
+) {
+  return request(
+    `/api/v1/admin/mintrud/batches/${batchId}/submitted`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
 export async function downloadAdminMintrudSubmissionBatch(
   batchId
 ) {

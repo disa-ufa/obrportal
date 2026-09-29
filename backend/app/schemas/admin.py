@@ -814,8 +814,26 @@ class AdminMintrudSubmissionBatchItem(BaseModel):
     generated_by_user_id: str | None = None
     generated_at: datetime
 
+    imported_by_user_id: str | None = None
+    imported_at: datetime | None = None
+
+    submitted_by_user_id: str | None = None
+    submitted_at: datetime | None = None
+
+    external_reference: str | None = None
+
     created_at: datetime
     updated_at: datetime
+
+
+class AdminMintrudSubmissionBatchMarkSubmitted(
+    BaseModel
+):
+    external_reference: str | None = Field(
+        default=None,
+        max_length=255,
+    )
+
 
 class AdminRegistrySubmissionAttemptItem(BaseModel):
     id: str

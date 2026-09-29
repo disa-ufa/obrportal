@@ -55,6 +55,9 @@ from app.services.compliance_registry_batches import (
     RegistrySubmissionBatchError,
     create_mintrud_registry_submission_batch,
     delete_registry_submission_batch_artifact_safely,
+    list_mintrud_registry_submission_batches,
+    mark_mintrud_registry_submission_batch_imported,
+    mark_mintrud_registry_submission_batch_submitted,
     read_registry_submission_batch_artifact,
 )
 
@@ -255,6 +258,7 @@ from app.schemas.admin import (
 from app.schemas.admin import (
     AdminMintrudSubmissionBatchCreate,
     AdminMintrudSubmissionBatchItem,
+    AdminMintrudSubmissionBatchMarkSubmitted,
 )
 
 
@@ -11933,9 +11937,52 @@ def build_admin_mintrud_submission_batch_item(
             batch.generated_by_user_id
         ),
         generated_at=batch.generated_at,
+        imported_by_user_id=(
+            batch.imported_by_user_id
+        ),
+        imported_at=batch.imported_at,
+        submitted_by_user_id=(
+            batch.submitted_by_user_id
+        ),
+        submitted_at=batch.submitted_at,
+        external_reference=(
+            batch.external_reference
+        ),
         created_at=batch.created_at,
         updated_at=batch.updated_at,
     )
+
+
+@router.get(
+    "/mintrud/batches",
+    response_model=list[
+        AdminMintrudSubmissionBatchItem
+    ],
+)
+async def list_admin_mintrud_submission_batches(
+    _: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> list[
+    AdminMintrudSubmissionBatchItem
+]:
+    batches = (
+        await list_mintrud_registry_submission_batches(
+            session
+        )
+    )
+
+    return [
+        build_admin_mintrud_submission_batch_item(
+            batch
+        )
+        for batch in batches
+    ]
 
 
 @router.post(
@@ -12054,6 +12101,213 @@ async def prepare_admin_mintrud_submission_batch(
                 artifact_path_to_cleanup
             )
 
+        raise
+
+    return response_item
+
+
+@router.post(
+    "/mintrud/batches/{batch_id}/imported",
+    response_model=(
+        AdminMintrudSubmissionBatchItem
+    ),
+)
+async def mark_admin_mintrud_submission_batch_imported(
+    batch_id: str,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudSubmissionBatchItem:
+    try:
+        batch = (
+            await mark_mintrud_registry_submission_batch_imported(
+                session,
+                batch_id=batch_id,
+                imported_by_user_id=str(
+                    current_user.id
+                ),
+            )
+        )
+
+        response_item = (
+            build_admin_mintrud_submission_batch_item(
+                batch
+            )
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.mintrud_submission_batch_"
+                "import_recorded"
+            ),
+            entity_type=(
+                "registry_submission_batch"
+            ),
+            entity_id=str(
+                batch.id
+            ),
+            payload={
+                "registry": (
+                    batch.registry
+                ),
+                "before": {
+                    "status": "exported",
+                },
+                "after": {
+                    "status": (
+                        batch.status
+                    ),
+                    "imported_by_user_id": (
+                        batch.imported_by_user_id
+                    ),
+                    "imported_at": (
+                        batch.imported_at.isoformat()
+                        if batch.imported_at
+                        else None
+                    ),
+                },
+                "obligation_count": int(
+                    batch.obligation_count
+                ),
+                "record_count": int(
+                    batch.record_count
+                ),
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except RegistrySubmissionBatchError as exc:
+        await session.rollback()
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(
+                exc
+            ),
+        ) from exc
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    return response_item
+
+
+@router.post(
+    "/mintrud/batches/{batch_id}/submitted",
+    response_model=(
+        AdminMintrudSubmissionBatchItem
+    ),
+)
+async def mark_admin_mintrud_submission_batch_submitted(
+    batch_id: str,
+    payload: AdminMintrudSubmissionBatchMarkSubmitted,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudSubmissionBatchItem:
+    try:
+        batch = (
+            await mark_mintrud_registry_submission_batch_submitted(
+                session,
+                batch_id=batch_id,
+                submitted_by_user_id=str(
+                    current_user.id
+                ),
+                external_reference=(
+                    payload.external_reference
+                ),
+            )
+        )
+
+        response_item = (
+            build_admin_mintrud_submission_batch_item(
+                batch
+            )
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.mintrud_submission_batch_"
+                "submission_recorded"
+            ),
+            entity_type=(
+                "registry_submission_batch"
+            ),
+            entity_id=str(
+                batch.id
+            ),
+            payload={
+                "registry": (
+                    batch.registry
+                ),
+                "before": {
+                    "status": "imported",
+                },
+                "after": {
+                    "status": (
+                        batch.status
+                    ),
+                    "submitted_by_user_id": (
+                        batch.submitted_by_user_id
+                    ),
+                    "submitted_at": (
+                        batch.submitted_at.isoformat()
+                        if batch.submitted_at
+                        else None
+                    ),
+                    "external_reference": (
+                        batch.external_reference
+                    ),
+                },
+                "obligation_count": int(
+                    batch.obligation_count
+                ),
+                "record_count": int(
+                    batch.record_count
+                ),
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except RegistrySubmissionBatchError as exc:
+        await session.rollback()
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(
+                exc
+            ),
+        ) from exc
+
+    except Exception:
+        await session.rollback()
         raise
 
     return response_item
