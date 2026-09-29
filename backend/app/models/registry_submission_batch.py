@@ -37,7 +37,10 @@ class RegistrySubmissionBatch(
             name="ck_registry_submission_batch_registry",
         ),
         CheckConstraint(
-            "status = 'exported'",
+            (
+                "status IN "
+                "('exported', 'imported', 'submitted')"
+            ),
             name="ck_registry_submission_batch_status",
         ),
         CheckConstraint(
@@ -132,6 +135,39 @@ class RegistrySubmissionBatch(
         DateTime(timezone=True),
         default=_utcnow,
         nullable=False,
+    )
+
+    imported_by_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+        ),
+        index=True,
+        nullable=True,
+    )
+
+    imported_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    submitted_by_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+        ),
+        index=True,
+        nullable=True,
+    )
+
+    submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    external_reference: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
     )
 
 

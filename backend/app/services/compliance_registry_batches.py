@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import PurePosixPath
 from uuid import uuid4
@@ -19,9 +20,13 @@ from app.services.compliance_registry_approval import (
 from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
     freeze_registry_snapshot,
+    normalize_registry_external_reference,
     validate_registry_approval_current,
 )
 from app.services.compliance_registry_contract import (
+    OBLIGATION_STATUS_APPROVED,
+    OBLIGATION_STATUS_EXPORTED,
+    OBLIGATION_STATUS_SUBMITTED,
     REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD,
     REGISTRY_MINTRUD,
 )
@@ -43,6 +48,8 @@ from app.services.mintrud_eisot_xsd import (
 
 
 REGISTRY_SUBMISSION_BATCH_STATUS_EXPORTED = "exported"
+REGISTRY_SUBMISSION_BATCH_STATUS_IMPORTED = "imported"
+REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED = "submitted"
 REGISTRY_SUBMISSION_BATCH_TRANSPORT_FILE = "file"
 MINTRUD_SUBMISSION_BATCH_EXTENSION = ".xml"
 
@@ -619,3 +626,546 @@ async def create_mintrud_registry_submission_batch(
         raise
 
     return batch
+
+
+def _normalize_batch_lifecycle_actor_user_id(
+    value: object,
+) -> str:
+    normalized = str(
+        value
+        or ""
+    ).strip()
+
+    if not normalized:
+        raise RegistrySubmissionBatchError(
+            "Registry batch lifecycle actor is required"
+        )
+
+    return normalized
+
+
+def _normalize_batch_external_reference(
+    value: str | None,
+) -> str | None:
+    try:
+        return normalize_registry_external_reference(
+            value
+        )
+
+    except RegistrySubmissionAttemptError as exc:
+        raise RegistrySubmissionBatchError(
+            str(exc)
+        ) from exc
+
+
+def _normalize_batch_id(
+    value: object,
+) -> str:
+    normalized = str(
+        value
+        or ""
+    ).strip()
+
+    if not normalized:
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch id is required"
+        )
+
+    return normalized
+
+
+async def _load_mintrud_batch_for_update(
+    session: AsyncSession,
+    *,
+    batch_id: str,
+) -> RegistrySubmissionBatch:
+    normalized_batch_id = (
+        _normalize_batch_id(
+            batch_id
+        )
+    )
+
+    batch = await session.scalar(
+        select(
+            RegistrySubmissionBatch
+        )
+        .where(
+            RegistrySubmissionBatch.id
+            == normalized_batch_id,
+            RegistrySubmissionBatch.registry
+            == REGISTRY_MINTRUD,
+        )
+        .with_for_update()
+    )
+
+    if batch is None:
+        raise RegistrySubmissionBatchError(
+            "Mintrud submission batch was not found"
+        )
+
+    return batch
+
+
+async def _load_batch_items_for_update(
+    session: AsyncSession,
+    *,
+    batch_id: str,
+) -> list[RegistrySubmissionBatchItem]:
+    result = await session.execute(
+        select(
+            RegistrySubmissionBatchItem
+        )
+        .where(
+            RegistrySubmissionBatchItem.batch_id
+            == batch_id
+        )
+        .order_by(
+            RegistrySubmissionBatchItem.position.asc()
+        )
+        .with_for_update()
+    )
+
+    return list(
+        result.scalars().all()
+    )
+
+
+async def _load_batch_items_and_obligations_for_update(
+    session: AsyncSession,
+    *,
+    batch: RegistrySubmissionBatch,
+) -> tuple[
+    list[RegistrySubmissionBatchItem],
+    list[RegistryObligation],
+]:
+    items = (
+        await _load_batch_items_for_update(
+            session,
+            batch_id=str(
+                batch.id
+            ),
+        )
+    )
+
+    if (
+        len(items)
+        != int(
+            batch.obligation_count
+        )
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch item count mismatch"
+        )
+
+    if not items:
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch has no items"
+        )
+
+    item_record_count = sum(
+        int(
+            item.record_count
+        )
+        for item in items
+    )
+
+    if (
+        item_record_count
+        != int(
+            batch.record_count
+        )
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch record count mismatch"
+        )
+
+    obligation_ids = [
+        str(
+            item.obligation_id
+        )
+        for item in items
+    ]
+
+    obligations = (
+        await _load_mintrud_obligations_for_update(
+            session,
+            obligation_ids,
+        )
+    )
+
+    return (
+        items,
+        obligations,
+    )
+
+
+def _validate_batch_item_matches_obligation(
+    *,
+    item: RegistrySubmissionBatchItem,
+    obligation: RegistryObligation,
+) -> None:
+    if (
+        str(
+            item.obligation_id
+        )
+        != str(
+            obligation.id
+        )
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch item obligation mismatch"
+        )
+
+    if (
+        obligation.registry
+        != REGISTRY_MINTRUD
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch supports "
+            "Mintrud obligations only"
+        )
+
+    item_snapshot = (
+        _freeze_batch_snapshot(
+            item.approval_snapshot_json
+        )
+    )
+
+    item_fingerprint = str(
+        item.approval_fingerprint
+        or ""
+    ).strip().lower()
+
+    if not item_fingerprint:
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch item "
+            "approval fingerprint is missing"
+        )
+
+    computed_item_fingerprint = (
+        fingerprint_registry_approval_snapshot(
+            item_snapshot
+        )
+    )
+
+    if (
+        item_fingerprint
+        != computed_item_fingerprint
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch item "
+            "approval fingerprint mismatch"
+        )
+
+    obligation_snapshot = (
+        _freeze_batch_snapshot(
+            obligation.approval_snapshot_json
+        )
+    )
+
+    obligation_fingerprint = (
+        _validated_stored_fingerprint(
+            obligation,
+            obligation_snapshot,
+        )
+    )
+
+    if (
+        obligation_fingerprint
+        != item_fingerprint
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch approval "
+            "fingerprint no longer matches obligation"
+        )
+
+    if (
+        obligation_snapshot
+        != item_snapshot
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch approval "
+            "snapshot no longer matches obligation"
+        )
+
+    expected_record_count = (
+        _snapshot_record_count(
+            item_snapshot
+        )
+    )
+
+    if (
+        int(
+            item.record_count
+        )
+        != expected_record_count
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch item "
+            "record count mismatch"
+        )
+
+
+async def mark_mintrud_registry_submission_batch_imported(
+    session: AsyncSession,
+    *,
+    batch_id: str,
+    imported_by_user_id: str,
+) -> RegistrySubmissionBatch:
+    actor_id = (
+        _normalize_batch_lifecycle_actor_user_id(
+            imported_by_user_id
+        )
+    )
+
+    batch = (
+        await _load_mintrud_batch_for_update(
+            session,
+            batch_id=batch_id,
+        )
+    )
+
+    if (
+        batch.status
+        != REGISTRY_SUBMISSION_BATCH_STATUS_EXPORTED
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch must be "
+            "exported before confirming import"
+        )
+
+    if (
+        batch.imported_at is not None
+        or batch.imported_by_user_id is not None
+        or batch.submitted_at is not None
+        or batch.submitted_by_user_id is not None
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch lifecycle "
+            "does not allow import confirmation"
+        )
+
+    read_registry_submission_batch_artifact(
+        batch
+    )
+
+    (
+        items,
+        obligations,
+    ) = (
+        await _load_batch_items_and_obligations_for_update(
+            session,
+            batch=batch,
+        )
+    )
+
+    for item, obligation in zip(
+        items,
+        obligations,
+        strict=True,
+    ):
+        if (
+            obligation.status
+            != OBLIGATION_STATUS_APPROVED
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry obligation must be approved "
+                "before confirming batch import: "
+                + str(
+                    obligation.id
+                )
+            )
+
+        try:
+            await validate_registry_approval_current(
+                session,
+                obligation=obligation,
+            )
+
+        except RegistrySubmissionAttemptError as exc:
+            raise RegistrySubmissionBatchError(
+                "Registry approval validation failed for obligation "
+                + str(
+                    obligation.id
+                )
+                + ": "
+                + str(exc)
+            ) from exc
+
+        _validate_batch_item_matches_obligation(
+            item=item,
+            obligation=obligation,
+        )
+
+    imported_at = datetime.now(
+        timezone.utc
+    )
+
+    for obligation in obligations:
+        obligation.status = (
+            OBLIGATION_STATUS_EXPORTED
+        )
+
+    batch.status = (
+        REGISTRY_SUBMISSION_BATCH_STATUS_IMPORTED
+    )
+
+    batch.imported_by_user_id = (
+        actor_id
+    )
+
+    batch.imported_at = (
+        imported_at
+    )
+
+    await session.flush()
+
+    return batch
+
+
+async def mark_mintrud_registry_submission_batch_submitted(
+    session: AsyncSession,
+    *,
+    batch_id: str,
+    submitted_by_user_id: str,
+    external_reference: str | None = None,
+) -> RegistrySubmissionBatch:
+    actor_id = (
+        _normalize_batch_lifecycle_actor_user_id(
+            submitted_by_user_id
+        )
+    )
+
+    normalized_reference = (
+        _normalize_batch_external_reference(
+            external_reference
+        )
+    )
+
+    batch = (
+        await _load_mintrud_batch_for_update(
+            session,
+            batch_id=batch_id,
+        )
+    )
+
+    if (
+        batch.status
+        != REGISTRY_SUBMISSION_BATCH_STATUS_IMPORTED
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch must be "
+            "imported before confirming submission"
+        )
+
+    if (
+        batch.imported_at is None
+        or batch.imported_by_user_id is None
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch import "
+            "metadata is incomplete"
+        )
+
+    if (
+        batch.submitted_at is not None
+        or batch.submitted_by_user_id is not None
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch is already submitted"
+        )
+
+    read_registry_submission_batch_artifact(
+        batch
+    )
+
+    (
+        items,
+        obligations,
+    ) = (
+        await _load_batch_items_and_obligations_for_update(
+            session,
+            batch=batch,
+        )
+    )
+
+    for item, obligation in zip(
+        items,
+        obligations,
+        strict=True,
+    ):
+        if (
+            obligation.status
+            != OBLIGATION_STATUS_EXPORTED
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry obligation must be exported "
+                "before confirming batch submission: "
+                + str(
+                    obligation.id
+                )
+            )
+
+        _validate_batch_item_matches_obligation(
+            item=item,
+            obligation=obligation,
+        )
+
+    submitted_at = datetime.now(
+        timezone.utc
+    )
+
+    for obligation in obligations:
+        obligation.status = (
+            OBLIGATION_STATUS_SUBMITTED
+        )
+
+        obligation.submitted_at = (
+            submitted_at
+        )
+
+        obligation.accepted_at = None
+        obligation.external_id = None
+        obligation.last_error = None
+
+    batch.status = (
+        REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+    )
+
+    batch.submitted_by_user_id = (
+        actor_id
+    )
+
+    batch.submitted_at = (
+        submitted_at
+    )
+
+    batch.external_reference = (
+        normalized_reference
+    )
+
+    await session.flush()
+
+    return batch
+
+
+async def list_mintrud_registry_submission_batches(
+    session: AsyncSession,
+) -> list[RegistrySubmissionBatch]:
+    result = await session.execute(
+        select(
+            RegistrySubmissionBatch
+        )
+        .where(
+            RegistrySubmissionBatch.registry
+            == REGISTRY_MINTRUD
+        )
+        .order_by(
+            RegistrySubmissionBatch.created_at.desc(),
+            RegistrySubmissionBatch.id.desc(),
+        )
+    )
+
+    return list(
+        result.scalars().all()
+    )

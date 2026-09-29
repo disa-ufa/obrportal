@@ -7,6 +7,9 @@ import {
   prepareAdminMintrudPortalArtifact,
   prepareAdminMintrudSubmissionBatch,
   downloadAdminMintrudSubmissionBatch,
+  getAdminMintrudSubmissionBatches,
+  markAdminMintrudSubmissionBatchImported,
+  markAdminMintrudSubmissionBatchSubmitted,
   reopenAdminFrdoObligation,
   reopenAdminMintrudObligation,
   downloadAdminFrdoSubmissionAttempt,
@@ -48,6 +51,16 @@ const T = {
   mintrudBatchClear: "\u041e\u0447\u0438\u0441\u0442\u0438\u0442\u044c \u0432\u044b\u0431\u043e\u0440",
   mintrudBatchNeedSelection: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u043d\u0443 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u0443\u044e \u0437\u0430\u043f\u0438\u0441\u044c \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
   mintrudBatchHint: "\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0435 \u0437\u0430\u043f\u0438\u0441\u0438 \u043f\u043e\u043f\u0430\u0434\u0443\u0442 \u0432 \u043e\u0434\u0438\u043d XML \u0432 \u043f\u043e\u0440\u044f\u0434\u043a\u0435 \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u0441\u043f\u0438\u0441\u043a\u0430. \u041f\u043e\u0441\u043b\u0435 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422 \u0432\u0440\u0443\u0447\u043d\u0443\u044e. \u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f.",
+  mintrudBatchHistoryTitle: "\u0418\u0441\u0442\u043e\u0440\u0438\u044f XML-\u043f\u0430\u043a\u0435\u0442\u043e\u0432",
+  mintrudBatchHistoryHint: "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 XML \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0432 \u0440\u0435\u0435\u0441\u0442\u0440 \u0444\u0438\u043a\u0441\u0438\u0440\u0443\u044e\u0442\u0441\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e. \u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0438\u043c\u043f\u043e\u0440\u0442\u0438\u0440\u0443\u0439\u0442\u0435 XML \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422, \u0437\u0430\u0442\u0435\u043c \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u0438\u043c\u043f\u043e\u0440\u0442. \u041f\u043e\u0441\u043b\u0435 \u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f \u043d\u0430\u0431\u043e\u0440\u0430, \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u042d\u041f \u0438 \u0440\u0443\u0447\u043d\u043e\u0439 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u043f\u0430\u043a\u0435\u0442 \u043a\u0430\u043a \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0439.",
+  mintrudBatchHistoryEmpty: "\u041f\u0430\u043a\u0435\u0442\u044b XML \u0435\u0449\u0451 \u043d\u0435 \u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043b\u0438\u0441\u044c.",
+  mintrudBatchDownload: "\u0421\u043a\u0430\u0447\u0430\u0442\u044c XML",
+  mintrudBatchConfirmImported: "\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u0438\u043c\u043f\u043e\u0440\u0442 XML",
+  mintrudBatchConfirmSubmitted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443",
+  mintrudBatchExternalReference: "\u0418\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u043d\u0430\u0431\u043e\u0440\u0430 / \u0441\u0441\u044b\u043b\u043a\u0430 (\u043d\u0435\u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e)",
+  mintrudBatchStatusExported: "XML \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043b\u0435\u043d",
+  mintrudBatchStatusImported: "XML \u0438\u043c\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u043d",
+  mintrudBatchStatusSubmitted: "\u041d\u0430\u0431\u043e\u0440 \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d",
   reopen: "\u041d\u0430\u0447\u0430\u0442\u044c \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435",
   attempts: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438",
   context: "\u0414\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
@@ -93,6 +106,51 @@ const ARTIFACT_KIND_LABELS = {
   [PORTAL_UPLOAD_ARTIFACT]:
     "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u043f\u043e\u0440\u0442\u0430\u043b\u0430",
 };
+
+
+function mintrudBatchStatusLabel(status) {
+  if (status === "exported") {
+    return T.mintrudBatchStatusExported;
+  }
+
+  if (status === "imported") {
+    return T.mintrudBatchStatusImported;
+  }
+
+  if (status === "submitted") {
+    return T.mintrudBatchStatusSubmitted;
+  }
+
+  return status || "\u2014";
+}
+
+
+function mintrudBatchStatusTone(status) {
+  if (status === "submitted") {
+    return "green";
+  }
+
+  if (status === "imported") {
+    return "blue";
+  }
+
+  return "amber";
+}
+
+
+function formatMintrudBatchTime(value) {
+  if (!value) {
+    return "\u2014";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("ru-RU");
+}
 
 
 function artifactKindLabel(attempt) {
@@ -1069,6 +1127,21 @@ export function AdminRegistriesPage() {
     setSelectedMintrudIds,
   ] = useState([]);
 
+  const [
+    mintrudBatches,
+    setMintrudBatches,
+  ] = useState([]);
+
+  const [
+    mintrudBatchSubmitId,
+    setMintrudBatchSubmitId,
+  ] = useState("");
+
+  const [
+    mintrudBatchSubmitReference,
+    setMintrudBatchSubmitReference,
+  ] = useState("");
+
   const selectedMintrudIdSet = useMemo(
     () => new Set(
       selectedMintrudIds
@@ -1160,6 +1233,22 @@ export function AdminRegistriesPage() {
           ? result
           : []
       );
+
+      if (
+        activeRegistry === "mintrud"
+      ) {
+        const batches = await (
+          getAdminMintrudSubmissionBatches()
+        );
+
+        setMintrudBatches(
+          Array.isArray(batches)
+            ? batches
+            : []
+        );
+      } else {
+        setMintrudBatches([]);
+      }
     } catch (err) {
       setError(formatApiError(err));
     } finally {
@@ -1167,6 +1256,7 @@ export function AdminRegistriesPage() {
     }
   }, [
     api,
+    activeRegistry,
     appliedFilters.q,
     appliedFilters.status,
   ]);
@@ -1175,6 +1265,8 @@ export function AdminRegistriesPage() {
     setExpandedId("");
     setEditingContextId("");
     setAttemptsById({});
+    setMintrudBatchSubmitId("");
+    setMintrudBatchSubmitReference("");
     load();
   }, [
     activeRegistry,
@@ -1352,8 +1444,85 @@ export function AdminRegistriesPage() {
         );
 
         setSelectedMintrudIds([]);
+        await load();
       }
     );
+  }
+
+
+  async function downloadMintrudBatch(
+    batch
+  ) {
+    await withAction(
+      `mintrud-batch-download:${batch.id}`,
+      () => (
+        downloadAdminMintrudSubmissionBatch(
+          batch.id
+        )
+      )
+    );
+  }
+
+
+  async function confirmMintrudBatchImported(
+    batch
+  ) {
+    await withAction(
+      `mintrud-batch-imported:${batch.id}`,
+      async () => {
+        await (
+          markAdminMintrudSubmissionBatchImported(
+            batch.id
+          )
+        );
+
+        await load();
+      }
+    );
+  }
+
+
+  function openMintrudBatchSubmitForm(
+    batch
+  ) {
+    setMintrudBatchSubmitId(
+      batch.id
+    );
+
+    setMintrudBatchSubmitReference(
+      batch.external_reference || ""
+    );
+  }
+
+
+  async function confirmMintrudBatchSubmitted(
+    event,
+    batch
+  ) {
+    event.preventDefault();
+
+    const success = await withAction(
+      `mintrud-batch-submitted:${batch.id}`,
+      async () => {
+        await (
+          markAdminMintrudSubmissionBatchSubmitted(
+            batch.id,
+            {
+              external_reference:
+                mintrudBatchSubmitReference.trim()
+                || null,
+            }
+          )
+        );
+
+        await load();
+      }
+    );
+
+    if (success) {
+      setMintrudBatchSubmitId("");
+      setMintrudBatchSubmitReference("");
+    }
   }
 
 
@@ -1670,6 +1839,206 @@ export function AdminRegistriesPage() {
               </button>
             </div>
           </div>
+        </section>
+      ) : null}
+
+      {activeRegistry === "mintrud" ? (
+        <section
+          data-testid="admin-registries-mintrud-batch-history"
+          className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+        >
+          <div>
+            <div className="text-base font-black text-slate-950">
+              {T.mintrudBatchHistoryTitle}
+            </div>
+
+            <p className="mt-1 max-w-4xl text-xs leading-5 text-slate-600">
+              {T.mintrudBatchHistoryHint}
+            </p>
+          </div>
+
+          {!mintrudBatches.length ? (
+            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+              {T.mintrudBatchHistoryEmpty}
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-3">
+              {mintrudBatches.map((batch) => (
+                <div
+                  key={batch.id}
+                  data-testid={`admin-registries-mintrud-batch-item-${batch.id}`}
+                  className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {batch.id}
+                      </div>
+
+                      <div className="mt-1 text-xs text-slate-500">
+                        XML v{batch.schema_version}
+                        {" / "}
+                        {batch.obligation_count}
+                        {" obligations / "}
+                        {batch.record_count}
+                        {" RegistryRecord"}
+                      </div>
+                    </div>
+
+                    <StatusBadge
+                      tone={
+                        mintrudBatchStatusTone(
+                          batch.status
+                        )
+                      }
+                    >
+                      {mintrudBatchStatusLabel(
+                        batch.status
+                      )}
+                    </StatusBadge>
+                  </div>
+
+                  <div className="mt-3 grid gap-1 text-xs text-slate-500 md:grid-cols-2">
+                    <div>
+                      {"\u0421\u043e\u0437\u0434\u0430\u043d: "}
+                      {formatMintrudBatchTime(
+                        batch.generated_at
+                      )}
+                    </div>
+
+                    <div>
+                      {"\u0418\u043c\u043f\u043e\u0440\u0442: "}
+                      {formatMintrudBatchTime(
+                        batch.imported_at
+                      )}
+                    </div>
+
+                    <div>
+                      {"\u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0430: "}
+                      {formatMintrudBatchTime(
+                        batch.submitted_at
+                      )}
+                    </div>
+
+                    <div className="break-all">
+                      {"external_reference: "}
+                      {batch.external_reference || "\u2014"}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 break-all text-[11px] text-slate-400">
+                    SHA-256: {batch.artifact_sha256}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {batch.has_artifact ? (
+                      <button
+                        type="button"
+                        className={SECONDARY}
+                        disabled={Boolean(busyKey)}
+                        onClick={() => (
+                          downloadMintrudBatch(
+                            batch
+                          )
+                        )}
+                      >
+                        {T.mintrudBatchDownload}
+                      </button>
+                    ) : null}
+
+                    {batch.status === "exported" ? (
+                      <button
+                        type="button"
+                        data-testid={`admin-registries-mintrud-batch-imported-${batch.id}`}
+                        className={BLUE}
+                        disabled={Boolean(busyKey)}
+                        onClick={() => (
+                          confirmMintrudBatchImported(
+                            batch
+                          )
+                        )}
+                      >
+                        {T.mintrudBatchConfirmImported}
+                      </button>
+                    ) : null}
+
+                    {batch.status === "imported"
+                    && mintrudBatchSubmitId
+                      !== batch.id ? (
+                      <button
+                        type="button"
+                        data-testid={`admin-registries-mintrud-batch-submitted-open-${batch.id}`}
+                        className={PRIMARY}
+                        disabled={Boolean(busyKey)}
+                        onClick={() => (
+                          openMintrudBatchSubmitForm(
+                            batch
+                          )
+                        )}
+                      >
+                        {T.mintrudBatchConfirmSubmitted}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {batch.status === "imported"
+                  && mintrudBatchSubmitId
+                    === batch.id ? (
+                    <form
+                      data-testid={`admin-registries-mintrud-batch-submitted-form-${batch.id}`}
+                      className="mt-4 grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                      onSubmit={(event) => (
+                        confirmMintrudBatchSubmitted(
+                          event,
+                          batch
+                        )
+                      )}
+                    >
+                      <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                        {T.mintrudBatchExternalReference}
+
+                        <input
+                          className={INPUT}
+                          value={
+                            mintrudBatchSubmitReference
+                          }
+                          maxLength={255}
+                          disabled={Boolean(busyKey)}
+                          onChange={(event) => (
+                            setMintrudBatchSubmitReference(
+                              event.target.value
+                            )
+                          )}
+                        />
+                      </label>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="submit"
+                          className={PRIMARY}
+                          disabled={Boolean(busyKey)}
+                        >
+                          {T.mintrudBatchConfirmSubmitted}
+                        </button>
+
+                        <button
+                          type="button"
+                          className={SECONDARY}
+                          disabled={Boolean(busyKey)}
+                          onClick={() => {
+                            setMintrudBatchSubmitId("");
+                            setMintrudBatchSubmitReference("");
+                          }}
+                        >
+                          {T.cancel}
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       ) : null}
 

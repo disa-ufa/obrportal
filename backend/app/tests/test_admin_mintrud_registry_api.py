@@ -3871,6 +3871,7 @@ def test_mintrud_batch_api_routes_and_schema_contract():
     from app.schemas.admin import (
         AdminMintrudSubmissionBatchCreate,
         AdminMintrudSubmissionBatchItem,
+        AdminMintrudSubmissionBatchMarkSubmitted,
     )
 
     route_pairs = {
@@ -3889,6 +3890,24 @@ def test_mintrud_batch_api_routes_and_schema_contract():
         "POST",
         router.prefix
         + "/mintrud/batches",
+    ) in route_pairs
+
+    assert (
+        "GET",
+        router.prefix
+        + "/mintrud/batches",
+    ) in route_pairs
+
+    assert (
+        "POST",
+        router.prefix
+        + "/mintrud/batches/{batch_id}/imported",
+    ) in route_pairs
+
+    assert (
+        "POST",
+        router.prefix
+        + "/mintrud/batches/{batch_id}/submitted",
     ) in route_pairs
 
     assert (
@@ -3922,6 +3941,28 @@ def test_mintrud_batch_api_routes_and_schema_contract():
         AdminMintrudSubmissionBatchItem
         is not None
     )
+
+    submitted_payload = (
+        AdminMintrudSubmissionBatchMarkSubmitted(
+            external_reference=(
+                "EISOT-SET-1"
+            )
+        )
+    )
+
+    assert (
+        submitted_payload.external_reference
+        == "EISOT-SET-1"
+    )
+
+    with pytest.raises(
+        ValidationError
+    ):
+        AdminMintrudSubmissionBatchMarkSubmitted(
+            external_reference=(
+                "x" * 256
+            )
+        )
 
 
 def test_mintrud_batch_create_route_commits_and_audits(
@@ -3964,6 +4005,11 @@ def test_mintrud_batch_create_route_commits_and_audits(
             "admin-user"
         ),
         generated_at=now,
+        imported_by_user_id=None,
+        imported_at=None,
+        submitted_by_user_id=None,
+        submitted_at=None,
+        external_reference=None,
         created_at=now,
         updated_at=now,
     )
@@ -4134,6 +4180,11 @@ def test_mintrud_batch_create_route_rolls_back_and_cleans(
             "admin-user"
         ),
         generated_at=now,
+        imported_by_user_id=None,
+        imported_at=None,
+        submitted_by_user_id=None,
+        submitted_at=None,
+        external_reference=None,
         created_at=now,
         updated_at=now,
     )
@@ -4439,4 +4490,669 @@ def test_mintrud_batch_download_route_contract(
     assert (
         integrity_exc.value.detail
         == "checksum mismatch"
+    )
+
+
+def make_admin_mintrud_batch_api_fixture(
+    *,
+    status: str,
+    imported: bool = False,
+    submitted: bool = False,
+    external_reference: str | None = None,
+):
+    from datetime import (
+        datetime,
+        timezone,
+    )
+    from types import SimpleNamespace
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    return SimpleNamespace(
+        id=(
+            "batch-"
+            + status
+        ),
+        registry="mintrud",
+        status=status,
+        artifact_kind=(
+            "portal-upload-artifact"
+        ),
+        transport="file",
+        schema_version="1.0.9",
+        obligation_count=2,
+        record_count=3,
+        artifact_path=(
+            "generated/registry/mintrud/"
+            "batches/batch-"
+            + status
+            + ".xml"
+        ),
+        artifact_sha256=(
+            "d" * 64
+        ),
+        generated_by_user_id=(
+            "generator-user"
+        ),
+        generated_at=now,
+        imported_by_user_id=(
+            "import-user"
+            if imported
+            else None
+        ),
+        imported_at=(
+            now
+            if imported
+            else None
+        ),
+        submitted_by_user_id=(
+            "submit-user"
+            if submitted
+            else None
+        ),
+        submitted_at=(
+            now
+            if submitted
+            else None
+        ),
+        external_reference=(
+            external_reference
+        ),
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def test_mintrud_batch_list_route_returns_lifecycle_fields(
+    monkeypatch,
+):
+    from types import SimpleNamespace
+
+    import app.api.v1.admin as admin_api
+
+    exported = (
+        make_admin_mintrud_batch_api_fixture(
+            status="exported",
+        )
+    )
+
+    submitted = (
+        make_admin_mintrud_batch_api_fixture(
+            status="submitted",
+            imported=True,
+            submitted=True,
+            external_reference=(
+                "EISOT-SET-99"
+            ),
+        )
+    )
+
+    calls = []
+
+    async def fake_list(
+        session,
+    ):
+        calls.append(
+            session
+        )
+
+        return [
+            submitted,
+            exported,
+        ]
+
+    monkeypatch.setattr(
+        admin_api,
+        "list_mintrud_registry_submission_batches",
+        fake_list,
+    )
+
+    session = SimpleNamespace()
+
+    result = asyncio.run(
+        admin_api.list_admin_mintrud_submission_batches(
+            _=SimpleNamespace(
+                id="admin-user"
+            ),
+            session=session,
+        )
+    )
+
+    assert calls == [
+        session,
+    ]
+
+    assert len(result) == 2
+
+    assert (
+        result[0].status
+        == "submitted"
+    )
+
+    assert (
+        result[0].imported_by_user_id
+        == "import-user"
+    )
+
+    assert (
+        result[0].imported_at
+        is not None
+    )
+
+    assert (
+        result[0].submitted_by_user_id
+        == "submit-user"
+    )
+
+    assert (
+        result[0].submitted_at
+        is not None
+    )
+
+    assert (
+        result[0].external_reference
+        == "EISOT-SET-99"
+    )
+
+    assert (
+        result[1].status
+        == "exported"
+    )
+
+    assert (
+        result[1].imported_at
+        is None
+    )
+
+    assert (
+        result[1].submitted_at
+        is None
+    )
+
+
+def test_mintrud_batch_imported_route_commits_and_audits(
+    monkeypatch,
+):
+    from types import SimpleNamespace
+
+    import app.api.v1.admin as admin_api
+
+    batch = (
+        make_admin_mintrud_batch_api_fixture(
+            status="imported",
+            imported=True,
+        )
+    )
+
+    calls = {
+        "service": None,
+        "audit": None,
+    }
+
+    class FakeSession:
+        def __init__(self):
+            self.commit_count = 0
+            self.rollback_count = 0
+
+        async def commit(self):
+            self.commit_count += 1
+
+        async def rollback(self):
+            self.rollback_count += 1
+
+    async def fake_import(
+        session,
+        *,
+        batch_id,
+        imported_by_user_id,
+    ):
+        calls[
+            "service"
+        ] = {
+            "batch_id": batch_id,
+            "imported_by_user_id": (
+                imported_by_user_id
+            ),
+        }
+
+        return batch
+
+    async def fake_audit(
+        session,
+        **kwargs,
+    ):
+        calls[
+            "audit"
+        ] = kwargs
+
+    monkeypatch.setattr(
+        admin_api,
+        "mark_mintrud_registry_submission_batch_imported",
+        fake_import,
+    )
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_admin_audit_event",
+        fake_audit,
+    )
+
+    session = FakeSession()
+
+    response = asyncio.run(
+        admin_api.mark_admin_mintrud_submission_batch_imported(
+            batch_id="batch-exported",
+            request=SimpleNamespace(),
+            current_user=SimpleNamespace(
+                id="admin-user"
+            ),
+            session=session,
+        )
+    )
+
+    assert response.status == (
+        "imported"
+    )
+
+    assert response.imported_at is not None
+
+    assert calls[
+        "service"
+    ] == {
+        "batch_id": (
+            "batch-exported"
+        ),
+        "imported_by_user_id": (
+            "admin-user"
+        ),
+    }
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "action"
+        ]
+        == (
+            "admin.mintrud_submission_batch_"
+            "import_recorded"
+        )
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "entity_type"
+        ]
+        == "registry_submission_batch"
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "before"
+        ][
+            "status"
+        ]
+        == "exported"
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "after"
+        ][
+            "status"
+        ]
+        == "imported"
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "external_registry_io"
+        ]
+        is False
+    )
+
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+
+
+def test_mintrud_batch_submitted_route_commits_and_audits(
+    monkeypatch,
+):
+    from types import SimpleNamespace
+
+    import app.api.v1.admin as admin_api
+    from app.schemas.admin import (
+        AdminMintrudSubmissionBatchMarkSubmitted,
+    )
+
+    batch = (
+        make_admin_mintrud_batch_api_fixture(
+            status="submitted",
+            imported=True,
+            submitted=True,
+            external_reference=(
+                "EISOT-SET-77"
+            ),
+        )
+    )
+
+    calls = {
+        "service": None,
+        "audit": None,
+    }
+
+    class FakeSession:
+        def __init__(self):
+            self.commit_count = 0
+            self.rollback_count = 0
+
+        async def commit(self):
+            self.commit_count += 1
+
+        async def rollback(self):
+            self.rollback_count += 1
+
+    async def fake_submit(
+        session,
+        *,
+        batch_id,
+        submitted_by_user_id,
+        external_reference,
+    ):
+        calls[
+            "service"
+        ] = {
+            "batch_id": batch_id,
+            "submitted_by_user_id": (
+                submitted_by_user_id
+            ),
+            "external_reference": (
+                external_reference
+            ),
+        }
+
+        return batch
+
+    async def fake_audit(
+        session,
+        **kwargs,
+    ):
+        calls[
+            "audit"
+        ] = kwargs
+
+    monkeypatch.setattr(
+        admin_api,
+        "mark_mintrud_registry_submission_batch_submitted",
+        fake_submit,
+    )
+
+    monkeypatch.setattr(
+        admin_api,
+        "create_admin_audit_event",
+        fake_audit,
+    )
+
+    session = FakeSession()
+
+    response = asyncio.run(
+        admin_api.mark_admin_mintrud_submission_batch_submitted(
+            batch_id="batch-imported",
+            payload=(
+                AdminMintrudSubmissionBatchMarkSubmitted(
+                    external_reference=(
+                        " EISOT-SET-77 "
+                    )
+                )
+            ),
+            request=SimpleNamespace(),
+            current_user=SimpleNamespace(
+                id="admin-user"
+            ),
+            session=session,
+        )
+    )
+
+    assert response.status == (
+        "submitted"
+    )
+
+    assert (
+        response.external_reference
+        == "EISOT-SET-77"
+    )
+
+    assert calls[
+        "service"
+    ] == {
+        "batch_id": (
+            "batch-imported"
+        ),
+        "submitted_by_user_id": (
+            "admin-user"
+        ),
+        "external_reference": (
+            " EISOT-SET-77 "
+        ),
+    }
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "action"
+        ]
+        == (
+            "admin.mintrud_submission_batch_"
+            "submission_recorded"
+        )
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "before"
+        ][
+            "status"
+        ]
+        == "imported"
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "after"
+        ][
+            "status"
+        ]
+        == "submitted"
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "after"
+        ][
+            "external_reference"
+        ]
+        == "EISOT-SET-77"
+    )
+
+    assert (
+        calls[
+            "audit"
+        ][
+            "payload"
+        ][
+            "external_registry_io"
+        ]
+        is False
+    )
+
+    assert session.commit_count == 1
+    assert session.rollback_count == 0
+
+
+def test_mintrud_batch_lifecycle_routes_map_domain_error_to_409(
+    monkeypatch,
+):
+    import pytest
+
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    import app.api.v1.admin as admin_api
+    from app.schemas.admin import (
+        AdminMintrudSubmissionBatchMarkSubmitted,
+    )
+
+    class FakeSession:
+        def __init__(self):
+            self.commit_count = 0
+            self.rollback_count = 0
+
+        async def commit(self):
+            self.commit_count += 1
+
+        async def rollback(self):
+            self.rollback_count += 1
+
+    async def fail_import(
+        session,
+        *,
+        batch_id,
+        imported_by_user_id,
+    ):
+        raise (
+            admin_api.RegistrySubmissionBatchError(
+                "import transition rejected"
+            )
+        )
+
+    monkeypatch.setattr(
+        admin_api,
+        "mark_mintrud_registry_submission_batch_imported",
+        fail_import,
+    )
+
+    import_session = FakeSession()
+
+    with pytest.raises(
+        HTTPException
+    ) as import_exc:
+        asyncio.run(
+            admin_api.mark_admin_mintrud_submission_batch_imported(
+                batch_id="batch-exported",
+                request=SimpleNamespace(),
+                current_user=SimpleNamespace(
+                    id="admin-user"
+                ),
+                session=import_session,
+            )
+        )
+
+    assert (
+        import_exc.value.status_code
+        == 409
+    )
+
+    assert (
+        import_exc.value.detail
+        == "import transition rejected"
+    )
+
+    assert (
+        import_session.commit_count
+        == 0
+    )
+
+    assert (
+        import_session.rollback_count
+        == 1
+    )
+
+    async def fail_submit(
+        session,
+        *,
+        batch_id,
+        submitted_by_user_id,
+        external_reference,
+    ):
+        raise (
+            admin_api.RegistrySubmissionBatchError(
+                "submit transition rejected"
+            )
+        )
+
+    monkeypatch.setattr(
+        admin_api,
+        "mark_mintrud_registry_submission_batch_submitted",
+        fail_submit,
+    )
+
+    submit_session = FakeSession()
+
+    with pytest.raises(
+        HTTPException
+    ) as submit_exc:
+        asyncio.run(
+            admin_api.mark_admin_mintrud_submission_batch_submitted(
+                batch_id="batch-imported",
+                payload=(
+                    AdminMintrudSubmissionBatchMarkSubmitted(
+                        external_reference=None
+                    )
+                ),
+                request=SimpleNamespace(),
+                current_user=SimpleNamespace(
+                    id="admin-user"
+                ),
+                session=submit_session,
+            )
+        )
+
+    assert (
+        submit_exc.value.status_code
+        == 409
+    )
+
+    assert (
+        submit_exc.value.detail
+        == "submit transition rejected"
+    )
+
+    assert (
+        submit_session.commit_count
+        == 0
+    )
+
+    assert (
+        submit_session.rollback_count
+        == 1
     )
