@@ -29,11 +29,16 @@ from app.services.compliance_registry_batches import (
     mark_mintrud_registry_submission_batch_imported,
     mark_mintrud_registry_submission_batch_submitted,
     normalize_batch_obligation_ids,
+    normalize_batch_result_items,
+    record_mintrud_registry_submission_batch_result,
     read_registry_submission_batch_artifact,
 )
 from app.services.compliance_registry_contract import (
+    OBLIGATION_STATUS_ACCEPTED,
     OBLIGATION_STATUS_APPROVED,
+    OBLIGATION_STATUS_CORRECTION_REQUIRED,
     OBLIGATION_STATUS_EXPORTED,
+    OBLIGATION_STATUS_REJECTED,
     OBLIGATION_STATUS_SUBMITTED,
     REGISTRY_MINTRUD,
 )
@@ -901,6 +906,11 @@ def make_lifecycle_item(
                 "mintrud_learn_programs"
             ]
         ),
+        result_status=None,
+        errors_json=[],
+        external_id=None,
+        result_recorded_by_user_id=None,
+        result_recorded_at=None,
     )
 
 
@@ -928,6 +938,8 @@ def make_lifecycle_batch(
         submitted_by_user_id=None,
         submitted_at=None,
         external_reference=None,
+        reconciled_by_user_id=None,
+        reconciled_at=None,
     )
 
 
@@ -1627,4 +1639,619 @@ def test_batch_lifecycle_rejects_invalid_transition_state(
         )
 
     assert artifact_called == []
+    assert session.flush_count == 0
+
+
+@pytest.mark.parametrize(
+    (
+        "payload",
+        "message",
+    ),
+    [
+        (
+            [
+                {
+                    "obligation_id": "obligation-1",
+                    "result_status": "accepted",
+                    "external_id": None,
+                    "errors": [
+                        "must-not-exist",
+                    ],
+                },
+            ],
+            "must not contain errors",
+        ),
+        (
+            [
+                {
+                    "obligation_id": "obligation-1",
+                    "result_status": "rejected",
+                    "external_id": "external-1",
+                    "errors": [],
+                },
+            ],
+            "allowed only for accepted",
+        ),
+        (
+            [
+                {
+                    "obligation_id": "obligation-1",
+                    "result_status": "accepted",
+                    "external_id": None,
+                    "errors": [],
+                },
+                {
+                    "obligation_id": "obligation-1",
+                    "result_status": "accepted",
+                    "external_id": None,
+                    "errors": [],
+                },
+            ],
+            "Duplicate",
+        ),
+    ],
+)
+def test_normalize_batch_result_items_semantics(
+    payload,
+    message,
+):
+    with pytest.raises(
+        RegistrySubmissionBatchError,
+        match=message,
+    ):
+        normalize_batch_result_items(
+            payload
+        )
+
+
+def test_batch_result_reconciliation_updates_every_item_atomically(
+    monkeypatch,
+):
+    first_snapshot = make_snapshot(
+        last_name="ResultOne",
+        program_ids=(
+            1,
+        ),
+    )
+
+    second_snapshot = make_snapshot(
+        last_name="ResultTwo",
+        program_ids=(
+            2,
+            3,
+        ),
+    )
+
+    first = make_lifecycle_obligation(
+        "obligation-result-1",
+        first_snapshot,
+        status=(
+            OBLIGATION_STATUS_SUBMITTED
+        ),
+    )
+
+    second = make_lifecycle_obligation(
+        "obligation-result-2",
+        second_snapshot,
+        status=(
+            OBLIGATION_STATUS_SUBMITTED
+        ),
+    )
+
+    batch = make_lifecycle_batch(
+        status=(
+            REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+        ),
+        obligation_count=2,
+        record_count=3,
+    )
+
+    batch.submitted_by_user_id = (
+        "admin-submit"
+    )
+
+    batch.submitted_at = (
+        batch_service.datetime.now(
+            batch_service.timezone.utc
+        )
+    )
+
+    items = [
+        make_lifecycle_item(
+            str(batch.id),
+            first,
+            position=0,
+        ),
+        make_lifecycle_item(
+            str(batch.id),
+            second,
+            position=1,
+        ),
+    ]
+
+    session = FakeSession()
+
+    install_lifecycle_loaders(
+        monkeypatch,
+        batch=batch,
+        items=items,
+        obligations=[
+            first,
+            second,
+        ],
+    )
+
+    result_batch, result_items = asyncio.run(
+        record_mintrud_registry_submission_batch_result(
+            session,
+            batch_id=str(
+                batch.id
+            ),
+            recorded_by_user_id=(
+                " admin-result "
+            ),
+            results=[
+                {
+                    "obligation_id": (
+                        str(
+                            second.id
+                        )
+                    ),
+                    "result_status": (
+                        OBLIGATION_STATUS_CORRECTION_REQUIRED
+                    ),
+                    "external_id": None,
+                    "errors": [
+                        " issue one ",
+                        "",
+                        "issue two",
+                    ],
+                },
+                {
+                    "obligation_id": (
+                        str(
+                            first.id
+                        )
+                    ),
+                    "result_status": (
+                        OBLIGATION_STATUS_ACCEPTED
+                    ),
+                    "external_id": (
+                        " EXT-001 "
+                    ),
+                    "errors": [],
+                },
+            ],
+        )
+    )
+
+    assert result_batch is batch
+    assert result_items == items
+
+    assert (
+        batch.status
+        == REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+    )
+
+    assert (
+        batch.reconciled_by_user_id
+        == "admin-result"
+    )
+
+    assert batch.reconciled_at is not None
+
+    assert (
+        first.status
+        == OBLIGATION_STATUS_ACCEPTED
+    )
+
+    assert (
+        first.accepted_at
+        == batch.reconciled_at
+    )
+
+    assert (
+        first.external_id
+        == "EXT-001"
+    )
+
+    assert first.last_error is None
+
+    assert (
+        items[0].result_status
+        == OBLIGATION_STATUS_ACCEPTED
+    )
+
+    assert items[0].errors_json == []
+
+    assert (
+        items[0].external_id
+        == "EXT-001"
+    )
+
+    assert (
+        items[0].result_recorded_by_user_id
+        == "admin-result"
+    )
+
+    assert (
+        items[0].result_recorded_at
+        == batch.reconciled_at
+    )
+
+    assert (
+        second.status
+        == OBLIGATION_STATUS_CORRECTION_REQUIRED
+    )
+
+    assert second.accepted_at is None
+    assert second.external_id is None
+
+    assert (
+        second.last_error
+        == "issue one\nissue two"
+    )
+
+    assert (
+        items[1].result_status
+        == OBLIGATION_STATUS_CORRECTION_REQUIRED
+    )
+
+    assert items[1].errors_json == [
+        "issue one",
+        "issue two",
+    ]
+
+    assert items[1].external_id is None
+
+    assert session.flush_count == 1
+
+
+def test_batch_result_requires_complete_payload_before_mutation(
+    monkeypatch,
+):
+    first_snapshot = make_snapshot(
+        last_name="CoverageOne",
+        program_ids=(
+            1,
+        ),
+    )
+
+    second_snapshot = make_snapshot(
+        last_name="CoverageTwo",
+        program_ids=(
+            2,
+        ),
+    )
+
+    first = make_lifecycle_obligation(
+        "obligation-coverage-1",
+        first_snapshot,
+        status=(
+            OBLIGATION_STATUS_SUBMITTED
+        ),
+    )
+
+    second = make_lifecycle_obligation(
+        "obligation-coverage-2",
+        second_snapshot,
+        status=(
+            OBLIGATION_STATUS_SUBMITTED
+        ),
+    )
+
+    batch = make_lifecycle_batch(
+        status=(
+            REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+        ),
+        obligation_count=2,
+        record_count=2,
+    )
+
+    batch.submitted_by_user_id = (
+        "admin-submit"
+    )
+
+    batch.submitted_at = (
+        batch_service.datetime.now(
+            batch_service.timezone.utc
+        )
+    )
+
+    items = [
+        make_lifecycle_item(
+            str(batch.id),
+            first,
+            position=0,
+        ),
+        make_lifecycle_item(
+            str(batch.id),
+            second,
+            position=1,
+        ),
+    ]
+
+    session = FakeSession()
+
+    install_lifecycle_loaders(
+        monkeypatch,
+        batch=batch,
+        items=items,
+        obligations=[
+            first,
+            second,
+        ],
+    )
+
+    with pytest.raises(
+        RegistrySubmissionBatchError,
+        match="cover every batch item exactly once",
+    ):
+        asyncio.run(
+            record_mintrud_registry_submission_batch_result(
+                session,
+                batch_id=str(
+                    batch.id
+                ),
+                recorded_by_user_id=(
+                    "admin-result"
+                ),
+                results=[
+                    {
+                        "obligation_id": (
+                            str(
+                                first.id
+                            )
+                        ),
+                        "result_status": (
+                            OBLIGATION_STATUS_ACCEPTED
+                        ),
+                        "external_id": None,
+                        "errors": [],
+                    },
+                ],
+            )
+        )
+
+    assert (
+        first.status
+        == OBLIGATION_STATUS_SUBMITTED
+    )
+
+    assert (
+        second.status
+        == OBLIGATION_STATUS_SUBMITTED
+    )
+
+    assert items[0].result_status is None
+    assert items[1].result_status is None
+    assert batch.reconciled_at is None
+    assert session.flush_count == 0
+
+
+def test_batch_result_validates_every_obligation_before_mutation(
+    monkeypatch,
+):
+    first_snapshot = make_snapshot(
+        last_name="AtomicResultOne",
+        program_ids=(
+            1,
+        ),
+    )
+
+    second_snapshot = make_snapshot(
+        last_name="AtomicResultTwo",
+        program_ids=(
+            2,
+        ),
+    )
+
+    first = make_lifecycle_obligation(
+        "obligation-result-atomic-1",
+        first_snapshot,
+        status=(
+            OBLIGATION_STATUS_SUBMITTED
+        ),
+    )
+
+    second = make_lifecycle_obligation(
+        "obligation-result-atomic-2",
+        second_snapshot,
+        status=(
+            OBLIGATION_STATUS_ACCEPTED
+        ),
+    )
+
+    batch = make_lifecycle_batch(
+        status=(
+            REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+        ),
+        obligation_count=2,
+        record_count=2,
+    )
+
+    batch.submitted_by_user_id = (
+        "admin-submit"
+    )
+
+    batch.submitted_at = (
+        batch_service.datetime.now(
+            batch_service.timezone.utc
+        )
+    )
+
+    items = [
+        make_lifecycle_item(
+            str(batch.id),
+            first,
+            position=0,
+        ),
+        make_lifecycle_item(
+            str(batch.id),
+            second,
+            position=1,
+        ),
+    ]
+
+    session = FakeSession()
+
+    install_lifecycle_loaders(
+        monkeypatch,
+        batch=batch,
+        items=items,
+        obligations=[
+            first,
+            second,
+        ],
+    )
+
+    payload = [
+        {
+            "obligation_id": str(
+                first.id
+            ),
+            "result_status": (
+                OBLIGATION_STATUS_ACCEPTED
+            ),
+            "external_id": None,
+            "errors": [],
+        },
+        {
+            "obligation_id": str(
+                second.id
+            ),
+            "result_status": (
+                OBLIGATION_STATUS_REJECTED
+            ),
+            "external_id": None,
+            "errors": [
+                "portal rejected",
+            ],
+        },
+    ]
+
+    with pytest.raises(
+        RegistrySubmissionBatchError,
+        match="must be submitted",
+    ):
+        asyncio.run(
+            record_mintrud_registry_submission_batch_result(
+                session,
+                batch_id=str(
+                    batch.id
+                ),
+                recorded_by_user_id=(
+                    "admin-result"
+                ),
+                results=payload,
+            )
+        )
+
+    assert (
+        first.status
+        == OBLIGATION_STATUS_SUBMITTED
+    )
+
+    assert (
+        second.status
+        == OBLIGATION_STATUS_ACCEPTED
+    )
+
+    assert items[0].result_status is None
+    assert items[1].result_status is None
+    assert batch.reconciled_at is None
+    assert session.flush_count == 0
+
+
+def test_batch_result_is_immutable_after_reconciliation(
+    monkeypatch,
+):
+    snapshot = make_snapshot(
+        last_name="ImmutableResult",
+        program_ids=(
+            1,
+        ),
+    )
+
+    obligation = make_lifecycle_obligation(
+        "obligation-result-immutable",
+        snapshot,
+        status=(
+            OBLIGATION_STATUS_SUBMITTED
+        ),
+    )
+
+    batch = make_lifecycle_batch(
+        status=(
+            REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+        ),
+        obligation_count=1,
+        record_count=1,
+    )
+
+    batch.submitted_by_user_id = (
+        "admin-submit"
+    )
+
+    batch.submitted_at = (
+        batch_service.datetime.now(
+            batch_service.timezone.utc
+        )
+    )
+
+    batch.reconciled_by_user_id = (
+        "previous-admin"
+    )
+
+    batch.reconciled_at = (
+        batch_service.datetime.now(
+            batch_service.timezone.utc
+        )
+    )
+
+    session = FakeSession()
+
+    async def load_batch(
+        session_arg,
+        *,
+        batch_id,
+    ):
+        return batch
+
+    monkeypatch.setattr(
+        batch_service,
+        "_load_mintrud_batch_for_update",
+        load_batch,
+    )
+
+    with pytest.raises(
+        RegistrySubmissionBatchError,
+        match="already recorded",
+    ):
+        asyncio.run(
+            record_mintrud_registry_submission_batch_result(
+                session,
+                batch_id=str(
+                    batch.id
+                ),
+                recorded_by_user_id=(
+                    "admin-result"
+                ),
+                results=[
+                    {
+                        "obligation_id": (
+                            str(
+                                obligation.id
+                            )
+                        ),
+                        "result_status": (
+                            OBLIGATION_STATUS_ACCEPTED
+                        ),
+                        "external_id": None,
+                        "errors": [],
+                    },
+                ],
+            )
+        )
+
     assert session.flush_count == 0

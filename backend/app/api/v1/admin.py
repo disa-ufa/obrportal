@@ -38,6 +38,7 @@ from app.models.registry_obligation import (
 )
 from app.models.registry_submission_batch import (
     RegistrySubmissionBatch,
+    RegistrySubmissionBatchItem,
 )
 
 from app.services.compliance_registry_attempts import (
@@ -55,10 +56,12 @@ from app.services.compliance_registry_batches import (
     RegistrySubmissionBatchError,
     create_mintrud_registry_submission_batch,
     delete_registry_submission_batch_artifact_safely,
+    get_mintrud_registry_submission_batch_detail,
     list_mintrud_registry_submission_batches,
     mark_mintrud_registry_submission_batch_imported,
     mark_mintrud_registry_submission_batch_submitted,
     read_registry_submission_batch_artifact,
+    record_mintrud_registry_submission_batch_result,
 )
 
 from app.services.compliance_registry_portal_artifacts import (
@@ -257,8 +260,11 @@ from app.schemas.admin import (
 )
 from app.schemas.admin import (
     AdminMintrudSubmissionBatchCreate,
+    AdminMintrudSubmissionBatchDetail,
     AdminMintrudSubmissionBatchItem,
     AdminMintrudSubmissionBatchMarkSubmitted,
+    AdminMintrudSubmissionBatchResultItem,
+    AdminMintrudSubmissionBatchResultUpdate,
 )
 
 
@@ -11948,8 +11954,74 @@ def build_admin_mintrud_submission_batch_item(
         external_reference=(
             batch.external_reference
         ),
+        reconciled_by_user_id=(
+            batch.reconciled_by_user_id
+        ),
+        reconciled_at=(
+            batch.reconciled_at
+        ),
         created_at=batch.created_at,
         updated_at=batch.updated_at,
+    )
+
+
+
+
+def build_admin_mintrud_submission_batch_result_item(
+    item: RegistrySubmissionBatchItem,
+) -> AdminMintrudSubmissionBatchResultItem:
+    return AdminMintrudSubmissionBatchResultItem(
+        id=str(
+            item.id
+        ),
+        obligation_id=str(
+            item.obligation_id
+        ),
+        position=int(
+            item.position
+        ),
+        record_count=int(
+            item.record_count
+        ),
+        result_status=(
+            item.result_status
+        ),
+        errors_json=list(
+            item.errors_json
+            or []
+        ),
+        external_id=(
+            item.external_id
+        ),
+        result_recorded_by_user_id=(
+            item.result_recorded_by_user_id
+        ),
+        result_recorded_at=(
+            item.result_recorded_at
+        ),
+    )
+
+
+def build_admin_mintrud_submission_batch_detail(
+    batch: RegistrySubmissionBatch,
+    items: list[
+        RegistrySubmissionBatchItem
+    ],
+) -> AdminMintrudSubmissionBatchDetail:
+    summary = (
+        build_admin_mintrud_submission_batch_item(
+            batch
+        )
+    )
+
+    return AdminMintrudSubmissionBatchDetail(
+        **summary.model_dump(),
+        items=[
+            build_admin_mintrud_submission_batch_result_item(
+                item
+            )
+            for item in items
+        ],
     )
 
 
@@ -11983,6 +12055,63 @@ async def list_admin_mintrud_submission_batches(
         )
         for batch in batches
     ]
+
+
+
+
+@router.get(
+    "/mintrud/batches/{batch_id}",
+    response_model=(
+        AdminMintrudSubmissionBatchDetail
+    ),
+)
+async def get_admin_mintrud_submission_batch_detail(
+    batch_id: str,
+    _: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudSubmissionBatchDetail:
+    try:
+        detail = (
+            await get_mintrud_registry_submission_batch_detail(
+                session,
+                batch_id=batch_id,
+            )
+        )
+
+    except RegistrySubmissionBatchError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(
+                exc
+            ),
+        ) from exc
+
+    if detail is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail=(
+                "Mintrud submission batch not found"
+            ),
+        )
+
+    batch, items = detail
+
+    return (
+        build_admin_mintrud_submission_batch_detail(
+            batch,
+            items,
+        )
+    )
 
 
 @router.post(
@@ -12281,6 +12410,142 @@ async def mark_admin_mintrud_submission_batch_submitted(
                         batch.external_reference
                     ),
                 },
+                "obligation_count": int(
+                    batch.obligation_count
+                ),
+                "record_count": int(
+                    batch.record_count
+                ),
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except RegistrySubmissionBatchError as exc:
+        await session.rollback()
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=str(
+                exc
+            ),
+        ) from exc
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    return response_item
+
+
+
+
+@router.post(
+    "/mintrud/batches/{batch_id}/result",
+    response_model=(
+        AdminMintrudSubmissionBatchDetail
+    ),
+)
+async def record_admin_mintrud_submission_batch_result(
+    batch_id: str,
+    payload: AdminMintrudSubmissionBatchResultUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "mintrud.export"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminMintrudSubmissionBatchDetail:
+    try:
+        (
+            batch,
+            items,
+        ) = (
+            await record_mintrud_registry_submission_batch_result(
+                session,
+                batch_id=batch_id,
+                recorded_by_user_id=str(
+                    current_user.id
+                ),
+                results=[
+                    item.model_dump()
+                    for item in payload.items
+                ],
+            )
+        )
+
+        response_item = (
+            build_admin_mintrud_submission_batch_detail(
+                batch,
+                items,
+            )
+        )
+
+        result_counts: dict[
+            str,
+            int,
+        ] = {}
+
+        for item in items:
+            key = str(
+                item.result_status
+                or ""
+            )
+
+            result_counts[
+                key
+            ] = (
+                result_counts.get(
+                    key,
+                    0,
+                )
+                + 1
+            )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.mintrud_submission_batch_"
+                "result_recorded"
+            ),
+            entity_type=(
+                "registry_submission_batch"
+            ),
+            entity_id=str(
+                batch.id
+            ),
+            payload={
+                "registry": (
+                    batch.registry
+                ),
+                "before": {
+                    "reconciled_by_user_id": None,
+                    "reconciled_at": None,
+                },
+                "after": {
+                    "status": (
+                        batch.status
+                    ),
+                    "reconciled_by_user_id": (
+                        batch.reconciled_by_user_id
+                    ),
+                    "reconciled_at": (
+                        batch.reconciled_at.isoformat()
+                        if batch.reconciled_at
+                        else None
+                    ),
+                },
+                "result_counts": (
+                    result_counts
+                ),
                 "obligation_count": int(
                     batch.obligation_count
                 ),

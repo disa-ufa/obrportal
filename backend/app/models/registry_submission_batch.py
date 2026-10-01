@@ -170,6 +170,20 @@ class RegistrySubmissionBatch(
         nullable=True,
     )
 
+    reconciled_by_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+        ),
+        index=True,
+        nullable=True,
+    )
+
+    reconciled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
 
 class RegistrySubmissionBatchItem(
     Base,
@@ -203,6 +217,17 @@ class RegistrySubmissionBatchItem(
             name=(
                 "ck_registry_submission_batch_item_"
                 "record_count"
+            ),
+        ),
+        CheckConstraint(
+            (
+                "result_status IS NULL OR "
+                "result_status IN "
+                "('accepted', 'rejected', 'correction_required')"
+            ),
+            name=(
+                "ck_registry_submission_batch_item_"
+                "result_status"
             ),
         ),
     )
@@ -242,6 +267,36 @@ class RegistrySubmissionBatchItem(
     record_count: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
+    )
+
+    result_status: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+    )
+
+    errors_json: Mapped[list] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+
+    external_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    result_recorded_by_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+        ),
+        index=True,
+        nullable=True,
+    )
+
+    result_recorded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
