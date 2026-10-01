@@ -7,6 +7,7 @@ import {
   prepareAdminMintrudPortalArtifact,
   prepareAdminMintrudSubmissionBatch,
   downloadAdminMintrudSubmissionBatch,
+  getAdminMintrudSubmissionBatch,
   getAdminMintrudSubmissionBatches,
   markAdminMintrudSubmissionBatchImported,
   markAdminMintrudSubmissionBatchSubmitted,
@@ -22,6 +23,7 @@ import {
   markAdminMintrudSubmissionAttemptSubmitted,
   recordAdminFrdoSubmissionAttemptResult,
   recordAdminMintrudSubmissionAttemptResult,
+  recordAdminMintrudSubmissionBatchResult,
   updateAdminMintrudObligationContext,
   validateAdminFrdoObligation,
   validateAdminMintrudObligation,
@@ -58,6 +60,15 @@ const T = {
   mintrudBatchConfirmImported: "\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c \u0438\u043c\u043f\u043e\u0440\u0442 XML",
   mintrudBatchConfirmSubmitted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443",
   mintrudBatchExternalReference: "\u0418\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u043d\u0430\u0431\u043e\u0440\u0430 / \u0441\u0441\u044b\u043b\u043a\u0430 (\u043d\u0435\u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u043e)",
+  mintrudBatchResults: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b \u043f\u0430\u043a\u0435\u0442\u0430",
+  mintrudBatchRecordResults: "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b",
+  mintrudBatchViewResults: "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b",
+  mintrudBatchResultsHint: "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0438\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0434\u043b\u044f \u043a\u0430\u0436\u0434\u043e\u0439 \u0437\u0430\u043f\u0438\u0441\u0438 \u043f\u0430\u043a\u0435\u0442\u0430 \u043f\u043e\u0441\u043b\u0435 \u0440\u0443\u0447\u043d\u043e\u0439 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422.",
+  mintrudBatchReconciled: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u044b",
+  mintrudBatchObligation: "\u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e",
+  mintrudBatchResultStatus: "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
+  mintrudBatchExternalId: "\u0412\u043d\u0435\u0448\u043d\u0438\u0439 \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440",
+  mintrudBatchErrors: "\u041e\u0448\u0438\u0431\u043a\u0438 (\u043f\u043e \u043e\u0434\u043d\u043e\u0439 \u043d\u0430 \u0441\u0442\u0440\u043e\u043a\u0443)",
   mintrudBatchStatusExported: "XML \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043b\u0435\u043d",
   mintrudBatchStatusImported: "XML \u0438\u043c\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u043d",
   mintrudBatchStatusSubmitted: "\u041d\u0430\u0431\u043e\u0440 \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d",
@@ -152,6 +163,33 @@ function formatMintrudBatchTime(value) {
   return date.toLocaleString("ru-RU");
 }
 
+
+
+
+function buildMintrudBatchResultForms(
+  batch
+) {
+  const forms = {};
+
+  (batch?.items || []).forEach(
+    (item) => {
+      forms[item.obligation_id] = {
+        result_status:
+          item.result_status
+          || "accepted",
+        external_id:
+          item.external_id
+          || "",
+        errors: (
+          item.errors_json
+          || []
+        ).join("\n"),
+      };
+    }
+  );
+
+  return forms;
+}
 
 function artifactKindLabel(attempt) {
   if (!attempt?.has_artifact) {
@@ -1142,6 +1180,21 @@ export function AdminRegistriesPage() {
     setMintrudBatchSubmitReference,
   ] = useState("");
 
+  const [
+    mintrudBatchResultId,
+    setMintrudBatchResultId,
+  ] = useState("");
+
+  const [
+    mintrudBatchDetail,
+    setMintrudBatchDetail,
+  ] = useState(null);
+
+  const [
+    mintrudBatchResultForms,
+    setMintrudBatchResultForms,
+  ] = useState({});
+
   const selectedMintrudIdSet = useMemo(
     () => new Set(
       selectedMintrudIds
@@ -1267,6 +1320,9 @@ export function AdminRegistriesPage() {
     setAttemptsById({});
     setMintrudBatchSubmitId("");
     setMintrudBatchSubmitReference("");
+    setMintrudBatchResultId("");
+    setMintrudBatchDetail(null);
+    setMintrudBatchResultForms({});
     load();
   }, [
     activeRegistry,
@@ -1525,6 +1581,181 @@ export function AdminRegistriesPage() {
     }
   }
 
+
+
+
+  async function openMintrudBatchResults(
+    batch
+  ) {
+    await withAction(
+      `mintrud-batch-result-open:${batch.id}`,
+      async () => {
+        const detail = await (
+          getAdminMintrudSubmissionBatch(
+            batch.id
+          )
+        );
+
+        setMintrudBatchResultId(
+          batch.id
+        );
+
+        setMintrudBatchDetail(
+          detail
+        );
+
+        setMintrudBatchResultForms(
+          buildMintrudBatchResultForms(
+            detail
+          )
+        );
+      }
+    );
+  }
+
+
+  function closeMintrudBatchResults() {
+    setMintrudBatchResultId("");
+    setMintrudBatchDetail(null);
+    setMintrudBatchResultForms({});
+  }
+
+
+  function updateMintrudBatchResultForm(
+    obligationId,
+    field,
+    value
+  ) {
+    setMintrudBatchResultForms(
+      (current) => ({
+        ...current,
+        [obligationId]: {
+          ...(current[
+            obligationId
+          ] || {
+            result_status: "accepted",
+            external_id: "",
+            errors: "",
+          }),
+          [field]: value,
+        },
+      })
+    );
+  }
+
+
+  async function submitMintrudBatchResults(
+    event,
+    batch
+  ) {
+    event.preventDefault();
+
+    if (
+      !mintrudBatchDetail
+      || mintrudBatchDetail.id
+        !== batch.id
+    ) {
+      setError(
+        "Batch detail is not loaded."
+      );
+
+      return;
+    }
+
+    const items = (
+      mintrudBatchDetail.items
+      || []
+    ).map(
+      (item) => {
+        const form = (
+          mintrudBatchResultForms[
+            item.obligation_id
+          ] || {
+            result_status: "accepted",
+            external_id: "",
+            errors: "",
+          }
+        );
+
+        const resultStatus = (
+          `${form.result_status || ""}`
+          .trim()
+        );
+
+        if (
+          ![
+            "accepted",
+            "rejected",
+            "correction_required",
+          ].includes(
+            resultStatus
+          )
+        ) {
+          throw new Error(
+            "Unsupported result_status"
+          );
+        }
+
+        return {
+          obligation_id:
+            item.obligation_id,
+          result_status:
+            resultStatus,
+          external_id:
+            resultStatus === "accepted"
+              ? (
+                  `${form.external_id || ""}`
+                    .trim()
+                  || null
+                )
+              : null,
+          errors:
+            resultStatus === "accepted"
+              ? []
+              : (
+                  `${form.errors || ""}`
+                    .split("\n")
+                    .map(
+                      (value) => (
+                        value.trim()
+                      )
+                    )
+                    .filter(Boolean)
+                ),
+        };
+      }
+    );
+
+    const success = await withAction(
+      `mintrud-batch-result:${batch.id}`,
+      async () => {
+        const detail = await (
+          recordAdminMintrudSubmissionBatchResult(
+            batch.id,
+            {
+              items,
+            }
+          )
+        );
+
+        setMintrudBatchDetail(
+          detail
+        );
+
+        setMintrudBatchResultForms(
+          buildMintrudBatchResultForms(
+            detail
+          )
+        );
+
+        await load();
+      }
+    );
+
+    if (!success) {
+      return;
+    }
+  }
 
   async function prepareExport(obligation) {
     await withAction(
@@ -1962,6 +2193,30 @@ export function AdminRegistriesPage() {
                       </button>
                     ) : null}
 
+                    {batch.status === "submitted" ? (
+                      <button
+                        type="button"
+                        data-testid={`admin-registries-mintrud-batch-results-open-${batch.id}`}
+                        className={SECONDARY}
+                        disabled={Boolean(busyKey)}
+                        onClick={() => (
+                          mintrudBatchResultId
+                            === batch.id
+                            ? closeMintrudBatchResults()
+                            : openMintrudBatchResults(
+                                batch
+                              )
+                        )}
+                      >
+                        {mintrudBatchResultId
+                          === batch.id
+                          ? T.cancel
+                          : batch.reconciled_at
+                            ? T.mintrudBatchViewResults
+                            : T.mintrudBatchRecordResults}
+                      </button>
+                    ) : null}
+
                     {batch.status === "imported"
                     && mintrudBatchSubmitId
                       !== batch.id ? (
@@ -2033,6 +2288,192 @@ export function AdminRegistriesPage() {
                           {T.cancel}
                         </button>
                       </div>
+                    </form>
+                  ) : null}
+
+                  {batch.status === "submitted"
+                  && mintrudBatchResultId
+                    === batch.id
+                  && mintrudBatchDetail?.id
+                    === batch.id ? (
+                    <form
+                      data-testid={`admin-registries-mintrud-batch-result-form-${batch.id}`}
+                      className="mt-4 grid gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                      onSubmit={(event) => (
+                        submitMintrudBatchResults(
+                          event,
+                          batch
+                        )
+                      )}
+                    >
+                      <div>
+                        <div className="text-sm font-bold text-slate-900">
+                          {T.mintrudBatchResults}
+                        </div>
+
+                        <div className="mt-1 text-xs leading-5 text-slate-600">
+                          {mintrudBatchDetail.reconciled_at
+                            ? (
+                                T.mintrudBatchReconciled
+                                + ": "
+                                + formatMintrudBatchTime(
+                                    mintrudBatchDetail
+                                      .reconciled_at
+                                  )
+                              )
+                            : T.mintrudBatchResultsHint}
+                        </div>
+                      </div>
+
+                      {(mintrudBatchDetail.items || []).map(
+                        (item) => {
+                          const form = (
+                            mintrudBatchResultForms[
+                              item.obligation_id
+                            ] || {
+                              result_status: "accepted",
+                              external_id: "",
+                              errors: "",
+                            }
+                          );
+
+                          const readOnly = Boolean(
+                            mintrudBatchDetail
+                              .reconciled_at
+                          );
+
+                          return (
+                            <div
+                              key={item.id}
+                              data-testid={`admin-registries-mintrud-batch-result-item-${item.obligation_id}`}
+                              className="grid gap-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200"
+                            >
+                              <div className="text-xs text-slate-600">
+                                <span className="font-semibold text-slate-900">
+                                  {T.mintrudBatchObligation}
+                                  {": "}
+                                </span>
+                                <span className="break-all">
+                                  {item.obligation_id}
+                                </span>
+                                {" / RegistryRecord: "}
+                                {item.record_count}
+                              </div>
+
+                              <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                                {T.mintrudBatchResultStatus}
+
+                                <select
+                                  className={INPUT}
+                                  value={
+                                    form.result_status
+                                  }
+                                  disabled={
+                                    Boolean(busyKey)
+                                    || readOnly
+                                  }
+                                  onChange={(event) => (
+                                    updateMintrudBatchResultForm(
+                                      item.obligation_id,
+                                      "result_status",
+                                      event.target.value
+                                    )
+                                  )}
+                                >
+                                  <option value="accepted">
+                                    {statusLabel(
+                                      "accepted"
+                                    )}
+                                  </option>
+
+                                  <option value="rejected">
+                                    {statusLabel(
+                                      "rejected"
+                                    )}
+                                  </option>
+
+                                  <option value="correction_required">
+                                    {statusLabel(
+                                      "correction_required"
+                                    )}
+                                  </option>
+                                </select>
+                              </label>
+
+                              {form.result_status
+                                === "accepted" ? (
+                                <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                                  {T.mintrudBatchExternalId}
+
+                                  <input
+                                    className={INPUT}
+                                    value={
+                                      form.external_id
+                                    }
+                                    maxLength={255}
+                                    disabled={
+                                      Boolean(busyKey)
+                                      || readOnly
+                                    }
+                                    onChange={(event) => (
+                                      updateMintrudBatchResultForm(
+                                        item.obligation_id,
+                                        "external_id",
+                                        event.target.value
+                                      )
+                                    )}
+                                  />
+                                </label>
+                              ) : (
+                                <label className="grid gap-1 text-xs font-semibold text-slate-700">
+                                  {T.mintrudBatchErrors}
+
+                                  <textarea
+                                    className={`${INPUT} min-h-20 py-2`}
+                                    value={
+                                      form.errors
+                                    }
+                                    disabled={
+                                      Boolean(busyKey)
+                                      || readOnly
+                                    }
+                                    onChange={(event) => (
+                                      updateMintrudBatchResultForm(
+                                        item.obligation_id,
+                                        "errors",
+                                        event.target.value
+                                      )
+                                    )}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          );
+                        }
+                      )}
+
+                      {!mintrudBatchDetail.reconciled_at ? (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="submit"
+                            className={PRIMARY}
+                            disabled={Boolean(busyKey)}
+                          >
+                            {T.mintrudBatchRecordResults}
+                          </button>
+
+                          <button
+                            type="button"
+                            className={SECONDARY}
+                            disabled={Boolean(busyKey)}
+                            onClick={
+                              closeMintrudBatchResults
+                            }
+                          >
+                            {T.cancel}
+                          </button>
+                        </div>
+                      ) : null}
                     </form>
                   ) : null}
                 </div>

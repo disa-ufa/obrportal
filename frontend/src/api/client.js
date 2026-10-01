@@ -1524,6 +1524,30 @@ export async function getAdminMintrudSubmissionBatches() {
 }
 
 
+
+
+export async function getAdminMintrudSubmissionBatch(
+  batchId
+) {
+  return request(
+    `/api/v1/admin/mintrud/batches/${batchId}`
+  );
+}
+
+
+export async function recordAdminMintrudSubmissionBatchResult(
+  batchId,
+  payload
+) {
+  return request(
+    `/api/v1/admin/mintrud/batches/${batchId}/result`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
 export async function markAdminMintrudSubmissionBatchImported(
   batchId
 ) {

@@ -822,6 +822,9 @@ class AdminMintrudSubmissionBatchItem(BaseModel):
 
     external_reference: str | None = None
 
+    reconciled_by_user_id: str | None = None
+    reconciled_at: datetime | None = None
+
     created_at: datetime
     updated_at: datetime
 
@@ -834,6 +837,62 @@ class AdminMintrudSubmissionBatchMarkSubmitted(
         max_length=255,
     )
 
+
+
+
+class AdminMintrudSubmissionBatchResultItemUpdate(
+    BaseModel
+):
+    obligation_id: str
+    result_status: str
+    external_id: str | None = Field(
+        default=None,
+        max_length=255,
+    )
+    errors: list[str] = Field(
+        default_factory=list
+    )
+
+
+class AdminMintrudSubmissionBatchResultUpdate(
+    BaseModel
+):
+    items: list[
+        AdminMintrudSubmissionBatchResultItemUpdate
+    ] = Field(
+        min_length=1,
+        max_length=5000,
+    )
+
+
+class AdminMintrudSubmissionBatchResultItem(
+    BaseModel
+):
+    id: str
+    obligation_id: str
+    position: int
+    record_count: int
+
+    result_status: str | None = None
+
+    errors_json: list[str] = Field(
+        default_factory=list
+    )
+
+    external_id: str | None = None
+
+    result_recorded_by_user_id: str | None = None
+    result_recorded_at: datetime | None = None
+
+
+class AdminMintrudSubmissionBatchDetail(
+    AdminMintrudSubmissionBatchItem
+):
+    items: list[
+        AdminMintrudSubmissionBatchResultItem
+    ] = Field(
+        default_factory=list
+    )
 
 class AdminRegistrySubmissionAttemptItem(BaseModel):
     id: str

@@ -20,12 +20,17 @@ from app.services.compliance_registry_approval import (
 from app.services.compliance_registry_attempts import (
     RegistrySubmissionAttemptError,
     freeze_registry_snapshot,
+    normalize_registry_external_id,
     normalize_registry_external_reference,
+    normalize_registry_result_errors,
     validate_registry_approval_current,
 )
 from app.services.compliance_registry_contract import (
+    OBLIGATION_STATUS_ACCEPTED,
     OBLIGATION_STATUS_APPROVED,
+    OBLIGATION_STATUS_CORRECTION_REQUIRED,
     OBLIGATION_STATUS_EXPORTED,
+    OBLIGATION_STATUS_REJECTED,
     OBLIGATION_STATUS_SUBMITTED,
     REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD,
     REGISTRY_MINTRUD,
@@ -52,6 +57,14 @@ REGISTRY_SUBMISSION_BATCH_STATUS_IMPORTED = "imported"
 REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED = "submitted"
 REGISTRY_SUBMISSION_BATCH_TRANSPORT_FILE = "file"
 MINTRUD_SUBMISSION_BATCH_EXTENSION = ".xml"
+
+REGISTRY_SUBMISSION_BATCH_RESULT_STATUSES = frozenset(
+    {
+        OBLIGATION_STATUS_ACCEPTED,
+        OBLIGATION_STATUS_REJECTED,
+        OBLIGATION_STATUS_CORRECTION_REQUIRED,
+    }
+)
 
 
 class RegistrySubmissionBatchError(ValueError):
@@ -1148,6 +1161,455 @@ async def mark_mintrud_registry_submission_batch_submitted(
 
     return batch
 
+
+
+
+def normalize_batch_result_items(
+    value: object,
+) -> list[dict[str, object]]:
+    if (
+        not isinstance(
+            value,
+            Sequence,
+        )
+        or isinstance(
+            value,
+            (
+                str,
+                bytes,
+                bytearray,
+            ),
+        )
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry batch result items must be a sequence"
+        )
+
+    normalized: list[dict[str, object]] = []
+    seen: set[str] = set()
+
+    for index, raw_item in enumerate(
+        value
+    ):
+        if not isinstance(
+            raw_item,
+            Mapping,
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry batch result item at position "
+                + str(index)
+                + " must be a mapping"
+            )
+
+        obligation_id = str(
+            raw_item.get(
+                "obligation_id"
+            )
+            or ""
+        ).strip()
+
+        if not obligation_id:
+            raise RegistrySubmissionBatchError(
+                "Registry batch result obligation id at position "
+                + str(index)
+                + " is required"
+            )
+
+        if obligation_id in seen:
+            raise RegistrySubmissionBatchError(
+                "Duplicate registry batch result obligation id: "
+                + obligation_id
+            )
+
+        result_status = str(
+            raw_item.get(
+                "result_status"
+            )
+            or ""
+        ).strip()
+
+        if (
+            result_status
+            not in REGISTRY_SUBMISSION_BATCH_RESULT_STATUSES
+        ):
+            raise RegistrySubmissionBatchError(
+                "Unsupported registry batch result status"
+            )
+
+        try:
+            external_id = (
+                normalize_registry_external_id(
+                    raw_item.get(
+                        "external_id"
+                    )
+                )
+            )
+
+            errors = (
+                normalize_registry_result_errors(
+                    raw_item.get(
+                        "errors"
+                    )
+                )
+            )
+
+        except RegistrySubmissionAttemptError as exc:
+            raise RegistrySubmissionBatchError(
+                str(exc)
+            ) from exc
+
+        if (
+            result_status
+            == OBLIGATION_STATUS_ACCEPTED
+            and errors
+        ):
+            raise RegistrySubmissionBatchError(
+                "Accepted registry batch result "
+                "must not contain errors"
+            )
+
+        if (
+            result_status
+            != OBLIGATION_STATUS_ACCEPTED
+            and external_id is not None
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry batch external id is allowed "
+                "only for accepted result"
+            )
+
+        seen.add(
+            obligation_id
+        )
+
+        normalized.append(
+            {
+                "obligation_id": obligation_id,
+                "result_status": result_status,
+                "external_id": external_id,
+                "errors": errors,
+            }
+        )
+
+    if not normalized:
+        raise RegistrySubmissionBatchError(
+            "Registry batch result must contain at least one item"
+        )
+
+    return normalized
+
+
+async def get_mintrud_registry_submission_batch_detail(
+    session: AsyncSession,
+    *,
+    batch_id: str,
+) -> tuple[
+    RegistrySubmissionBatch,
+    list[RegistrySubmissionBatchItem],
+] | None:
+    normalized_batch_id = (
+        _normalize_batch_id(
+            batch_id
+        )
+    )
+
+    batch = await session.scalar(
+        select(
+            RegistrySubmissionBatch
+        )
+        .where(
+            RegistrySubmissionBatch.id
+            == normalized_batch_id,
+            RegistrySubmissionBatch.registry
+            == REGISTRY_MINTRUD,
+        )
+    )
+
+    if batch is None:
+        return None
+
+    result = await session.execute(
+        select(
+            RegistrySubmissionBatchItem
+        )
+        .where(
+            RegistrySubmissionBatchItem.batch_id
+            == normalized_batch_id
+        )
+        .order_by(
+            RegistrySubmissionBatchItem.position.asc()
+        )
+    )
+
+    items = list(
+        result.scalars().all()
+    )
+
+    if (
+        len(items)
+        != int(
+            batch.obligation_count
+        )
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch item count mismatch"
+        )
+
+    return (
+        batch,
+        items,
+    )
+
+
+async def record_mintrud_registry_submission_batch_result(
+    session: AsyncSession,
+    *,
+    batch_id: str,
+    recorded_by_user_id: str,
+    results: Sequence[Mapping[str, object]],
+) -> tuple[
+    RegistrySubmissionBatch,
+    list[RegistrySubmissionBatchItem],
+]:
+    actor_id = (
+        _normalize_batch_lifecycle_actor_user_id(
+            recorded_by_user_id
+        )
+    )
+
+    normalized_results = (
+        normalize_batch_result_items(
+            results
+        )
+    )
+
+    batch = (
+        await _load_mintrud_batch_for_update(
+            session,
+            batch_id=batch_id,
+        )
+    )
+
+    if (
+        batch.status
+        != REGISTRY_SUBMISSION_BATCH_STATUS_SUBMITTED
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch must be "
+            "submitted before recording results"
+        )
+
+    if (
+        batch.submitted_at is None
+        or batch.submitted_by_user_id is None
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch submission "
+            "metadata is incomplete"
+        )
+
+    if (
+        batch.reconciled_at is not None
+        or batch.reconciled_by_user_id is not None
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch results "
+            "are already recorded"
+        )
+
+    (
+        items,
+        obligations,
+    ) = (
+        await _load_batch_items_and_obligations_for_update(
+            session,
+            batch=batch,
+        )
+    )
+
+    normalized_by_obligation = {
+        str(
+            item[
+                "obligation_id"
+            ]
+        ): item
+        for item in normalized_results
+    }
+
+    expected_ids = [
+        str(
+            item.obligation_id
+        )
+        for item in items
+    ]
+
+    if (
+        len(normalized_results)
+        != len(items)
+        or set(
+            normalized_by_obligation
+        )
+        != set(
+            expected_ids
+        )
+    ):
+        raise RegistrySubmissionBatchError(
+            "Registry batch result payload must cover "
+            "every batch item exactly once"
+        )
+
+    for item, obligation in zip(
+        items,
+        obligations,
+        strict=True,
+    ):
+        obligation_id = str(
+            obligation.id
+        )
+
+        if (
+            str(
+                item.obligation_id
+            )
+            != obligation_id
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry submission batch item "
+                "obligation mismatch"
+            )
+
+        if (
+            obligation.status
+            != OBLIGATION_STATUS_SUBMITTED
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry obligation must be submitted "
+                "before recording batch result: "
+                + obligation_id
+            )
+
+        if (
+            item.result_status is not None
+            or item.external_id is not None
+            or item.result_recorded_by_user_id is not None
+            or item.result_recorded_at is not None
+            or list(
+                item.errors_json
+                or []
+            )
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry submission batch item "
+                "already has result data: "
+                + obligation_id
+            )
+
+        if (
+            obligation_id
+            not in normalized_by_obligation
+        ):
+            raise RegistrySubmissionBatchError(
+                "Registry batch result item is missing: "
+                + obligation_id
+            )
+
+    reconciled_at = datetime.now(
+        timezone.utc
+    )
+
+    for item, obligation in zip(
+        items,
+        obligations,
+        strict=True,
+    ):
+        result = (
+            normalized_by_obligation[
+                str(
+                    obligation.id
+                )
+            ]
+        )
+
+        result_status = str(
+            result[
+                "result_status"
+            ]
+        )
+
+        external_id = result[
+            "external_id"
+        ]
+
+        errors = list(
+            result[
+                "errors"
+            ]
+        )
+
+        item.result_status = (
+            result_status
+        )
+
+        item.errors_json = (
+            errors
+        )
+
+        item.external_id = (
+            external_id
+        )
+
+        item.result_recorded_by_user_id = (
+            actor_id
+        )
+
+        item.result_recorded_at = (
+            reconciled_at
+        )
+
+        obligation.status = (
+            result_status
+        )
+
+        if (
+            result_status
+            == OBLIGATION_STATUS_ACCEPTED
+        ):
+            obligation.accepted_at = (
+                reconciled_at
+            )
+
+            obligation.external_id = (
+                external_id
+            )
+
+            obligation.last_error = None
+
+        else:
+            obligation.accepted_at = None
+            obligation.external_id = None
+
+            obligation.last_error = (
+                "\n".join(
+                    errors
+                )
+                if errors
+                else None
+            )
+
+    batch.reconciled_by_user_id = (
+        actor_id
+    )
+
+    batch.reconciled_at = (
+        reconciled_at
+    )
+
+    await session.flush()
+
+    return (
+        batch,
+        items,
+    )
 
 async def list_mintrud_registry_submission_batches(
     session: AsyncSession,
