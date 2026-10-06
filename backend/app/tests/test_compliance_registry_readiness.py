@@ -818,3 +818,463 @@ def test_unknown_registry_is_rejected() -> None:
             learner_profile=profile(),
             document=document(),
         )
+
+
+
+def test_frdo_po_official_contract_ready() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    po_course = SimpleNamespace(
+        title="PO test",
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+        hours=40,
+    )
+
+    po_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="NO-SERIES",
+        document_number="PO-001",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-PO-001",
+        revoked_at=None,
+    )
+
+    po_profile = profile(
+        middle_name="Middle",
+        snils="112-233-445 95",
+        citizenship_country_code="643",
+    )
+
+    context = SimpleNamespace(
+        document_status="Original",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="Paid",
+        education_delivery_form="In organization",
+        po_program_type="Initial training",
+        po_profession="Worker",
+        po_qualification=None,
+        dpo_professional_activity_area=None,
+        dpo_enlarged_specialty_group=None,
+        dpo_qualification=None,
+        prior_education_snapshot_json=None,
+        original_document_snapshot_json=None,
+    )
+
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=po_profile,
+        document=po_document,
+        frdo_context=context,
+    )
+
+    assert result.is_ready is True
+    assert result.error_codes == ()
+
+
+def test_frdo_po_requires_context_and_legal_document_fields() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    po_course = SimpleNamespace(
+        title="PO test",
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+        hours=40,
+    )
+
+    po_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series=None,
+        document_number="PO-001",
+        document_type="Certificate",
+        issued_at=None,
+        registration_number=None,
+        revoked_at=None,
+    )
+
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=profile(
+            middle_name="Middle",
+            snils=None,
+        ),
+        document=po_document,
+        frdo_context=None,
+    )
+
+    assert result.is_ready is False
+
+    assert {
+        "document.series_missing",
+        "document.issued_at_missing",
+        "document.registration_number_missing",
+        "frdo.context_missing",
+    }.issubset(
+        set(
+            result.error_codes
+        )
+    )
+
+
+def test_frdo_po_requires_six_hours_and_po_fields() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    po_course = SimpleNamespace(
+        title="PO test",
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+        hours=5,
+    )
+
+    po_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="S",
+        document_number="PO-002",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-PO-002",
+        revoked_at=None,
+    )
+
+    context = SimpleNamespace(
+        document_status="Original",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="Paid",
+        education_delivery_form="In organization",
+        po_program_type=None,
+        po_profession=None,
+        po_qualification=None,
+        dpo_professional_activity_area=None,
+        dpo_enlarged_specialty_group=None,
+        dpo_qualification=None,
+        prior_education_snapshot_json=None,
+        original_document_snapshot_json=None,
+    )
+
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=profile(
+            middle_name="Middle",
+            snils="112-233-445 95",
+        ),
+        document=po_document,
+        frdo_context=context,
+    )
+
+    assert result.is_ready is False
+
+    assert {
+        "frdo.po.hours_below_minimum",
+        "frdo.po.program_type_missing",
+        "frdo.po.profession_missing",
+    }.issubset(
+        set(
+            result.error_codes
+        )
+    )
+
+
+def test_frdo_post_2021_russian_document_requires_valid_snils() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    po_course = SimpleNamespace(
+        title="PO test",
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+        hours=40,
+    )
+
+    po_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="S",
+        document_number="PO-003",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-PO-003",
+        revoked_at=None,
+    )
+
+    context = SimpleNamespace(
+        document_status="Original",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="Paid",
+        education_delivery_form="In organization",
+        po_program_type="Initial training",
+        po_profession="Worker",
+        po_qualification=None,
+        dpo_professional_activity_area=None,
+        dpo_enlarged_specialty_group=None,
+        dpo_qualification=None,
+        prior_education_snapshot_json=None,
+        original_document_snapshot_json=None,
+    )
+
+    missing = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=profile(
+            middle_name="Middle",
+            snils=None,
+            citizenship_country_code="643",
+        ),
+        document=po_document,
+        frdo_context=context,
+    )
+
+    invalid = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=profile(
+            middle_name="Middle",
+            snils="111-111-111 11",
+            citizenship_country_code="643",
+        ),
+        document=po_document,
+        frdo_context=context,
+    )
+
+    assert (
+        "learner_profile.snils_missing"
+        in missing.error_codes
+    )
+
+    assert (
+        "learner_profile.snils_invalid"
+        in invalid.error_codes
+    )
+
+
+def test_frdo_dpo_fails_closed_when_production_contract_unconfirmed() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    dpo_course = SimpleNamespace(
+        title="DPO test",
+        regulatory_program_type=(
+            "dpo_advanced_training"
+        ),
+        hours=72,
+    )
+
+    dpo_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="DPO",
+        document_number="DPO-001",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-DPO-001",
+        revoked_at=None,
+    )
+
+    context = SimpleNamespace(
+        document_status="Original",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="Paid",
+        education_delivery_form="In organization",
+        po_program_type=None,
+        po_profession=None,
+        po_qualification=None,
+        dpo_professional_activity_area=(
+            "Reference-only activity"
+        ),
+        dpo_enlarged_specialty_group=(
+            "Reference-only group"
+        ),
+        dpo_qualification=(
+            "Reference-only qualification"
+        ),
+        prior_education_snapshot_json={
+            "education_level": "Higher education",
+            "diploma_last_name": "Tester",
+            "diploma_series": "AA",
+            "diploma_number": "100",
+        },
+        original_document_snapshot_json=None,
+    )
+
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=dpo_course,
+        learner=learner(),
+        learner_profile=profile(
+            middle_name="Middle",
+            snils="112-233-445 95",
+        ),
+        document=dpo_document,
+        frdo_context=context,
+    )
+
+    assert result.is_ready is False
+
+    assert (
+        "frdo.dpo.production_contract_unconfirmed"
+        in set(
+            result.error_codes
+        )
+    )
+
+    unverified_errors = {
+        (
+            "frdo.dpo."
+            "professional_activity_area_missing"
+        ),
+        (
+            "frdo.dpo."
+            "enlarged_specialty_group_missing"
+        ),
+        "frdo.dpo.qualification_missing",
+        "frdo.dpo.prior_education",
+    }
+
+    assert not (
+        unverified_errors
+        & set(
+            result.error_codes
+        )
+    )
+
+
+def test_frdo_duplicate_requires_original_document_snapshot() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    po_course = SimpleNamespace(
+        title="PO test",
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+        hours=40,
+    )
+
+    po_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="S",
+        document_number="PO-004",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-PO-004",
+        revoked_at=None,
+    )
+
+    context = SimpleNamespace(
+        document_status="Duplicate",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="Paid",
+        education_delivery_form="In organization",
+        po_program_type="Initial training",
+        po_profession="Worker",
+        po_qualification=None,
+        dpo_professional_activity_area=None,
+        dpo_enlarged_specialty_group=None,
+        dpo_qualification=None,
+        prior_education_snapshot_json=None,
+        original_document_snapshot_json=None,
+    )
+
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=profile(
+            middle_name="Middle",
+            snils="112-233-445 95",
+        ),
+        document=po_document,
+        frdo_context=context,
+    )
+
+    assert result.is_ready is False
+
+    assert (
+        "frdo.original_document"
+        in result.error_codes
+    )

@@ -9,6 +9,9 @@ from app.services.compliance_registry_approval import (
     APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED,
 )
 from app.services.compliance_registry_approval_invalidation import (
+    FRDO_EXTENDED_APPROVAL_PROGRAM_TYPES,
+    _learner_profile_change_scope,
+    _learner_profile_registry_condition,
     invalidate_registry_approvals_for_course,
     invalidate_registry_approvals_for_learner_profile,
 )
@@ -221,4 +224,141 @@ def test_course_change_invalidates_all_approved_registry_rows():
     assert (
         mintrud.approval_invalidation_reason
         == APPROVAL_INVALIDATION_COURSE_TITLE_CHANGED
+    )
+
+
+
+def test_middle_name_change_scope_adds_contextual_frdo() -> None:
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        {
+            "middle_name",
+        }
+    )
+
+    assert registries == (
+        REGISTRY_MINTRUD,
+    )
+
+    assert include_extended_frdo is True
+
+
+def test_snils_change_scope_adds_contextual_frdo() -> None:
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        {
+            "snils",
+        }
+    )
+
+    assert registries == (
+        REGISTRY_MINTRUD,
+    )
+
+    assert include_extended_frdo is True
+
+
+def test_birth_date_change_keeps_normal_frdo_scope() -> None:
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        {
+            "birth_date",
+        }
+    )
+
+    assert registries == (
+        REGISTRY_FRDO,
+    )
+
+    assert include_extended_frdo is False
+
+
+def test_unrelated_change_has_no_invalidation_scope() -> None:
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        {
+            "phone",
+        }
+    )
+
+    assert registries == ()
+    assert include_extended_frdo is False
+
+
+def test_contextual_frdo_program_types_are_exact() -> None:
+    assert (
+        FRDO_EXTENDED_APPROVAL_PROGRAM_TYPES
+        == {
+            "vocational_training",
+        }
+    )
+
+
+def test_contextual_registry_condition_is_created_for_middle_name() -> None:
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        {
+            "middle_name",
+        }
+    )
+
+    condition = (
+        _learner_profile_registry_condition(
+            registries=registries,
+            include_extended_frdo=(
+                include_extended_frdo
+            ),
+        )
+    )
+
+    assert condition is not None
+
+    compiled = condition.compile()
+
+    values = list(
+        compiled.params.values()
+    )
+
+    flattened = set()
+
+    for value in values:
+        if isinstance(
+            value,
+            (
+                tuple,
+                list,
+                set,
+                frozenset,
+            ),
+        ):
+            flattened.update(
+                str(item)
+                for item in value
+            )
+        else:
+            flattened.add(
+                str(value)
+            )
+
+    assert "mintrud" in flattened
+    assert "vocational_training" in flattened
+
+    assert (
+        "dpo_advanced_training"
+        not in flattened
+    )
+
+    assert (
+        "dpo_professional_retraining"
+        not in flattened
     )
