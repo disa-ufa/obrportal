@@ -3,9 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.registry_obligation import RegistryObligation
 from app.services.compliance_registry_approval import (
@@ -13,11 +14,13 @@ from app.services.compliance_registry_approval import (
     APPROVAL_INVALIDATION_COURSE_TITLE_CHANGED,
     APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED,
     APPROVAL_INVALIDATION_MINTRUD_PROGRAMS_CHANGED,
+    FRDO_EXTENDED_APPROVAL_LEARNER_PROFILE_FIELDS,
     approval_registries_for_learner_profile_fields,
     invalidate_registry_approval,
 )
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_APPROVED,
+    PROGRAM_TYPE_VOCATIONAL_TRAINING,
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
@@ -28,6 +31,84 @@ class RegistryApprovalInvalidation:
     obligation_id: str
     registry: str
     reason: str
+
+
+# STAGE_11B_3B_CONTEXTUAL_FRDO_INVALIDATION
+FRDO_EXTENDED_APPROVAL_PROGRAM_TYPES = frozenset(
+    {
+        PROGRAM_TYPE_VOCATIONAL_TRAINING,
+    }
+)
+
+
+def _learner_profile_change_scope(
+    changed_fields: object,
+) -> tuple[
+    tuple[str, ...],
+    bool,
+]:
+    fields = {
+        str(field)
+        for field in (
+            changed_fields
+            or ()
+        )
+    }
+
+    registries = (
+        approval_registries_for_learner_profile_fields(
+            fields
+        )
+    )
+
+    include_extended_frdo = bool(
+        fields.intersection(
+            FRDO_EXTENDED_APPROVAL_LEARNER_PROFILE_FIELDS
+        )
+    )
+
+    return (
+        registries,
+        include_extended_frdo,
+    )
+
+
+def _learner_profile_registry_condition(
+    *,
+    registries: tuple[str, ...],
+    include_extended_frdo: bool,
+):
+    conditions = []
+
+    if registries:
+        conditions.append(
+            RegistryObligation.registry.in_(
+                registries
+            )
+        )
+
+    if include_extended_frdo:
+        conditions.append(
+            and_(
+                RegistryObligation.registry
+                == REGISTRY_FRDO,
+                Course.regulatory_program_type.in_(
+                    tuple(
+                        FRDO_EXTENDED_APPROVAL_PROGRAM_TYPES
+                    )
+                ),
+            )
+        )
+
+    if not conditions:
+        return None
+
+    if len(conditions) == 1:
+        return conditions[0]
+
+    return or_(
+        *conditions
+    )
 
 
 def _apply_invalidation_rows(
@@ -74,13 +155,23 @@ async def invalidate_registry_approvals_for_learner_profile(
     changed_fields: object,
     invalidated_at: datetime,
 ) -> tuple[RegistryApprovalInvalidation, ...]:
-    registries = (
-        approval_registries_for_learner_profile_fields(
-            changed_fields
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        changed_fields
+    )
+
+    registry_condition = (
+        _learner_profile_registry_condition(
+            registries=registries,
+            include_extended_frdo=(
+                include_extended_frdo
+            ),
         )
     )
 
-    if not registries:
+    if registry_condition is None:
         return ()
 
     result = await session.execute(
@@ -92,12 +183,15 @@ async def invalidate_registry_approvals_for_learner_profile(
             Enrollment.id
             == RegistryObligation.enrollment_id,
         )
+        .join(
+            Course,
+            Course.id
+            == Enrollment.course_id,
+        )
         .where(
             Enrollment.user_id
             == str(user_id),
-            RegistryObligation.registry.in_(
-                registries
-            ),
+            registry_condition,
             RegistryObligation.status
             == OBLIGATION_STATUS_APPROVED,
         )
@@ -226,13 +320,23 @@ async def lock_registry_approvals_for_learner_profile(
     user_id: str,
     changed_fields: object,
 ) -> tuple[str, ...]:
-    registries = (
-        approval_registries_for_learner_profile_fields(
-            changed_fields
+    (
+        registries,
+        include_extended_frdo,
+    ) = _learner_profile_change_scope(
+        changed_fields
+    )
+
+    registry_condition = (
+        _learner_profile_registry_condition(
+            registries=registries,
+            include_extended_frdo=(
+                include_extended_frdo
+            ),
         )
     )
 
-    if not registries:
+    if registry_condition is None:
         return ()
 
     with session.no_autoflush:
@@ -245,12 +349,15 @@ async def lock_registry_approvals_for_learner_profile(
                 Enrollment.id
                 == RegistryObligation.enrollment_id,
             )
+            .join(
+                Course,
+                Course.id
+                == Enrollment.course_id,
+            )
             .where(
                 Enrollment.user_id
                 == str(user_id),
-                RegistryObligation.registry.in_(
-                    registries
-                ),
+                registry_condition,
                 RegistryObligation.status
                 == OBLIGATION_STATUS_APPROVED,
             )

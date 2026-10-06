@@ -3796,7 +3796,7 @@ def post_multipart_admin_document(
         }
 
     return httpx.post(
-        "http://127.0.0.1:8000/api/v1/admin/documents",
+        f"{BASE_URL}/api/v1/admin/documents",
         headers={"Authorization": f"Bearer {token}"},
         data=fields,
         files=files,
@@ -4015,7 +4015,7 @@ def patch_multipart_admin_document(
         }
 
     return httpx.patch(
-        f"http://127.0.0.1:8000/api/v1/admin/documents/{document_id}",
+        f"{BASE_URL}/api/v1/admin/documents/{document_id}",
         headers={"Authorization": f"Bearer {token}"},
         data=fields,
         files=files,
@@ -4163,6 +4163,386 @@ def test_admin_can_update_document_status_and_replace_file() -> None:
     assert isinstance(draft_download_payload, dict)
 
 
+def test_admin_document_legal_fields_create_update_and_clear() -> None:
+    token = login(
+        ADMIN_EMAIL,
+        ADMIN_PASSWORD,
+    )
+
+    status_code, me_payload = (
+        request_json(
+            "GET",
+            "/api/v1/auth/me",
+            token=token,
+        )
+    )
+
+    assert status_code == 200
+    assert isinstance(
+        me_payload,
+        dict,
+    )
+
+    user_id = str(
+        me_payload["id"]
+    )
+
+    document_id = None
+
+    try:
+        create_response = (
+            post_multipart_admin_document(
+                token=token,
+                fields={
+                    "user_id": user_id,
+                    "title": (
+                        "FRDO legal fields document"
+                    ),
+                    "document_type": (
+                        "Certificate"
+                    ),
+                    "status": "draft",
+                    "document_series": (
+                        "  SERIES-A  "
+                    ),
+                    "issued_at": (
+                        "2026-10-01"
+                    ),
+                    "registration_number": (
+                        "  REG-LEGAL-001  "
+                    ),
+                },
+            )
+        )
+
+        assert (
+            create_response.status_code
+            == 201
+        )
+
+        created = (
+            create_response.json()
+        )
+
+        document_id = str(
+            created["id"]
+        )
+
+        assert (
+            created[
+                "document_series"
+            ]
+            == "SERIES-A"
+        )
+
+        assert (
+            created[
+                "issued_at"
+            ]
+            == "2026-10-01"
+        )
+
+        assert (
+            created[
+                "registration_number"
+            ]
+            == "REG-LEGAL-001"
+        )
+
+        status_code, documents = (
+            request_json(
+                "GET",
+                "/api/v1/admin/documents",
+                token=token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            documents,
+            list,
+        )
+
+        listed = next(
+            item
+            for item in documents
+            if (
+                item["id"]
+                == document_id
+            )
+        )
+
+        assert (
+            listed[
+                "document_series"
+            ]
+            == "SERIES-A"
+        )
+
+        assert (
+            listed[
+                "issued_at"
+            ]
+            == "2026-10-01"
+        )
+
+        assert (
+            listed[
+                "registration_number"
+            ]
+            == "REG-LEGAL-001"
+        )
+
+        update_response = (
+            patch_multipart_admin_document(
+                token=token,
+                document_id=document_id,
+                fields={
+                    "document_series": (
+                        "  SERIES-B  "
+                    ),
+                    "issued_at": (
+                        "2026-10-02"
+                    ),
+                    "registration_number": (
+                        "  REG-LEGAL-002  "
+                    ),
+                },
+            )
+        )
+
+        assert (
+            update_response.status_code
+            == 200
+        )
+
+        updated = (
+            update_response.json()
+        )
+
+        assert (
+            updated[
+                "document_series"
+            ]
+            == "SERIES-B"
+        )
+
+        assert (
+            updated[
+                "issued_at"
+            ]
+            == "2026-10-02"
+        )
+
+        assert (
+            updated[
+                "registration_number"
+            ]
+            == "REG-LEGAL-002"
+        )
+
+        status_code, audit_events = (
+            request_json(
+                "GET",
+                (
+                    "/api/v1/admin/"
+                    "audit-events?"
+                    "entity_type=document"
+                    "&entity_id="
+                    + document_id
+                    + "&limit=20"
+                ),
+                token=token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            audit_events,
+            list,
+        )
+
+        update_event = next(
+            event
+            for event in audit_events
+            if (
+                event["action"]
+                == "admin.document_updated"
+                and
+                "document_series"
+                in event[
+                    "payload"
+                ][
+                    "changed_fields"
+                ]
+            )
+        )
+
+        changed_fields = set(
+            update_event[
+                "payload"
+            ][
+                "changed_fields"
+            ]
+        )
+
+        assert {
+            "document_series",
+            "issued_at",
+            "registration_number",
+        } <= changed_fields
+
+        assert (
+            update_event[
+                "payload"
+            ][
+                "before"
+            ][
+                "document_series"
+            ]
+            == "SERIES-A"
+        )
+
+        assert (
+            update_event[
+                "payload"
+            ][
+                "after"
+            ][
+                "document_series"
+            ]
+            == "SERIES-B"
+        )
+
+        assert (
+            update_event[
+                "payload"
+            ][
+                "after"
+            ][
+                "issued_at"
+            ]
+            == "2026-10-02"
+        )
+
+        assert (
+            update_event[
+                "payload"
+            ][
+                "after"
+            ][
+                "registration_number"
+            ]
+            == "REG-LEGAL-002"
+        )
+
+        invalid_date = (
+            patch_multipart_admin_document(
+                token=token,
+                document_id=document_id,
+                fields={
+                    "issued_at": (
+                        "02.10.2026"
+                    ),
+                },
+            )
+        )
+
+        assert (
+            invalid_date.status_code
+            == 422
+        )
+
+        too_long_series = (
+            patch_multipart_admin_document(
+                token=token,
+                document_id=document_id,
+                fields={
+                    "document_series": (
+                        "X" * 33
+                    ),
+                },
+            )
+        )
+
+        assert (
+            too_long_series.status_code
+            == 422
+        )
+
+        too_long_registration = (
+            patch_multipart_admin_document(
+                token=token,
+                document_id=document_id,
+                fields={
+                    "registration_number": (
+                        "R" * 129
+                    ),
+                },
+            )
+        )
+
+        assert (
+            too_long_registration.status_code
+            == 422
+        )
+
+        clear_response = (
+            patch_multipart_admin_document(
+                token=token,
+                document_id=document_id,
+                fields={
+                    "document_series": "",
+                    "issued_at": "",
+                    "registration_number": "",
+                },
+            )
+        )
+
+        assert (
+            clear_response.status_code
+            == 200
+        )
+
+        cleared = (
+            clear_response.json()
+        )
+
+        assert (
+            cleared[
+                "document_series"
+            ]
+            is None
+        )
+
+        assert (
+            cleared[
+                "issued_at"
+            ]
+            is None
+        )
+
+        assert (
+            cleared[
+                "registration_number"
+            ]
+            is None
+        )
+
+    finally:
+        if document_id is not None:
+            delete_response = (
+                delete_admin_document_request(
+                    token=token,
+                    document_id=document_id,
+                )
+            )
+
+            assert (
+                delete_response.status_code
+                == 200
+            )
+
 def test_admin_update_document_duplicate_number_returns_409() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
 
@@ -4224,7 +4604,7 @@ def delete_admin_document_request(
     import httpx
 
     return httpx.delete(
-        f"http://127.0.0.1:8000/api/v1/admin/documents/{document_id}",
+        f"{BASE_URL}/api/v1/admin/documents/{document_id}",
         headers={"Authorization": f"Bearer {token}"},
         timeout=20.0,
     )

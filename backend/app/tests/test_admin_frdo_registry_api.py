@@ -20,12 +20,17 @@ from app.models.audit_event import AuditEvent
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.frdo_registry_context import FrdoRegistryContext
 from app.models.learner_profile import LearnerProfile
 from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
 )
 from app.models.user import User
+
+from test_account_learner_profile_api import (
+    unique_snils,
+)
 
 
 BASE_URL = os.getenv(
@@ -143,6 +148,7 @@ def login(
 def create_frdo_fixture(
     *,
     with_profile: bool,
+    with_context: bool = True,
     obligation_status: str = "pending_data",
 ) -> dict:
     async def _create():
@@ -196,7 +202,7 @@ def create_frdo_fixture(
                     "?????????????"
                 ),
                 regulatory_program_type=(
-                    "dpo_advanced_training"
+                    "vocational_training"
                 ),
                 frdo_requirement_mode=(
                     "required"
@@ -232,6 +238,7 @@ def create_frdo_fixture(
                     citizenship_country_code=(
                         "643"
                     ),
+                    snils=unique_snils(),
                     source="test",
                 )
 
@@ -263,8 +270,14 @@ def create_frdo_fixture(
                 enrollment_id=str(
                     enrollment.id
                 ),
+                document_series="FRDO",
                 document_number=(
                     "FRDO-API-"
+                    + suffix
+                ),
+                issued_at=now.date(),
+                registration_number=(
+                    "REG-FRDO-"
                     + suffix
                 ),
                 document_type=(
@@ -313,6 +326,38 @@ def create_frdo_fixture(
             session.add(
                 obligation
             )
+
+            await session.flush()
+
+            if with_context:
+                frdo_context = FrdoRegistryContext(
+                    obligation_id=str(
+                        obligation.id
+                    ),
+                    document_status="Original",
+                    loss_confirmation="No",
+                    exchange_confirmation="No",
+                    destruction_confirmation="No",
+                    study_form="Full-time",
+                    funding_source="Paid",
+                    education_delivery_form=(
+                        "In organization"
+                    ),
+                    po_program_type=(
+                        "Initial training"
+                    ),
+                    po_profession="Worker",
+                    po_qualification=None,
+                    dpo_professional_activity_area=None,
+                    dpo_enlarged_specialty_group=None,
+                    dpo_qualification=None,
+                    prior_education_snapshot_json=None,
+                    original_document_snapshot_json=None,
+                )
+
+                session.add(
+                    frdo_context
+                )
 
             await session.commit()
 
@@ -778,6 +823,650 @@ def get_frdo_audit_actions(
         _read()
     )
 
+
+def test_frdo_admin_context_write_api() -> None:
+    editable = create_frdo_fixture(
+        with_profile=True,
+        with_context=False,
+    )
+
+    approved = create_frdo_fixture(
+        with_profile=True,
+        with_context=True,
+        obligation_status="approved",
+    )
+
+    fixtures = [
+        editable,
+        approved,
+    ]
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        learner_token = login(
+            LEARNER_EMAIL,
+            LEARNER_PASSWORD,
+        )
+
+        context_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + editable[
+                "obligation_id"
+            ]
+            + "/context"
+        )
+
+        complete_payload = {
+            "document_status": (
+                "  Original  "
+            ),
+            "loss_confirmation": (
+                "  No  "
+            ),
+            "exchange_confirmation": (
+                "  No  "
+            ),
+            "destruction_confirmation": (
+                "  No  "
+            ),
+            "study_form": (
+                "  Full-time  "
+            ),
+            "funding_source": (
+                "  Paid  "
+            ),
+            "education_delivery_form": (
+                "  In organization  "
+            ),
+            "po_program_type": (
+                "  Initial training  "
+            ),
+            "po_profession": (
+                "  Worker  "
+            ),
+            "po_qualification": (
+                "  Category 1  "
+            ),
+        }
+
+        status_code, created = (
+            request_json(
+                "PATCH",
+                context_path,
+                complete_payload,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            created["id"]
+            == editable[
+                "obligation_id"
+            ]
+        )
+        assert (
+            created["status"]
+            == "ready"
+        )
+        assert (
+            created[
+                "readiness_errors"
+            ]
+            == []
+        )
+
+        context = created[
+            "frdo_context"
+        ]
+
+        assert context is not None
+
+        first_context_id = (
+            context["id"]
+        )
+
+        assert (
+            context[
+                "obligation_id"
+            ]
+            == editable[
+                "obligation_id"
+            ]
+        )
+        assert (
+            context[
+                "document_status"
+            ]
+            == "Original"
+        )
+        assert (
+            context[
+                "po_program_type"
+            ]
+            == "Initial training"
+        )
+        assert (
+            context[
+                "po_profession"
+            ]
+            == "Worker"
+        )
+        assert (
+            context[
+                "po_qualification"
+            ]
+            == "Category 1"
+        )
+
+        status_code, partial = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "po_qualification": (
+                        "  Category 2  "
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            partial[
+                "frdo_context"
+            ][
+                "id"
+            ]
+            == first_context_id
+        )
+        assert (
+            partial[
+                "frdo_context"
+            ][
+                "po_qualification"
+            ]
+            == "Category 2"
+        )
+        assert (
+            partial["status"]
+            == "ready"
+        )
+
+        status_code, cleared = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "po_profession": None,
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            cleared[
+                "frdo_context"
+            ][
+                "id"
+            ]
+            == first_context_id
+        )
+        assert (
+            cleared[
+                "frdo_context"
+            ][
+                "po_profession"
+            ]
+            is None
+        )
+        assert (
+            cleared["status"]
+            == "pending_data"
+        )
+
+        cleared_codes = {
+            item["code"]
+            for item
+            in cleared[
+                "readiness_errors"
+            ]
+        }
+
+        assert (
+            "frdo.po.profession_missing"
+            in cleared_codes
+        )
+
+        status_code, restored = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "po_profession": (
+                        "Worker"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert (
+            restored["status"]
+            == "ready"
+        )
+        assert (
+            restored[
+                "readiness_errors"
+            ]
+            == []
+        )
+        assert (
+            restored[
+                "frdo_context"
+            ][
+                "id"
+            ]
+            == first_context_id
+        )
+
+        actions = (
+            get_frdo_audit_actions(
+                editable[
+                    "obligation_id"
+                ]
+            )
+        )
+
+        assert (
+            "admin.frdo_context_updated"
+            in actions
+        )
+
+        status_code, empty = (
+            request_json(
+                "PATCH",
+                context_path,
+                {},
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 400
+        assert isinstance(
+            empty,
+            dict,
+        )
+
+        status_code, too_long = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "po_profession": (
+                        "X" * 513
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 422
+        assert isinstance(
+            too_long,
+            dict,
+        )
+
+        status_code, forbidden = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "po_profession": (
+                        "Forbidden"
+                    ),
+                },
+                token=learner_token,
+            )
+        )
+
+        assert status_code == 403
+        assert isinstance(
+            forbidden,
+            dict,
+        )
+
+        approved_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + approved[
+                "obligation_id"
+            ]
+            + "/context"
+        )
+
+        status_code, lifecycle_guard = (
+            request_json(
+                "PATCH",
+                approved_path,
+                {
+                    "po_profession": (
+                        "Should not write"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            lifecycle_guard,
+            dict,
+        )
+
+        missing_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            "00000000-0000-0000-"
+            "0000-000000000000/"
+            "context"
+        )
+
+        status_code, missing = (
+            request_json(
+                "PATCH",
+                missing_path,
+                {
+                    "po_profession": (
+                        "Missing"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 404
+        assert isinstance(
+            missing,
+            dict,
+        )
+
+    finally:
+        cleanup_frdo_fixtures(
+            fixtures
+        )
+
+def test_frdo_approved_document_legal_change_invalidates_approval() -> None:
+    import httpx
+
+    from app.services.compliance_registry_approval import (
+        APPROVAL_INVALIDATION_COMPLETION_DOCUMENT_CHANGED,
+    )
+
+    fixture = create_frdo_fixture(
+        with_profile=True,
+        with_context=True,
+        obligation_status="needs_approval",
+    )
+
+    async def read_obligation_state() -> dict:
+        engine = create_async_engine(
+            str(
+                settings.database_url
+            )
+        )
+
+        session_factory = (
+            async_sessionmaker(
+                engine,
+                expire_on_commit=False,
+            )
+        )
+
+        async with session_factory() as session:
+            result = await session.execute(
+                select(
+                    RegistryObligation
+                ).where(
+                    RegistryObligation.id
+                    == fixture[
+                        "obligation_id"
+                    ]
+                )
+            )
+
+            obligation = (
+                result.scalar_one()
+            )
+
+            state = {
+                "status": obligation.status,
+                "approved_by_user_id": (
+                    str(
+                        obligation.approved_by_user_id
+                    )
+                    if obligation.approved_by_user_id
+                    else None
+                ),
+                "approved_at": (
+                    obligation.approved_at
+                ),
+                "approval_snapshot_json": (
+                    obligation.approval_snapshot_json
+                ),
+                "approval_fingerprint": (
+                    obligation.approval_fingerprint
+                ),
+                "approval_invalidated_at": (
+                    obligation.approval_invalidated_at
+                ),
+                "approval_invalidation_reason": (
+                    obligation.approval_invalidation_reason
+                ),
+            }
+
+        await engine.dispose()
+
+        return state
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        approve_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + fixture[
+                "obligation_id"
+            ]
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            approved,
+            dict,
+        )
+
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        before = asyncio.run(
+            read_obligation_state()
+        )
+
+        assert (
+            before["status"]
+            == "approved"
+        )
+
+        assert (
+            before[
+                "approved_by_user_id"
+            ]
+            is not None
+        )
+
+        assert (
+            before[
+                "approved_at"
+            ]
+            is not None
+        )
+
+        assert (
+            before[
+                "approval_snapshot_json"
+            ]
+            is not None
+        )
+
+        assert (
+            before[
+                "approval_fingerprint"
+            ]
+            is not None
+        )
+
+        assert (
+            before[
+                "approval_invalidated_at"
+            ]
+            is None
+        )
+
+        assert (
+            before[
+                "approval_invalidation_reason"
+            ]
+            is None
+        )
+
+        response = httpx.patch(
+            (
+                BASE_URL
+                + "/api/v1/admin/documents/"
+                + fixture[
+                    "document_id"
+                ]
+            ),
+            headers={
+                "Authorization": (
+                    "Bearer "
+                    + admin_token
+                ),
+            },
+            data={
+                "document_series": (
+                    "FRDO-CHANGED"
+                ),
+            },
+            timeout=20.0,
+        )
+
+        assert (
+            response.status_code
+            == 200
+        )
+
+        updated_document = (
+            response.json()
+        )
+
+        assert (
+            updated_document[
+                "document_series"
+            ]
+            == "FRDO-CHANGED"
+        )
+
+        after = asyncio.run(
+            read_obligation_state()
+        )
+
+        assert (
+            after["status"]
+            == "needs_approval"
+        )
+
+        assert (
+            after[
+                "approval_invalidated_at"
+            ]
+            is not None
+        )
+
+        assert (
+            after[
+                "approval_invalidation_reason"
+            ]
+            == (
+                APPROVAL_INVALIDATION_COMPLETION_DOCUMENT_CHANGED
+            )
+        )
+
+        assert (
+            after[
+                "approved_by_user_id"
+            ]
+            == before[
+                "approved_by_user_id"
+            ]
+        )
+
+        assert (
+            after[
+                "approved_at"
+            ]
+            == before[
+                "approved_at"
+            ]
+        )
+
+        assert (
+            after[
+                "approval_snapshot_json"
+            ]
+            == before[
+                "approval_snapshot_json"
+            ]
+        )
+
+        assert (
+            after[
+                "approval_fingerprint"
+            ]
+            == before[
+                "approval_fingerprint"
+            ]
+        )
+
+    finally:
+        cleanup_frdo_fixtures(
+            [
+                fixture,
+            ]
+        )
 
 def test_frdo_admin_approval_state_machine() -> None:
     needs_approval = create_frdo_fixture(
@@ -2260,7 +2949,7 @@ def test_frdo_admin_export_preparation_api() -> None:
             ][
                 "schema_version"
             ]
-            == "registry-approval-v1"
+            == "registry-approval-frdo-v2"
         )
 
         attempt_id = attempt["id"]

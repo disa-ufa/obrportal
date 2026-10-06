@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
@@ -78,6 +78,9 @@ from app.services.compliance_registry_export import (
     RegistryExportPackageError,
     build_registry_export_package,
     serialize_registry_export_package,
+)
+from app.models.frdo_registry_context import (
+    FrdoRegistryContext,
 )
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
@@ -257,6 +260,9 @@ from app.schemas.admin import (
     AdminRegistrySubmissionAttemptItem,
     AdminRegistrySubmissionMarkSubmitted,
     AdminRegistrySubmissionResultUpdate,
+    AdminRegistryObligationItem,
+    AdminFrdoRegistryContext,
+    AdminFrdoRegistryContextUpdate,
 )
 from app.schemas.admin import (
     AdminMintrudSubmissionBatchCreate,
@@ -2790,6 +2796,9 @@ def build_admin_document_item(row) -> AdminDocumentItem:
     return AdminDocumentItem(
         id=str(row.id),
         document_number=row.document_number,
+        document_series=row.document_series,
+        issued_at=row.issued_at,
+        registration_number=row.registration_number,
         verification_code=row.verification_code,
         document_type=row.document_type,
         title=row.title,
@@ -2851,6 +2860,61 @@ def normalize_document_number(value: str | None) -> str:
 
     return normalized
 
+
+def normalize_optional_admin_document_text(
+    value: str | None,
+    *,
+    max_length: int,
+    field_label: str,
+) -> str | None:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+
+    if not normalized:
+        return None
+
+    if len(normalized) > max_length:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail=(
+                field_label
+                + " exceeds maximum length "
+                + str(max_length)
+            ),
+        )
+
+    return normalized
+
+
+def normalize_admin_document_issued_at(
+    value: str | None,
+) -> date | None:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+
+    if not normalized:
+        return None
+
+    try:
+        return date.fromisoformat(
+            normalized
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail=(
+                "Document issued_at "
+                "must use YYYY-MM-DD"
+            ),
+        ) from exc
 
 def normalize_document_status(value: str) -> str:
     normalized = value.strip().lower()
@@ -3010,6 +3074,9 @@ async def get_admin_document_row_or_404(
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.document_series.label("document_series"),
+            DocumentRecord.issued_at.label("issued_at"),
+            DocumentRecord.registration_number.label("registration_number"),
             DocumentRecord.verification_code.label("verification_code"),
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
@@ -3080,6 +3147,9 @@ async def list_admin_documents(
         select(
             DocumentRecord.id.label("id"),
             DocumentRecord.document_number.label("document_number"),
+            DocumentRecord.document_series.label("document_series"),
+            DocumentRecord.issued_at.label("issued_at"),
+            DocumentRecord.registration_number.label("registration_number"),
             DocumentRecord.verification_code.label("verification_code"),
             DocumentRecord.document_type.label("document_type"),
             DocumentRecord.title.label("title"),
@@ -3175,6 +3245,9 @@ async def create_admin_document(
     title: str = Form(...),
     document_type: str = Form(...),
     document_number: str | None = Form(default=None),
+    document_series: str | None = Form(default=None),
+    issued_at: str | None = Form(default=None),
+    registration_number: str | None = Form(default=None),
     doc_status: str = Form(default="available", alias="status"),
     revocation_reason: str | None = Form(default=None),
     course_id: str | None = Form(default=None),
@@ -3187,6 +3260,30 @@ async def create_admin_document(
 
     normalized_title = title.strip()
     normalized_document_type = document_type.strip()
+
+    normalized_document_series = (
+        normalize_optional_admin_document_text(
+            document_series,
+            max_length=32,
+            field_label="Document series",
+        )
+    )
+
+    normalized_issued_at = (
+        normalize_admin_document_issued_at(
+            issued_at
+        )
+    )
+
+    normalized_registration_number = (
+        normalize_optional_admin_document_text(
+            registration_number,
+            max_length=128,
+            field_label=(
+                "Document registration number"
+            ),
+        )
+    )
 
     if not normalized_title:
         raise HTTPException(
@@ -3260,6 +3357,9 @@ async def create_admin_document(
         course_id=normalized_course_id,
         enrollment_id=normalized_enrollment_id,
         document_number=normalized_number,
+        document_series=normalized_document_series,
+        issued_at=normalized_issued_at,
+        registration_number=normalized_registration_number,
         document_type=normalized_document_type,
         title=normalized_title,
         status=normalized_status,
@@ -3296,6 +3396,13 @@ async def create_admin_document(
                 "document": {
                     "id": str(document.id),
                     "document_number": document.document_number,
+                    "document_series": document.document_series,
+                    "issued_at": (
+                        document.issued_at.isoformat()
+                        if document.issued_at
+                        else None
+                    ),
+                    "registration_number": document.registration_number,
                     "title": document.title,
                     "document_type": document.document_type,
                     "status": document.status,
@@ -3325,6 +3432,13 @@ def document_record_snapshot(document: DocumentRecord) -> dict:
     return {
         "id": str(document.id),
         "document_number": document.document_number,
+        "document_series": document.document_series,
+        "issued_at": (
+            document.issued_at.isoformat()
+            if document.issued_at
+            else None
+        ),
+        "registration_number": document.registration_number,
         "verification_code": document.verification_code,
         "document_type": document.document_type,
         "title": document.title,
@@ -3476,6 +3590,9 @@ async def update_admin_document(
     title: str | None = Form(default=None),
     document_type: str | None = Form(default=None),
     document_number: str | None = Form(default=None),
+    document_series: str | None = Form(default=None),
+    issued_at: str | None = Form(default=None),
+    registration_number: str | None = Form(default=None),
     doc_status: str | None = Form(default=None, alias="status"),
     revocation_reason: str | None = Form(default=None),
     course_id: str | None = Form(default=None),
@@ -3489,7 +3606,18 @@ async def update_admin_document(
     has_file = file is not None and bool(file.filename)
     has_changes = any(
         value is not None
-        for value in [title, document_type, document_number, doc_status, revocation_reason, course_id, enrollment_id]
+        for value in [
+            title,
+            document_type,
+            document_number,
+            document_series,
+            issued_at,
+            registration_number,
+            doc_status,
+            revocation_reason,
+            course_id,
+            enrollment_id,
+        ]
     ) or has_file
 
     if not has_changes:
@@ -3505,6 +3633,9 @@ async def update_admin_document(
         for value in (
             document_type,
             document_number,
+            document_series,
+            issued_at,
+            registration_number,
             doc_status,
             enrollment_id,
         )
@@ -3549,6 +3680,33 @@ async def update_admin_document(
 
     if document_number is not None and document_number.strip():
         document.document_number = normalize_document_number(document_number)
+
+    if document_series is not None:
+        document.document_series = (
+            normalize_optional_admin_document_text(
+                document_series,
+                max_length=32,
+                field_label="Document series",
+            )
+        )
+
+    if issued_at is not None:
+        document.issued_at = (
+            normalize_admin_document_issued_at(
+                issued_at
+            )
+        )
+
+    if registration_number is not None:
+        document.registration_number = (
+            normalize_optional_admin_document_text(
+                registration_number,
+                max_length=128,
+                field_label=(
+                    "Document registration number"
+                ),
+            )
+        )
 
     if doc_status is not None:
         normalized_status = normalize_document_status(doc_status)
@@ -3704,6 +3862,9 @@ async def update_admin_document(
             for field_name in (
                 "enrollment_id",
                 "document_number",
+                "document_series",
+                "issued_at",
+                "registration_number",
                 "document_type",
                 "revoked_at",
             )
@@ -8660,6 +8821,63 @@ def build_admin_frdo_obligation_query():
             DocumentRecord.status.label(
                 "document_status"
             ),
+            FrdoRegistryContext.id.label(
+                "frdo_context_id"
+            ),
+            FrdoRegistryContext.obligation_id.label(
+                "frdo_context_obligation_id"
+            ),
+            FrdoRegistryContext.document_status.label(
+                "frdo_context_document_status"
+            ),
+            FrdoRegistryContext.loss_confirmation.label(
+                "frdo_loss_confirmation"
+            ),
+            FrdoRegistryContext.exchange_confirmation.label(
+                "frdo_exchange_confirmation"
+            ),
+            FrdoRegistryContext.destruction_confirmation.label(
+                "frdo_destruction_confirmation"
+            ),
+            FrdoRegistryContext.study_form.label(
+                "frdo_study_form"
+            ),
+            FrdoRegistryContext.funding_source.label(
+                "frdo_funding_source"
+            ),
+            FrdoRegistryContext.education_delivery_form.label(
+                "frdo_education_delivery_form"
+            ),
+            FrdoRegistryContext.po_program_type.label(
+                "frdo_po_program_type"
+            ),
+            FrdoRegistryContext.po_profession.label(
+                "frdo_po_profession"
+            ),
+            FrdoRegistryContext.po_qualification.label(
+                "frdo_po_qualification"
+            ),
+            FrdoRegistryContext.dpo_professional_activity_area.label(
+                "frdo_dpo_professional_activity_area"
+            ),
+            FrdoRegistryContext.dpo_enlarged_specialty_group.label(
+                "frdo_dpo_enlarged_specialty_group"
+            ),
+            FrdoRegistryContext.dpo_qualification.label(
+                "frdo_dpo_qualification"
+            ),
+            FrdoRegistryContext.prior_education_snapshot_json.label(
+                "frdo_prior_education_snapshot_json"
+            ),
+            FrdoRegistryContext.original_document_snapshot_json.label(
+                "frdo_original_document_snapshot_json"
+            ),
+            FrdoRegistryContext.created_at.label(
+                "frdo_context_created_at"
+            ),
+            FrdoRegistryContext.updated_at.label(
+                "frdo_context_updated_at"
+            ),
         )
         .join(
             Enrollment,
@@ -8686,6 +8904,11 @@ def build_admin_frdo_obligation_query():
             DocumentRecord.id
             == RegistryObligation.document_id,
         )
+        .outerjoin(
+            FrdoRegistryContext,
+            FrdoRegistryContext.obligation_id
+            == RegistryObligation.id,
+        )
         .where(
             RegistryObligation.registry
             == REGISTRY_FRDO
@@ -8693,10 +8916,10 @@ def build_admin_frdo_obligation_query():
     )
 
 
-def build_admin_frdo_obligation_item(
+def build_admin_registry_obligation_item(
     row,
-) -> AdminFrdoObligationItem:
-    return AdminFrdoObligationItem(
+) -> AdminRegistryObligationItem:
+    return AdminRegistryObligationItem(
         id=str(row["id"]),
         registry=row["registry"],
         status=row["status"],
@@ -8772,6 +8995,119 @@ def build_admin_frdo_obligation_item(
         updated_at=row["updated_at"],
     )
 
+def build_admin_frdo_obligation_item(
+    row,
+) -> AdminFrdoObligationItem:
+    base = (
+        build_admin_registry_obligation_item(
+            row
+        )
+    )
+
+    context = None
+
+    if row["frdo_context_id"]:
+        context = AdminFrdoRegistryContext(
+            id=str(
+                row["frdo_context_id"]
+            ),
+            obligation_id=str(
+                row[
+                    "frdo_context_obligation_id"
+                ]
+            ),
+            document_status=(
+                row[
+                    "frdo_context_document_status"
+                ]
+            ),
+            loss_confirmation=(
+                row[
+                    "frdo_loss_confirmation"
+                ]
+            ),
+            exchange_confirmation=(
+                row[
+                    "frdo_exchange_confirmation"
+                ]
+            ),
+            destruction_confirmation=(
+                row[
+                    "frdo_destruction_confirmation"
+                ]
+            ),
+            study_form=(
+                row[
+                    "frdo_study_form"
+                ]
+            ),
+            funding_source=(
+                row[
+                    "frdo_funding_source"
+                ]
+            ),
+            education_delivery_form=(
+                row[
+                    "frdo_education_delivery_form"
+                ]
+            ),
+            po_program_type=(
+                row[
+                    "frdo_po_program_type"
+                ]
+            ),
+            po_profession=(
+                row[
+                    "frdo_po_profession"
+                ]
+            ),
+            po_qualification=(
+                row[
+                    "frdo_po_qualification"
+                ]
+            ),
+            dpo_professional_activity_area=(
+                row[
+                    "frdo_dpo_professional_activity_area"
+                ]
+            ),
+            dpo_enlarged_specialty_group=(
+                row[
+                    "frdo_dpo_enlarged_specialty_group"
+                ]
+            ),
+            dpo_qualification=(
+                row[
+                    "frdo_dpo_qualification"
+                ]
+            ),
+            prior_education_snapshot_json=(
+                row[
+                    "frdo_prior_education_snapshot_json"
+                ]
+            ),
+            original_document_snapshot_json=(
+                row[
+                    "frdo_original_document_snapshot_json"
+                ]
+            ),
+            created_at=(
+                row[
+                    "frdo_context_created_at"
+                ]
+            ),
+            updated_at=(
+                row[
+                    "frdo_context_updated_at"
+                ]
+            ),
+        )
+
+    return AdminFrdoObligationItem(
+        **base.model_dump(),
+        frdo_context=context,
+    )
+
 
 async def get_admin_frdo_obligation_item_or_404(
     obligation_id: str,
@@ -8838,6 +9174,315 @@ async def get_admin_frdo_obligation_or_404(
 
     return obligation
 
+
+def normalize_optional_frdo_text(
+    value: str | None,
+) -> str | None:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+
+    return (
+        normalized
+        if normalized
+        else None
+    )
+
+
+def frdo_registry_context_snapshot(
+    context: FrdoRegistryContext | None,
+) -> dict | None:
+    if context is None:
+        return None
+
+    return {
+        "id": str(context.id),
+        "obligation_id": str(
+            context.obligation_id
+        ),
+        "document_status": context.document_status,
+        "loss_confirmation": context.loss_confirmation,
+        "exchange_confirmation": context.exchange_confirmation,
+        "destruction_confirmation": context.destruction_confirmation,
+        "study_form": context.study_form,
+        "funding_source": context.funding_source,
+        "education_delivery_form": context.education_delivery_form,
+        "po_program_type": context.po_program_type,
+        "po_profession": context.po_profession,
+        "po_qualification": context.po_qualification,
+        "dpo_professional_activity_area": (
+            context.dpo_professional_activity_area
+        ),
+        "dpo_enlarged_specialty_group": (
+            context.dpo_enlarged_specialty_group
+        ),
+        "dpo_qualification": context.dpo_qualification,
+        "prior_education_snapshot_json": (
+            context.prior_education_snapshot_json
+        ),
+        "original_document_snapshot_json": (
+            context.original_document_snapshot_json
+        ),
+    }
+
+
+@router.patch(
+    "/frdo/obligations/{obligation_id}/context",
+    response_model=AdminFrdoObligationItem,
+)
+async def update_admin_frdo_obligation_context(
+    obligation_id: str,
+    payload: AdminFrdoRegistryContextUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission(
+            "frdo.write"
+        )
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+) -> AdminFrdoObligationItem:
+    obligation = (
+        await get_admin_frdo_obligation_or_404(
+            obligation_id,
+            session,
+            for_update=True,
+        )
+    )
+
+    if obligation.status not in {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+        OBLIGATION_STATUS_NEEDS_APPROVAL,
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "FRDO obligation lifecycle "
+                "does not allow context editing"
+            ),
+        )
+
+    data = model_to_dict(
+        payload,
+        exclude_unset=True,
+    )
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+
+    text_lengths = {
+        "document_status": 32,
+        "loss_confirmation": 128,
+        "exchange_confirmation": 128,
+        "destruction_confirmation": 32,
+        "study_form": 64,
+        "funding_source": 128,
+        "education_delivery_form": 128,
+        "po_program_type": 255,
+        "po_profession": 512,
+        "po_qualification": 255,
+        "dpo_professional_activity_area": 512,
+        "dpo_enlarged_specialty_group": 512,
+        "dpo_qualification": 512,
+    }
+
+    for field, max_length in text_lengths.items():
+        if field not in data:
+            continue
+
+        data[field] = (
+            normalize_optional_frdo_text(
+                data[field]
+            )
+        )
+
+        if (
+            data[field] is not None
+            and len(data[field]) > max_length
+        ):
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "FRDO field "
+                    + field
+                    + " exceeds maximum length "
+                    + str(max_length)
+                ),
+            )
+
+    context_result = await session.execute(
+        select(
+            FrdoRegistryContext
+        )
+        .where(
+            FrdoRegistryContext.obligation_id
+            == obligation.id
+        )
+        .with_for_update()
+    )
+
+    frdo_context = (
+        context_result.scalar_one_or_none()
+    )
+
+    before_context = (
+        frdo_registry_context_snapshot(
+            frdo_context
+        )
+    )
+
+    if frdo_context is None:
+        frdo_context = FrdoRegistryContext(
+            obligation_id=str(
+                obligation.id
+            )
+        )
+
+        session.add(
+            frdo_context
+        )
+
+    for field, value in data.items():
+        setattr(
+            frdo_context,
+            field,
+            value,
+        )
+
+    await session.flush()
+
+    enrollment_result = await session.execute(
+        select(
+            Enrollment
+        ).where(
+            Enrollment.id
+            == obligation.enrollment_id
+        )
+    )
+
+    enrollment = (
+        enrollment_result.scalar_one_or_none()
+    )
+
+    if enrollment is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "FRDO obligation enrollment "
+                "is not available"
+            ),
+        )
+
+    (
+        course,
+        learner,
+        learner_profile,
+        organization,
+    ) = await load_completion_document_context(
+        enrollment,
+        session,
+    )
+
+    document = None
+
+    if obligation.document_id:
+        document_result = await session.execute(
+            select(
+                DocumentRecord
+            ).where(
+                DocumentRecord.id
+                == obligation.document_id
+            )
+        )
+
+        document = (
+            document_result.scalar_one_or_none()
+        )
+
+    readiness = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=course,
+        learner=learner,
+        learner_profile=learner_profile,
+        document=document,
+        frdo_context=frdo_context,
+        organization=organization,
+    )
+
+    before_status = obligation.status
+
+    before_errors = list(
+        obligation.readiness_errors
+        or []
+    )
+
+    obligation.readiness_errors = (
+        readiness.as_error_payload()
+    )
+
+    if obligation.status in {
+        OBLIGATION_STATUS_PENDING_DATA,
+        OBLIGATION_STATUS_READY,
+    }:
+        obligation.status = (
+            OBLIGATION_STATUS_READY
+            if readiness.is_ready
+            else OBLIGATION_STATUS_PENDING_DATA
+        )
+
+    await session.flush()
+
+    await create_admin_audit_event(
+        session,
+        actor_user=current_user,
+        action="admin.frdo_context_updated",
+        entity_type="registry_obligation",
+        entity_id=str(
+            obligation.id
+        ),
+        payload={
+            "registry": REGISTRY_FRDO,
+            "before": {
+                "context": before_context,
+                "status": before_status,
+                "readiness_errors": before_errors,
+            },
+            "after": {
+                "context": (
+                    frdo_registry_context_snapshot(
+                        frdo_context
+                    )
+                ),
+                "status": obligation.status,
+                "readiness_errors": (
+                    obligation.readiness_errors
+                ),
+            },
+            "changed_fields": sorted(
+                data.keys()
+            ),
+            "is_ready": readiness.is_ready,
+        },
+        request=request,
+    )
+
+    await session.commit()
+
+    return (
+        await get_admin_frdo_obligation_item_or_404(
+            str(obligation.id),
+            session,
+        )
+    )
 
 @router.get(
     "/frdo/obligations",
@@ -9068,6 +9713,22 @@ async def validate_admin_frdo_obligation(
             .scalar_one_or_none()
         )
 
+    frdo_context_result = (
+        await session.execute(
+            select(
+                FrdoRegistryContext
+            ).where(
+                FrdoRegistryContext.obligation_id
+                == obligation.id
+            )
+        )
+    )
+
+    frdo_context = (
+        frdo_context_result
+        .scalar_one_or_none()
+    )
+
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_FRDO,
@@ -9078,6 +9739,7 @@ async def validate_admin_frdo_obligation(
                 learner_profile
             ),
             document=document,
+            frdo_context=frdo_context,
             organization=organization,
         )
     )
@@ -9337,7 +9999,7 @@ def build_admin_mintrud_obligation_query():
 def build_admin_mintrud_obligation_item(
     row,
 ) -> AdminMintrudObligationItem:
-    base = build_admin_frdo_obligation_item(
+    base = build_admin_registry_obligation_item(
         row
     )
 
@@ -10419,6 +11081,22 @@ async def approve_admin_frdo_obligation(
             .scalar_one_or_none()
         )
 
+    frdo_context_result = (
+        await session.execute(
+            select(
+                FrdoRegistryContext
+            ).where(
+                FrdoRegistryContext.obligation_id
+                == obligation.id
+            )
+        )
+    )
+
+    frdo_context = (
+        frdo_context_result
+        .scalar_one_or_none()
+    )
+
     readiness = (
         evaluate_registry_readiness(
             registry=REGISTRY_FRDO,
@@ -10429,6 +11107,7 @@ async def approve_admin_frdo_obligation(
                 learner_profile
             ),
             document=document,
+            frdo_context=frdo_context,
             organization=organization,
         )
     )
@@ -10497,6 +11176,7 @@ async def approve_admin_frdo_obligation(
                 learner_profile
             ),
             document=document,
+            frdo_context=frdo_context,
         )
     )
 

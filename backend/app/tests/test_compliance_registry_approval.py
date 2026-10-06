@@ -864,3 +864,169 @@ def test_unrelated_profile_change_affects_no_registry():
         )
         == ()
     )
+
+
+
+def test_frdo_po_snapshot_freezes_extended_inputs() -> None:
+    enrollment = SimpleNamespace(
+        status="completed",
+        started_at=datetime(
+            2026,
+            1,
+            10,
+            tzinfo=timezone.utc,
+        ),
+        completed_at=datetime(
+            2026,
+            9,
+            1,
+            tzinfo=timezone.utc,
+        ),
+    )
+
+    course = SimpleNamespace(
+        title="PO test",
+        hours=40,
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+    )
+
+    learner_profile = SimpleNamespace(
+        last_name="Tester",
+        first_name="Learner",
+        middle_name="Middle",
+        birth_date=date(
+            2000,
+            1,
+            2,
+        ),
+        sex="male",
+        snils="112-233-445 95",
+        citizenship_country_code="643",
+    )
+
+    document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="S",
+        document_number="PO-001",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-001",
+        revoked_at=None,
+    )
+
+    prior = {
+        "education_level": "SPO",
+        "diploma_last_name": "Tester",
+        "diploma_series": "AA",
+        "diploma_number": "100",
+    }
+
+    original = {
+        "document_type": "Certificate",
+        "document_series": "OLD",
+        "document_number": "OLD-1",
+        "registration_number": "OLD-REG",
+        "issue_date": "2025-01-01",
+        "recipient_last_name": "Tester",
+        "recipient_first_name": "Learner",
+        "recipient_middle_name": "Middle",
+    }
+
+    frdo_context = SimpleNamespace(
+        document_status="Original",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="Paid",
+        education_delivery_form="In organization",
+        po_program_type="Initial training",
+        po_profession="Worker",
+        po_qualification=None,
+        dpo_professional_activity_area=None,
+        dpo_enlarged_specialty_group=None,
+        dpo_qualification=None,
+        prior_education_snapshot_json=None,
+        original_document_snapshot_json=original,
+    )
+
+    snapshot = build_registry_approval_snapshot(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=course,
+        learner_profile=learner_profile,
+        document=document,
+        frdo_context=frdo_context,
+    )
+
+    assert (
+        snapshot["schema_version"]
+        == "registry-approval-frdo-v2"
+    )
+
+    assert snapshot["enrollment"] == {
+        "status": "completed",
+        "started_at": (
+            "2026-01-10T00:00:00+00:00"
+        ),
+        "completed_at": (
+            "2026-09-01T00:00:00+00:00"
+        ),
+    }
+
+    assert snapshot["course"] == {
+        "title": "PO test",
+        "hours": 40,
+        "regulatory_program_type": (
+            "vocational_training"
+        ),
+    }
+
+    assert snapshot["learner_profile"][
+        "middle_name"
+    ] == "Middle"
+
+    assert snapshot["learner_profile"][
+        "snils"
+    ] == "112-233-445 95"
+
+    assert snapshot["document"][
+        "document_series"
+    ] == "S"
+
+    assert snapshot["document"][
+        "issued_at"
+    ] == "2026-09-01"
+
+    assert snapshot["document"][
+        "registration_number"
+    ] == "REG-001"
+
+    assert snapshot["frdo_context"][
+        "po_profession"
+    ] == "Worker"
+
+    assert (
+        "prior_education_snapshot_json"
+        not in snapshot["frdo_context"]
+    )
+
+    for field in (
+        "dpo_professional_activity_area",
+        "dpo_enlarged_specialty_group",
+        "dpo_qualification",
+    ):
+        assert (
+            field
+            not in snapshot["frdo_context"]
+        )
+
+    assert snapshot["frdo_context"][
+        "original_document_snapshot_json"
+    ] == original

@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -34,6 +34,9 @@ class DocumentRecord(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         nullable=True,
     )
     document_number: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    document_series: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    issued_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    registration_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
     verification_code: Mapped[str] = mapped_column(
         String(64),
         unique=True,

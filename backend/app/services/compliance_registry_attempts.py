@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.frdo_registry_context import FrdoRegistryContext
 from app.models.learner_profile import LearnerProfile
 from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_obligation import (
@@ -1047,12 +1048,33 @@ async def _build_current_registry_approval_snapshot(
                     "FRDO approval document is missing"
                 )
 
+            context_result = await session.execute(
+                select(
+                    FrdoRegistryContext
+                )
+                .where(
+                    FrdoRegistryContext.obligation_id
+                    == str(
+                        obligation.id
+                    )
+                )
+                .execution_options(
+                    populate_existing=True
+                )
+            )
+
+            frdo_context = (
+                context_result
+                .scalar_one_or_none()
+            )
+
             return build_registry_approval_snapshot(
                 registry=REGISTRY_FRDO,
                 enrollment=enrollment,
                 course=course,
                 learner_profile=learner_profile,
                 document=document,
+                frdo_context=frdo_context,
             )
 
         if (

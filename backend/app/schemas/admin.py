@@ -232,6 +232,9 @@ class AdminWorklistSummary(BaseModel):
 class AdminDocumentItem(BaseModel):
     id: str
     document_number: str
+    document_series: str | None = None
+    issued_at: date | None = None
+    registration_number: str | None = None
     verification_code: str
     document_type: str
     title: str
@@ -943,7 +946,7 @@ class AdminRegistrySubmissionResultUpdate(
     )
 
 
-class AdminFrdoObligationItem(BaseModel):
+class AdminRegistryObligationItem(BaseModel):
     id: str
     registry: str
     status: str
@@ -986,6 +989,61 @@ class AdminFrdoObligationItem(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+class AdminFrdoRegistryContext(BaseModel):
+    id: str
+    obligation_id: str
+
+    document_status: str | None = None
+    loss_confirmation: str | None = None
+    exchange_confirmation: str | None = None
+    destruction_confirmation: str | None = None
+    study_form: str | None = None
+    funding_source: str | None = None
+    education_delivery_form: str | None = None
+
+    po_program_type: str | None = None
+    po_profession: str | None = None
+    po_qualification: str | None = None
+
+    dpo_professional_activity_area: str | None = None
+    dpo_enlarged_specialty_group: str | None = None
+    dpo_qualification: str | None = None
+
+    prior_education_snapshot_json: dict | None = None
+    original_document_snapshot_json: dict | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminFrdoRegistryContextUpdate(BaseModel):
+    document_status: str | None = None
+    loss_confirmation: str | None = None
+    exchange_confirmation: str | None = None
+    destruction_confirmation: str | None = None
+    study_form: str | None = None
+    funding_source: str | None = None
+    education_delivery_form: str | None = None
+
+    po_program_type: str | None = None
+    po_profession: str | None = None
+    po_qualification: str | None = None
+
+    dpo_professional_activity_area: str | None = None
+    dpo_enlarged_specialty_group: str | None = None
+    dpo_qualification: str | None = None
+
+    prior_education_snapshot_json: dict | None = None
+    original_document_snapshot_json: dict | None = None
+
+
+class AdminFrdoObligationItem(
+    AdminRegistryObligationItem
+):
+    frdo_context: (
+        AdminFrdoRegistryContext | None
+    ) = None
+
 
 class AdminFrdoObligationValidationResult(BaseModel):
     is_ready: bool
@@ -1026,7 +1084,7 @@ class AdminMintrudRegistryContextUpdate(BaseModel):
 
 
 class AdminMintrudObligationItem(
-    AdminFrdoObligationItem
+    AdminRegistryObligationItem
 ):
     mintrud_context: (
         AdminMintrudRegistryContext | None

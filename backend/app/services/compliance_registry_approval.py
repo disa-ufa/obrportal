@@ -12,6 +12,7 @@ from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_APPROVED,
     OBLIGATION_STATUS_NEEDS_APPROVAL,
     OBLIGATION_STATUS_READY,
+    PROGRAM_TYPE_VOCATIONAL_TRAINING,
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
@@ -21,6 +22,9 @@ from app.services.mintrud_learn_programs import (
 
 
 APPROVAL_SNAPSHOT_SCHEMA_VERSION = "registry-approval-v1"
+FRDO_PO_APPROVAL_SNAPSHOT_SCHEMA_VERSION = (
+    "registry-approval-frdo-v2"
+)
 
 APPROVAL_INVALIDATION_LEARNER_PROFILE_CHANGED = (
     "learner_profile_changed"
@@ -189,6 +193,7 @@ def build_registry_approval_snapshot(
     course: object | None,
     learner_profile: object | None,
     document: object | None = None,
+    frdo_context: object | None = None,
     mintrud_context: object | None = None,
     mintrud_learn_programs: tuple[object, ...] = (),
     mintrud_reporting_organization: object | None = None,
@@ -217,6 +222,72 @@ def build_registry_approval_snapshot(
     }
 
     if registry == REGISTRY_FRDO:
+        # STAGE_11B_3F_FRDO_PO_APPROVAL_CONTRACT
+        program_type = str(
+            _get(
+                course,
+                "regulatory_program_type",
+            )
+            or ""
+        ).strip()
+
+        if (
+            program_type
+            != PROGRAM_TYPE_VOCATIONAL_TRAINING
+        ):
+            snapshot[
+                "learner_profile"
+            ] = _field_snapshot(
+                learner_profile,
+                (
+                    "last_name",
+                    "first_name",
+                    "birth_date",
+                    "sex",
+                    "citizenship_country_code",
+                ),
+            )
+
+            snapshot[
+                "document"
+            ] = _field_snapshot(
+                document,
+                (
+                    "enrollment_id",
+                    "document_number",
+                    "document_type",
+                    "revoked_at",
+                ),
+            )
+
+            return snapshot
+
+        snapshot["schema_version"] = (
+            FRDO_PO_APPROVAL_SNAPSHOT_SCHEMA_VERSION
+        )
+
+        snapshot[
+            "enrollment"
+        ] = _field_snapshot(
+            enrollment,
+            (
+                "status",
+                "started_at",
+                "completed_at",
+            ),
+        )
+
+        snapshot[
+            "course"
+        ] = _field_snapshot(
+            course,
+            (
+                "title",
+                "hours",
+                "regulatory_program_type",
+            ),
+        )
+
         snapshot[
             "learner_profile"
         ] = _field_snapshot(
@@ -224,8 +295,10 @@ def build_registry_approval_snapshot(
             (
                 "last_name",
                 "first_name",
+                "middle_name",
                 "birth_date",
                 "sex",
+                "snils",
                 "citizenship_country_code",
             ),
         )
@@ -236,11 +309,45 @@ def build_registry_approval_snapshot(
             document,
             (
                 "enrollment_id",
+                "document_series",
                 "document_number",
                 "document_type",
+                "issued_at",
+                "registration_number",
                 "revoked_at",
             ),
         )
+
+        frdo_context_snapshot = (
+            _field_snapshot(
+                frdo_context,
+                (
+                    "document_status",
+                    "loss_confirmation",
+                    "exchange_confirmation",
+                    "destruction_confirmation",
+                    "study_form",
+                    "funding_source",
+                    "education_delivery_form",
+                    "po_program_type",
+                    "po_profession",
+                    "po_qualification",
+                ),
+            )
+        )
+
+        frdo_context_snapshot[
+            "original_document_snapshot_json"
+        ] = _normalize_json(
+            _get(
+                frdo_context,
+                "original_document_snapshot_json",
+            )
+        )
+
+        snapshot[
+            "frdo_context"
+        ] = frdo_context_snapshot
 
         return snapshot
 
@@ -695,6 +802,13 @@ FRDO_APPROVAL_LEARNER_PROFILE_FIELDS = frozenset(
         "birth_date",
         "sex",
         "citizenship_country_code",
+    }
+)
+
+FRDO_EXTENDED_APPROVAL_LEARNER_PROFILE_FIELDS = frozenset(
+    {
+        "middle_name",
+        "snils",
     }
 )
 

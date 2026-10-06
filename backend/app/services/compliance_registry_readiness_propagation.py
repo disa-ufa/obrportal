@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.frdo_registry_context import FrdoRegistryContext
 from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_obligation import RegistryObligation
 from app.services.completion_documents import load_completion_document_context
@@ -200,6 +201,7 @@ async def refresh_registry_readiness_for_user(
         )
 
         document = None
+        frdo_context = None
         mintrud_context = None
 
         if obligation.registry == REGISTRY_FRDO:
@@ -211,6 +213,19 @@ async def refresh_registry_readiness_for_user(
                     ),
                 )
 
+            context_result = await session.execute(
+                select(
+                    FrdoRegistryContext
+                ).where(
+                    FrdoRegistryContext.obligation_id
+                    == obligation.id
+                )
+            )
+
+            frdo_context = (
+                context_result.scalar_one_or_none()
+            )
+
             readiness = evaluate_registry_readiness(
                 registry=REGISTRY_FRDO,
                 enrollment=enrollment,
@@ -218,6 +233,7 @@ async def refresh_registry_readiness_for_user(
                 learner=learner,
                 learner_profile=learner_profile,
                 document=document,
+                frdo_context=frdo_context,
                 organization=organization,
             )
 
