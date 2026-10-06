@@ -268,7 +268,7 @@ def test_expected_production_call_counts():
                 frdo += 1
 
     assert mintrud == 4
-    assert frdo == 3
+    assert frdo == 4
 
 
 def test_frdo_calls_do_not_require_mintrud_programs():
