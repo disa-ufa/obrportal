@@ -3278,13 +3278,13 @@ def count_frdo_registry_submission_attempts(
 
 
 def test_frdo_portal_artifact_fail_closed_contract() -> None:
-    approved = create_frdo_fixture(
+    fixture = create_frdo_fixture(
         with_profile=True,
-        obligation_status="approved",
+        obligation_status="needs_approval",
     )
 
     fixtures = [
-        approved,
+        fixture,
     ]
 
     try:
@@ -3298,40 +3298,78 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
             LEARNER_PASSWORD,
         )
 
+        obligation_id = fixture[
+            "obligation_id"
+        ]
+
         before_count = (
             count_frdo_registry_submission_attempts(
-                approved["obligation_id"]
+                obligation_id
             )
         )
 
         assert before_count == 0
 
+        approve_path = (
+            "/api/v1/admin/frdo/obligations/"
+            + obligation_id
+            + "/approve"
+        )
+
+        status_code, approved = request_json(
+            "POST",
+            approve_path,
+            token=admin_token,
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            approved,
+            dict,
+        )
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        approval_fingerprint = (
+            get_frdo_obligation_approval_fingerprint(
+                obligation_id
+            )
+        )
+
+        assert approval_fingerprint is not None
+        assert len(
+            approval_fingerprint
+        ) == 64
+
+        portal_path = (
+            "/api/v1/admin/frdo/obligations/"
+            + obligation_id
+            + "/portal-artifact"
+        )
+
         status_code, conflict = request_json(
             "POST",
-            (
-                "/api/v1/admin/frdo/obligations/"
-                + approved["obligation_id"]
-                + "/portal-artifact"
-            ),
+            portal_path,
             token=admin_token,
         )
 
         after_count = (
             count_frdo_registry_submission_attempts(
-                approved["obligation_id"]
+                obligation_id
             )
         )
 
         assert after_count == before_count
-
         assert status_code == 409
         assert isinstance(
             conflict,
             dict,
         )
         assert (
-            "Official portal upload artifact "
-            "contract is not confirmed for frdo"
+            "Official FRDO PO portal upload "
+            "contract is not confirmed"
             in str(
                 conflict.get(
                     "detail",
@@ -3342,11 +3380,7 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
 
         status_code, forbidden = request_json(
             "POST",
-            (
-                "/api/v1/admin/frdo/obligations/"
-                + approved["obligation_id"]
-                + "/portal-artifact"
-            ),
+            portal_path,
             token=learner_token,
         )
 
@@ -3358,7 +3392,7 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
 
         assert (
             count_frdo_registry_submission_attempts(
-                approved["obligation_id"]
+                obligation_id
             )
             == before_count
         )
@@ -3382,7 +3416,7 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
 
         assert (
             count_frdo_registry_submission_attempts(
-                approved["obligation_id"]
+                obligation_id
             )
             == before_count
         )
