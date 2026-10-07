@@ -68,6 +68,10 @@ from app.services.compliance_registry_portal_artifacts import (
     RegistryPortalArtifactContractUnavailable,
     require_registry_portal_artifact_contract,
 )
+from app.services.frdo_po_portal_artifact import (
+    FrdoPoPortalArtifactError,
+    prepare_frdo_po_portal_artifact,
+)
 from app.services.compliance_registry_rework import (
     RegistryObligationReworkError,
     reopen_registry_obligation_for_correction,
@@ -12531,10 +12535,24 @@ async def prepare_admin_frdo_portal_artifact(
     )
 
     try:
-        require_registry_portal_artifact_contract(
-            obligation.registry
+        await validate_registry_approval_current(
+            session,
+            obligation=obligation,
         )
-    except RegistryPortalArtifactContractUnavailable as exc:
+
+        approval_snapshot = dict(
+            obligation.approval_snapshot_json
+            or {}
+        )
+
+        prepare_frdo_po_portal_artifact(
+            approval_snapshot=approval_snapshot,
+        )
+
+    except (
+        RegistrySubmissionAttemptError,
+        FrdoPoPortalArtifactError,
+    ) as exc:
         raise HTTPException(
             status_code=(
                 status.HTTP_409_CONFLICT
@@ -12547,8 +12565,8 @@ async def prepare_admin_frdo_portal_artifact(
             status.HTTP_501_NOT_IMPLEMENTED
         ),
         detail=(
-            "Portal upload artifact formatter "
-            "is unavailable for the "
+            "FRDO PO portal upload artifact "
+            "formatter is unavailable for the "
             "confirmed contract"
         ),
     )

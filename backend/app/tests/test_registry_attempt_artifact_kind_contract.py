@@ -315,3 +315,39 @@ def test_mintrud_portal_endpoint_never_auto_submits():
         '"external_registry_io": False'
         in source
     )
+
+
+def test_frdo_portal_endpoint_uses_approved_po_snapshot_preflight():
+    source = function_source(
+        "app/api/v1/admin.py",
+        "prepare_admin_frdo_portal_artifact",
+    )
+
+    assert (
+        "validate_registry_approval_current"
+        in source
+    )
+    assert (
+        "obligation.approval_snapshot_json"
+        in source
+    )
+    assert (
+        "prepare_frdo_po_portal_artifact"
+        in source
+    )
+    assert (
+        "build_registry_export_package"
+        not in source
+    )
+    assert (
+        "create_registry_submission_attempt"
+        not in source
+    )
+    assert (
+        "REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD"
+        not in source
+    )
+    assert (
+        "mark_registry_exported"
+        not in source
+    )
