@@ -1001,6 +1001,7 @@ class AdminFrdoRegistryContext(BaseModel):
     funding_source: str | None = None
     education_delivery_form: str | None = None
 
+    po_document_type: str | None = None
     po_program_type: str | None = None
     po_profession: str | None = None
     po_qualification: str | None = None
@@ -1025,6 +1026,7 @@ class AdminFrdoRegistryContextUpdate(BaseModel):
     funding_source: str | None = None
     education_delivery_form: str | None = None
 
+    po_document_type: str | None = None
     po_program_type: str | None = None
     po_profession: str | None = None
     po_qualification: str | None = None
@@ -1035,6 +1037,23 @@ class AdminFrdoRegistryContextUpdate(BaseModel):
 
     prior_education_snapshot_json: dict | None = None
     original_document_snapshot_json: dict | None = None
+
+
+class AdminFrdoPoClassifierCatalog(BaseModel):
+    mapping_version: str
+    classifiers: dict[str, list[str]] = Field(
+        default_factory=dict
+    )
+    profession_count: int
+
+
+class AdminFrdoPoProfessionSearchResult(BaseModel):
+    mapping_version: str
+    query: str
+    total: int
+    values: list[str] = Field(
+        default_factory=list
+    )
 
 
 class AdminFrdoObligationItem(
@@ -1098,3 +1117,92 @@ class AdminMintrudObligationValidationResult(BaseModel):
     ] = Field(default_factory=list)
 
     obligation: AdminMintrudObligationItem
+
+
+class AdminFrdoSubmissionBatchCreate(BaseModel):
+    obligation_ids: list[str] = Field(
+        min_length=1,
+        max_length=1001,
+    )
+
+
+class AdminFrdoSubmissionBatchItem(BaseModel):
+    id: str
+    registry: str
+    status: str
+
+    artifact_kind: str
+    transport: str
+    schema_version: str
+
+    obligation_count: int
+    record_count: int
+
+    has_artifact: bool = False
+    artifact_sha256: str
+
+    generated_by_user_id: str | None = None
+    generated_at: datetime
+
+    submitted_by_user_id: str | None = None
+    submitted_at: datetime | None = None
+    external_reference: str | None = None
+
+    reconciled_by_user_id: str | None = None
+    reconciled_at: datetime | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminFrdoSubmissionBatchDetailItem(BaseModel):
+    id: str
+    obligation_id: str
+    position: int
+    record_count: int
+    approval_snapshot_json: dict[str, Any]
+    approval_fingerprint: str
+    result_status: str | None = None
+    errors_json: list[str] = Field(default_factory=list)
+    external_id: str | None = None
+    result_recorded_by_user_id: str | None = None
+    result_recorded_at: datetime | None = None
+
+
+class AdminFrdoSubmissionBatchDetail(
+    AdminFrdoSubmissionBatchItem
+):
+    items: list[AdminFrdoSubmissionBatchDetailItem] = Field(
+        default_factory=list
+    )
+
+
+class AdminFrdoSubmissionBatchMarkSubmitted(BaseModel):
+    external_reference: str | None = Field(
+        default=None,
+        max_length=255,
+    )
+
+class AdminFrdoSubmissionBatchResultItemUpdate(BaseModel):
+    obligation_id: str
+    result_status: str
+    external_id: str | None = Field(
+        default=None,
+        max_length=255,
+    )
+    errors: list[str] = Field(default_factory=list)
+
+
+class AdminFrdoSubmissionBatchResultUpdate(BaseModel):
+    source_description: str = Field(
+        min_length=3,
+        max_length=512,
+    )
+    source_reference: str | None = Field(
+        default=None,
+        max_length=255,
+    )
+    items: list[AdminFrdoSubmissionBatchResultItemUpdate] = Field(
+        min_length=1,
+        max_length=1001,
+    )

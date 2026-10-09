@@ -72,6 +72,10 @@ from app.services.frdo_po_portal_artifact import (
     FrdoPoPortalArtifactError,
     prepare_frdo_po_portal_artifact,
 )
+from app.services.frdo_po_portal_contract import (
+    FrdoPoPortalContractError,
+    require_frdo_po_portal_contract,
+)
 from app.services.compliance_registry_rework import (
     RegistryObligationReworkError,
     reopen_registry_obligation_for_correction,
@@ -105,6 +109,7 @@ from app.services.document_storage import (
 )
 from app.services.compliance_registry_contract import (
     PROGRAM_TYPE_UNSPECIFIED,
+    PROGRAM_TYPE_VOCATIONAL_TRAINING,
     REGULATORY_PROGRAM_TYPES,
     REQUIREMENT_MODE_AUTO,
     REQUIREMENT_MODES,
@@ -132,6 +137,13 @@ from app.services.compliance_registry_contract import (
 )
 from app.services.compliance_registry_readiness import (
     evaluate_registry_readiness,
+)
+from app.services.frdo_po_portal_mapping import (
+    FRDO_PO_MAPPING_VERSION,
+    FrdoPoPortalMappingError,
+    get_frdo_po_classifier_values,
+    normalize_frdo_po_classifier_value,
+    search_frdo_po_classifier_values,
 )
 from app.services.compliance_registry_approval import (
     apply_registry_approval,
@@ -267,6 +279,8 @@ from app.schemas.admin import (
     AdminRegistryObligationItem,
     AdminFrdoRegistryContext,
     AdminFrdoRegistryContextUpdate,
+    AdminFrdoPoClassifierCatalog,
+    AdminFrdoPoProfessionSearchResult,
 )
 from app.schemas.admin import (
     AdminMintrudSubmissionBatchCreate,
@@ -277,6 +291,33 @@ from app.schemas.admin import (
     AdminMintrudSubmissionBatchResultUpdate,
 )
 
+
+
+from app.schemas.admin import (
+    AdminFrdoSubmissionBatchCreate,
+    AdminFrdoSubmissionBatchItem,
+    AdminFrdoSubmissionBatchDetailItem,
+    AdminFrdoSubmissionBatchDetail,
+)
+from app.services.frdo_po_batches import (
+    create_frdo_registry_submission_batch,
+)
+
+
+from app.schemas.admin import (
+    AdminFrdoSubmissionBatchMarkSubmitted,
+)
+from app.services.frdo_po_batches import (
+    mark_frdo_registry_submission_batch_submitted,
+)
+
+
+from app.schemas.admin import (
+    AdminFrdoSubmissionBatchResultUpdate,
+)
+from app.services.frdo_po_batches import (
+    record_frdo_registry_submission_batch_results,
+)
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -8852,6 +8893,9 @@ def build_admin_frdo_obligation_query():
             FrdoRegistryContext.education_delivery_form.label(
                 "frdo_education_delivery_form"
             ),
+            FrdoRegistryContext.po_document_type.label(
+                "frdo_po_document_type"
+            ),
             FrdoRegistryContext.po_program_type.label(
                 "frdo_po_program_type"
             ),
@@ -9055,6 +9099,11 @@ def build_admin_frdo_obligation_item(
                     "frdo_education_delivery_form"
                 ]
             ),
+            po_document_type=(
+                row[
+                    "frdo_po_document_type"
+                ]
+            ),
             po_program_type=(
                 row[
                     "frdo_po_program_type"
@@ -9212,6 +9261,7 @@ def frdo_registry_context_snapshot(
         "study_form": context.study_form,
         "funding_source": context.funding_source,
         "education_delivery_form": context.education_delivery_form,
+        "po_document_type": context.po_document_type,
         "po_program_type": context.po_program_type,
         "po_profession": context.po_profession,
         "po_qualification": context.po_qualification,
@@ -9229,6 +9279,90 @@ def frdo_registry_context_snapshot(
             context.original_document_snapshot_json
         ),
     }
+
+
+@router.get(
+    "/frdo/po/classifiers",
+    response_model=AdminFrdoPoClassifierCatalog,
+)
+async def get_admin_frdo_po_classifier_catalog(
+    _: User = Depends(
+        require_permission(
+            "frdo.read"
+        )
+    ),
+) -> AdminFrdoPoClassifierCatalog:
+    classifier_names = (
+        "document_type",
+        "document_status",
+        "loss_confirmation",
+        "exchange_confirmation",
+        "destruction_confirmation",
+        "po_program_type",
+        "po_qualification",
+        "sex",
+        "citizenship_country_code",
+        "study_form",
+        "funding_source",
+        "education_delivery_form",
+    )
+
+    classifiers = {
+        classifier: list(
+            get_frdo_po_classifier_values(
+                classifier
+            )
+        )
+        for classifier in classifier_names
+    }
+
+    return AdminFrdoPoClassifierCatalog(
+        mapping_version=FRDO_PO_MAPPING_VERSION,
+        classifiers=classifiers,
+        profession_count=len(
+            get_frdo_po_classifier_values(
+                "po_profession"
+            )
+        ),
+    )
+
+
+@router.get(
+    "/frdo/po/professions",
+    response_model=(
+        AdminFrdoPoProfessionSearchResult
+    ),
+)
+async def search_admin_frdo_po_professions(
+    q: str = Query(
+        default="",
+        max_length=255,
+    ),
+    limit: int = Query(
+        default=50,
+        ge=1,
+        le=100,
+    ),
+    _: User = Depends(
+        require_permission(
+            "frdo.read"
+        )
+    ),
+) -> AdminFrdoPoProfessionSearchResult:
+    values, total = (
+        search_frdo_po_classifier_values(
+            "po_profession",
+            q,
+            limit=limit,
+        )
+    )
+
+    return AdminFrdoPoProfessionSearchResult(
+        mapping_version=FRDO_PO_MAPPING_VERSION,
+        query=q.strip(),
+        total=total,
+        values=list(values),
+    )
 
 
 @router.patch(
@@ -9288,6 +9422,7 @@ async def update_admin_frdo_obligation_context(
         "study_form": 64,
         "funding_source": 128,
         "education_delivery_form": 128,
+        "po_document_type": 128,
         "po_program_type": 255,
         "po_profession": 512,
         "po_qualification": 255,
@@ -9394,6 +9529,89 @@ async def update_admin_frdo_obligation_context(
         enrollment,
         session,
     )
+
+    if (
+        course.regulatory_program_type
+        == PROGRAM_TYPE_VOCATIONAL_TRAINING
+    ):
+        classifier_fields = (
+            (
+                "document_status",
+                "document_status",
+            ),
+            (
+                "loss_confirmation",
+                "loss_confirmation",
+            ),
+            (
+                "exchange_confirmation",
+                "exchange_confirmation",
+            ),
+            (
+                "destruction_confirmation",
+                "destruction_confirmation",
+            ),
+            (
+                "study_form",
+                "study_form",
+            ),
+            (
+                "funding_source",
+                "funding_source",
+            ),
+            (
+                "education_delivery_form",
+                "education_delivery_form",
+            ),
+            (
+                "po_document_type",
+                "document_type",
+            ),
+            (
+                "po_program_type",
+                "po_program_type",
+            ),
+            (
+                "po_profession",
+                "po_profession",
+            ),
+            (
+                "po_qualification",
+                "po_qualification",
+            ),
+        )
+
+        for field, classifier in classifier_fields:
+            if field not in data:
+                continue
+
+            current_value = data[field]
+
+            if current_value is None:
+                continue
+
+            try:
+                canonical_value = (
+                    normalize_frdo_po_classifier_value(
+                        classifier,
+                        current_value,
+                    )
+                )
+            except FrdoPoPortalMappingError as exc:
+                raise HTTPException(
+                    status_code=(
+                        status.HTTP_422_UNPROCESSABLE_ENTITY
+                    ),
+                    detail=str(exc),
+                ) from exc
+
+            data[field] = canonical_value
+
+            setattr(
+                frdo_context,
+                field,
+                canonical_value,
+            )
 
     document = None
 
@@ -12517,6 +12735,7 @@ async def prepare_admin_registry_export_attempt(
 )
 async def prepare_admin_frdo_portal_artifact(
     obligation_id: str,
+    request: Request,
     current_user: User = Depends(
         require_permission(
             "frdo.export"
@@ -12534,6 +12753,8 @@ async def prepare_admin_frdo_portal_artifact(
         )
     )
 
+    artifact_path_to_cleanup: str | None = None
+
     try:
         await validate_registry_approval_current(
             session,
@@ -12545,31 +12766,205 @@ async def prepare_admin_frdo_portal_artifact(
             or {}
         )
 
-        prepare_frdo_po_portal_artifact(
-            approval_snapshot=approval_snapshot,
+        course_snapshot = (
+            approval_snapshot.get(
+                "course"
+            )
         )
 
+        if not isinstance(
+            course_snapshot,
+            dict,
+        ):
+            raise FrdoPoPortalArtifactError(
+                "FRDO PO approval snapshot "
+                "course section is invalid"
+            )
+
+        program_type = str(
+            course_snapshot.get(
+                "regulatory_program_type"
+            )
+            or ""
+        ).strip()
+
+        contract = (
+            require_frdo_po_portal_contract(
+                program_type=program_type,
+            )
+        )
+
+        if (
+            not contract.extension
+            or not contract.template_contract_version
+        ):
+            raise FrdoPoPortalContractError(
+                "FRDO PO portal upload artifact "
+                "contract metadata is incomplete"
+            )
+
+        export_content = (
+            prepare_frdo_po_portal_artifact(
+                approval_snapshot=(
+                    approval_snapshot
+                ),
+            )
+        )
+
+        attempt = (
+            await create_registry_submission_attempt(
+                session,
+                obligation_id=str(
+                    obligation.id
+                ),
+                snapshot=approval_snapshot,
+                generated_by_user_id=str(
+                    current_user.id
+                ),
+                artifact_kind=(
+                    REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD
+                ),
+                transport="file",
+                schema_version=(
+                    contract.template_contract_version
+                ),
+            )
+        )
+
+        attempt = (
+            await attach_registry_submission_artifact(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+                content=export_content,
+                extension=(
+                    contract.extension
+                ),
+            )
+        )
+
+        artifact_path_to_cleanup = (
+            attempt.artifact_path
+        )
+
+        attempt = (
+            await mark_registry_exported(
+                session,
+                attempt_id=str(
+                    attempt.id
+                ),
+            )
+        )
+
+        response_item = (
+            build_admin_registry_submission_attempt_item(
+                attempt
+            )
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.frdo_portal_artifact_prepared"
+            ),
+            entity_type=(
+                "registry_obligation"
+            ),
+            entity_id=str(
+                obligation.id
+            ),
+            payload={
+                "registry": (
+                    obligation.registry
+                ),
+                "attempt_id": str(
+                    attempt.id
+                ),
+                "attempt_no": int(
+                    attempt.attempt_no
+                ),
+                "transport": (
+                    attempt.transport
+                ),
+                "artifact_kind": (
+                    attempt.artifact_kind
+                ),
+                "schema_version": (
+                    attempt.schema_version
+                ),
+                "artifact_sha256": (
+                    attempt.artifact_sha256
+                ),
+                "approval_fingerprint": (
+                    obligation.approval_fingerprint
+                ),
+                "portal_contract": {
+                    "status": (
+                        contract.status
+                    ),
+                    "template_kind": (
+                        contract.template_kind
+                    ),
+                    "source_reference": (
+                        contract.source_reference
+                    ),
+                    "source_sha256": (
+                        contract.source_sha256
+                    ),
+                    "template_contract_version": (
+                        contract.template_contract_version
+                    ),
+                    "file_format": (
+                        contract.file_format
+                    ),
+                    "mime_type": (
+                        contract.mime_type
+                    ),
+                    "extension": (
+                        contract.extension
+                    ),
+                },
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
     except (
+        FrdoPoPortalContractError,
         RegistrySubmissionAttemptError,
         FrdoPoPortalArtifactError,
     ) as exc:
+        await session.rollback()
+
+        if artifact_path_to_cleanup:
+            delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+
         raise HTTPException(
             status_code=(
                 status.HTTP_409_CONFLICT
             ),
-            detail=str(exc),
+            detail=str(
+                exc
+            ),
         ) from exc
 
-    raise HTTPException(
-        status_code=(
-            status.HTTP_501_NOT_IMPLEMENTED
-        ),
-        detail=(
-            "FRDO PO portal upload artifact "
-            "formatter is unavailable for the "
-            "confirmed contract"
-        ),
-    )
+    except Exception:
+        await session.rollback()
+
+        if artifact_path_to_cleanup:
+            delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+
+        raise
+
+    return response_item
 
 
 @router.post(
@@ -13744,3 +14139,453 @@ async def download_admin_mintrud_submission_attempt_artifact(
             resolved_path.name
         ),
     )
+
+
+def build_admin_frdo_submission_batch_item(
+    batch: RegistrySubmissionBatch,
+) -> AdminFrdoSubmissionBatchItem:
+    return AdminFrdoSubmissionBatchItem(
+        id=str(batch.id),
+        registry=batch.registry,
+        status=batch.status,
+        artifact_kind=batch.artifact_kind,
+        transport=batch.transport,
+        schema_version=batch.schema_version,
+        obligation_count=int(batch.obligation_count),
+        record_count=int(batch.record_count),
+        has_artifact=bool(
+            batch.artifact_path
+            and batch.artifact_sha256
+        ),
+        artifact_sha256=batch.artifact_sha256,
+        generated_by_user_id=batch.generated_by_user_id,
+        generated_at=batch.generated_at,
+        submitted_by_user_id=batch.submitted_by_user_id,
+        submitted_at=batch.submitted_at,
+        external_reference=batch.external_reference,
+        reconciled_by_user_id=batch.reconciled_by_user_id,
+        reconciled_at=batch.reconciled_at,
+        created_at=batch.created_at,
+        updated_at=batch.updated_at,
+    )
+
+
+@router.post(
+    "/frdo/batches",
+    response_model=AdminFrdoSubmissionBatchItem,
+    status_code=status.HTTP_201_CREATED,
+)
+async def prepare_admin_frdo_submission_batch(
+    payload: AdminFrdoSubmissionBatchCreate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission("frdo.export")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> AdminFrdoSubmissionBatchItem:
+    artifact_path_to_cleanup: str | None = None
+
+    try:
+        batch = await create_frdo_registry_submission_batch(
+            session,
+            obligation_ids=payload.obligation_ids,
+            generated_by_user_id=str(current_user.id),
+        )
+
+        artifact_path_to_cleanup = batch.artifact_path
+
+        response_item = (
+            build_admin_frdo_submission_batch_item(
+                batch
+            )
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.frdo_submission_batch_prepared",
+            entity_type="registry_submission_batch",
+            entity_id=str(batch.id),
+            payload={
+                "registry": batch.registry,
+                "status": batch.status,
+                "artifact_kind": batch.artifact_kind,
+                "transport": batch.transport,
+                "schema_version": batch.schema_version,
+                "obligation_count": int(batch.obligation_count),
+                "record_count": int(batch.record_count),
+                "artifact_sha256": batch.artifact_sha256,
+                "obligation_ids": list(payload.obligation_ids),
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except Exception as exc:
+        try:
+            await session.rollback()
+        finally:
+            if artifact_path_to_cleanup:
+                removed = (
+                    delete_registry_submission_batch_artifact_safely(
+                        artifact_path_to_cleanup
+                    )
+                )
+
+                if not removed:
+                    raise RuntimeError(
+                        "FRDO batch artifact cleanup "
+                        "could not be confirmed"
+                    ) from exc
+
+        if isinstance(exc, RegistrySubmissionBatchError):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            ) from exc
+
+        raise
+
+    return response_item
+
+
+def build_admin_frdo_submission_batch_detail_item(
+    item: RegistrySubmissionBatchItem,
+) -> AdminFrdoSubmissionBatchDetailItem:
+    return AdminFrdoSubmissionBatchDetailItem(
+        id=str(item.id),
+        obligation_id=str(item.obligation_id),
+        position=int(item.position),
+        record_count=int(item.record_count),
+        approval_snapshot_json=dict(
+            item.approval_snapshot_json or {}
+        ),
+        approval_fingerprint=item.approval_fingerprint,
+        result_status=getattr(item, "result_status", None),
+        errors_json=list(getattr(item, "errors_json", None) or []),
+        external_id=getattr(item, "external_id", None),
+        result_recorded_by_user_id=getattr(
+            item, "result_recorded_by_user_id", None
+        ),
+        result_recorded_at=getattr(
+            item, "result_recorded_at", None
+        ),
+    )
+
+
+def build_admin_frdo_submission_batch_detail(
+    batch: RegistrySubmissionBatch,
+    items: list[RegistrySubmissionBatchItem],
+) -> AdminFrdoSubmissionBatchDetail:
+    summary = build_admin_frdo_submission_batch_item(batch)
+
+    return AdminFrdoSubmissionBatchDetail(
+        **summary.model_dump(),
+        items=[
+            build_admin_frdo_submission_batch_detail_item(item)
+            for item in items
+        ],
+    )
+
+
+async def get_admin_frdo_submission_batch_or_404(
+    batch_id: str,
+    session: AsyncSession,
+) -> RegistrySubmissionBatch:
+    batch = await session.scalar(
+        select(RegistrySubmissionBatch).where(
+            RegistrySubmissionBatch.id == batch_id,
+            RegistrySubmissionBatch.registry == "frdo",
+        )
+    )
+
+    if batch is None or batch.registry != "frdo":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="FRDO submission batch not found",
+        )
+
+    return batch
+
+
+@router.get(
+    "/frdo/batches",
+    response_model=list[AdminFrdoSubmissionBatchItem],
+)
+async def list_admin_frdo_submission_batches(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    _: User = Depends(require_permission("frdo.export")),
+    session: AsyncSession = Depends(get_db),
+) -> list[AdminFrdoSubmissionBatchItem]:
+    result = await session.scalars(
+        select(RegistrySubmissionBatch)
+        .where(
+            RegistrySubmissionBatch.registry == "frdo"
+        )
+        .order_by(
+            RegistrySubmissionBatch.created_at.desc(),
+            RegistrySubmissionBatch.id.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+
+    return [
+        build_admin_frdo_submission_batch_item(batch)
+        for batch in result.all()
+    ]
+
+
+@router.get(
+    "/frdo/batches/{batch_id}",
+    response_model=AdminFrdoSubmissionBatchDetail,
+)
+async def get_admin_frdo_submission_batch_detail(
+    batch_id: str,
+    _: User = Depends(require_permission("frdo.export")),
+    session: AsyncSession = Depends(get_db),
+) -> AdminFrdoSubmissionBatchDetail:
+    batch = await get_admin_frdo_submission_batch_or_404(
+        batch_id,
+        session,
+    )
+
+    result = await session.scalars(
+        select(RegistrySubmissionBatchItem)
+        .where(
+            RegistrySubmissionBatchItem.batch_id == batch.id
+        )
+        .order_by(
+            RegistrySubmissionBatchItem.position
+        )
+    )
+
+    return build_admin_frdo_submission_batch_detail(
+        batch,
+        list(result.all()),
+    )
+
+
+@router.get(
+    "/frdo/batches/{batch_id}/download",
+)
+async def download_admin_frdo_submission_batch(
+    batch_id: str,
+    _: User = Depends(require_permission("frdo.export")),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    batch = await get_admin_frdo_submission_batch_or_404(
+        batch_id,
+        session,
+    )
+
+    try:
+        content = read_registry_submission_batch_artifact(
+            batch
+        )
+    except RegistrySubmissionBatchError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    filename = "frdo-po-batch-" + str(batch.id) + ".xlsx"
+
+    return Response(
+        content=content,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="' + filename + '"'
+            ),
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.post(
+    "/frdo/batches/{batch_id}/submitted",
+    response_model=AdminFrdoSubmissionBatchItem,
+)
+async def mark_admin_frdo_submission_batch_submitted(
+    batch_id: str,
+    payload: AdminFrdoSubmissionBatchMarkSubmitted,
+    request: Request,
+    current_user: User = Depends(
+        require_permission("frdo.export")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> AdminFrdoSubmissionBatchItem:
+    # Missing or foreign-registry IDs are exposed as 404.
+    await get_admin_frdo_submission_batch_or_404(
+        batch_id,
+        session,
+    )
+
+    try:
+        batch = await mark_frdo_registry_submission_batch_submitted(
+            session,
+            batch_id=batch_id,
+            submitted_by_user_id=str(current_user.id),
+            external_reference=payload.external_reference,
+        )
+
+        response_item = build_admin_frdo_submission_batch_item(
+            batch
+        )
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.frdo_submission_batch_submission_recorded",
+            entity_type="registry_submission_batch",
+            entity_id=str(batch.id),
+            payload={
+                "registry": "frdo",
+                "before": {
+                    "status": "exported",
+                },
+                "after": {
+                    "status": batch.status,
+                    "submitted_by_user_id": (
+                        batch.submitted_by_user_id
+                    ),
+                    "submitted_at": (
+                        batch.submitted_at.isoformat()
+                        if batch.submitted_at
+                        else None
+                    ),
+                    "external_reference": (
+                        batch.external_reference
+                    ),
+                },
+                "obligation_count": int(batch.obligation_count),
+                "record_count": int(batch.record_count),
+                "submission_source": "operator_confirmation",
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except RegistrySubmissionBatchError as exc:
+        await session.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    return response_item
+
+@router.post(
+    "/frdo/batches/{batch_id}/results",
+    response_model=AdminFrdoSubmissionBatchDetail,
+)
+async def record_admin_frdo_submission_batch_results(
+    batch_id: str,
+    payload: AdminFrdoSubmissionBatchResultUpdate,
+    request: Request,
+    current_user: User = Depends(
+        require_permission("frdo.export")
+    ),
+    session: AsyncSession = Depends(get_db),
+) -> AdminFrdoSubmissionBatchDetail:
+    await get_admin_frdo_submission_batch_or_404(
+        batch_id,
+        session,
+    )
+
+    source_description = payload.source_description.strip()
+
+    if len(source_description) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="FRDO result source description is required",
+        )
+
+    try:
+        batch, items = (
+            await record_frdo_registry_submission_batch_results(
+                session,
+                batch_id=batch_id,
+                recorded_by_user_id=str(current_user.id),
+                results=[
+                    item.model_dump()
+                    for item in payload.items
+                ],
+            )
+        )
+
+        response_item = build_admin_frdo_submission_batch_detail(
+            batch,
+            items,
+        )
+
+        counts = {}
+
+        for item in items:
+            key = str(item.result_status or "pending")
+            counts[key] = counts.get(key, 0) + 1
+
+        remaining = counts.get("pending", 0)
+
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.frdo_submission_batch_results_recorded",
+            entity_type="registry_submission_batch",
+            entity_id=str(batch.id),
+            payload={
+                "registry": "frdo",
+                "source_kind": "operator_entered_feedback",
+                "source_description": source_description,
+                "source_reference": (
+                    payload.source_reference.strip()
+                    if payload.source_reference
+                    else None
+                ),
+                "recorded_obligation_ids": [
+                    item.obligation_id
+                    for item in payload.items
+                ],
+                "recorded_in_request_count": len(payload.items),
+                "result_counts": counts,
+                "remaining_count": remaining,
+                "fully_reconciled": remaining == 0,
+                "reconciled_at": (
+                    batch.reconciled_at.isoformat()
+                    if batch.reconciled_at
+                    else None
+                ),
+                "external_registry_io": False,
+            },
+            request=request,
+        )
+
+        await session.commit()
+
+    except RegistrySubmissionBatchError as exc:
+        await session.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    return response_item

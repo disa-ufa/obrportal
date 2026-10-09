@@ -1316,6 +1316,51 @@ export async function getAdminFrdoObligations(
 }
 
 
+export async function getAdminFrdoPoClassifierCatalog() {
+  return request(
+    "/api/v1/admin/frdo/po/classifiers"
+  );
+}
+
+
+export async function searchAdminFrdoPoProfessions(
+  query = "",
+  limit = 50
+) {
+  const params = new URLSearchParams();
+
+  if (`${query || ""}`.trim()) {
+    params.set(
+      "q",
+      `${query}`.trim()
+    );
+  }
+
+  params.set(
+    "limit",
+    `${limit}`
+  );
+
+  return request(
+    `/api/v1/admin/frdo/po/professions?${params.toString()}`
+  );
+}
+
+
+export async function updateAdminFrdoObligationContext(
+  obligationId,
+  payload
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/context`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
 export async function validateAdminFrdoObligation(
   obligationId
 ) {
@@ -1357,6 +1402,18 @@ export async function prepareAdminFrdoRegistryExport(
 ) {
   return request(
     `/api/v1/admin/frdo/obligations/${obligationId}/export`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function prepareAdminFrdoPortalArtifact(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/portal-artifact`,
     {
       method: "POST",
     }

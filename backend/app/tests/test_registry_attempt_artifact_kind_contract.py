@@ -317,7 +317,7 @@ def test_mintrud_portal_endpoint_never_auto_submits():
     )
 
 
-def test_frdo_portal_endpoint_uses_approved_po_snapshot_preflight():
+def test_frdo_portal_endpoint_persists_portal_upload_attempt():
     source = function_source(
         "app/api/v1/admin.py",
         "prepare_admin_frdo_portal_artifact",
@@ -339,15 +339,66 @@ def test_frdo_portal_endpoint_uses_approved_po_snapshot_preflight():
         "build_registry_export_package"
         not in source
     )
+
+    assert (
+        "require_frdo_po_portal_contract"
+        in source
+    )
+    assert (
+        "contract.template_contract_version"
+        in source
+    )
+
     assert (
         "create_registry_submission_attempt"
-        not in source
+        in source
     )
     assert (
         "REGISTRY_ARTIFACT_KIND_PORTAL_UPLOAD"
-        not in source
+        in source
     )
     assert (
+        'transport="file"'
+        in source
+    )
+
+    assert (
+        "attach_registry_submission_artifact"
+        in source
+    )
+    assert (
+        "contract.extension"
+        in source
+    )
+
+    assert (
         "mark_registry_exported"
+        in source
+    )
+
+    assert (
+        "admin.frdo_portal_artifact_prepared"
+        in source
+    )
+    assert (
+        '"external_registry_io": False'
+        in source
+    )
+
+    assert (
+        "await session.commit()"
+        in source
+    )
+    assert (
+        "await session.rollback()"
+        in source
+    )
+    assert (
+        "delete_registry_artifact_safely"
+        in source
+    )
+
+    assert (
+        "HTTP_501_NOT_IMPLEMENTED"
         not in source
     )

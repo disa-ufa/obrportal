@@ -30,16 +30,19 @@ def make_snapshot() -> dict:
             "completed_at": "2026-09-30T00:00:00+00:00",
         },
         "course": {
-            "title": "Worker training",
+            "title": (
+                "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 "
+                "\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u0435\u0439"
+            ),
             "hours": 40,
             "regulatory_program_type": (
                 "vocational_training"
             ),
         },
         "learner_profile": {
-            "last_name": "Ivanov",
-            "first_name": "Ivan",
-            "middle_name": "Ivanovich",
+            "last_name": "\u0418\u0432\u0430\u043d\u043e\u0432",
+            "first_name": "\u0418\u0432\u0430\u043d",
+            "middle_name": "\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             "birth_date": "2000-01-01",
             "sex": "male",
             "snils": "123-456-789 00",
@@ -56,15 +59,25 @@ def make_snapshot() -> dict:
         },
         "frdo_context": {
             "document_status": "original",
-            "loss_confirmation": None,
-            "exchange_confirmation": None,
-            "destruction_confirmation": None,
+            "loss_confirmation": "No",
+            "exchange_confirmation": "No",
+            "destruction_confirmation": "No",
             "study_form": "full_time",
-            "funding_source": "budget",
+            "funding_source": "paid",
             "education_delivery_form": "onsite",
+            "po_document_type": (
+                "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+                "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+                "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+                "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+                "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+            ),
             "po_program_type": "initial_training",
-            "po_profession": "Worker",
-            "po_qualification": None,
+            "po_profession": (
+                "\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c "
+                "\u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f"
+            ),
+            "po_qualification": "1",
             "original_document_snapshot_json": None,
         },
     }
@@ -142,19 +155,21 @@ def test_snapshot_guard_rejects_dpo_program() -> None:
         )
 
 
-def test_portal_artifact_still_fails_closed_without_contract() -> None:
+def test_portal_artifact_returns_xlsx_with_working_reference() -> None:
     snapshot = make_snapshot()
 
-    with pytest.raises(
-        FrdoPoPortalArtifactUnavailable,
-        match=(
-            "Official FRDO PO portal upload contract "
-            "is not confirmed"
-        ),
-    ):
-        prepare_frdo_po_portal_artifact(
-            approval_snapshot=snapshot,
-        )
+    content = prepare_frdo_po_portal_artifact(
+        approval_snapshot=snapshot,
+    )
+
+    assert isinstance(
+        content,
+        bytes,
+    )
+    assert content.startswith(
+        b"PK"
+    )
+    assert len(content) > 1000
 
 
 def test_snapshot_validation_does_not_mutate_snapshot() -> None:

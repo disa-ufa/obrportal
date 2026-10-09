@@ -22,6 +22,10 @@ from app.services.compliance_registry_contract import (
     REGISTRY_FRDO,
     REGISTRY_MINTRUD,
 )
+from app.services.frdo_po_portal_mapping import (
+    FrdoPoPortalMappingError,
+    normalize_frdo_po_classifier_value,
+)
 
 
 FRDO_ALLOWED_SEX_VALUES = frozenset(
@@ -83,6 +87,34 @@ def _append_issue(
             message=message,
         )
     )
+
+
+def _append_frdo_po_classifier_issue(
+    issues: list[RegistryReadinessIssue],
+    *,
+    classifier: str,
+    value: object | None,
+    field: str,
+    code: str,
+) -> None:
+    if not _text_present(value):
+        return
+
+    try:
+        normalize_frdo_po_classifier_value(
+            classifier,
+            value,
+        )
+    except FrdoPoPortalMappingError:
+        _append_issue(
+            issues,
+            code=code,
+            field=field,
+            message=(
+                "Value is not supported by the pinned "
+                "FRDO PO classifier."
+            ),
+        )
 
 
 def _evaluate_completion_context(
@@ -179,6 +211,493 @@ FRDO_DPO_PROGRAM_TYPES = frozenset(
     }
 )
 
+
+
+FRDO_PO_DOCUMENT_TYPE_TRAINING_REFERENCE = (
+    "\u0421\u043f\u0440\u0430\u0432\u043a\u0430 "
+    "\u043e\u0431 "
+    "\u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438"
+)
+
+
+def _frdo_po_context_classifier_value(
+    context: Any,
+    attribute: str,
+    classifier: str,
+) -> str | None:
+    if context is None:
+        return None
+
+    value = getattr(
+        context,
+        attribute,
+        None,
+    )
+
+    if not _text_present(
+        value
+    ):
+        return None
+
+    try:
+        return normalize_frdo_po_classifier_value(
+            classifier,
+            value,
+        )
+    except FrdoPoPortalMappingError:
+        return None
+
+
+def _frdo_po_allows_blank_document_identifier(
+    program_type: str,
+    context: Any,
+) -> bool:
+    if (
+        program_type
+        not in FRDO_PO_PROGRAM_TYPES
+    ):
+        return False
+
+    return (
+        _frdo_po_context_classifier_value(
+            context,
+            "po_document_type",
+            "document_type",
+        )
+        == FRDO_PO_DOCUMENT_TYPE_TRAINING_REFERENCE
+    )
+
+
+FRDO_PO_DOCUMENT_TYPE_ART_CERTIFICATE = (
+    "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+    "\u043e\u0431 "
+    "\u043e\u0441\u0432\u043e\u0435\u043d\u0438\u0438 "
+    "\u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0445 "
+    "\u043f\u0440\u0435\u0434\u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0445 "
+    "\u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c "
+    "\u0432 "
+    "\u043e\u0431\u043b\u0430\u0441\u0442\u0438 "
+    "\u0438\u0441\u043a\u0443\u0441\u0441\u0442\u0432"
+)
+
+
+def _frdo_po_is_cyrillic_letter(
+    char: str,
+) -> bool:
+    return (
+        "\u0400" <= char <= "\u052f"
+        or "\u2de0" <= char <= "\u2dff"
+        or "\ua640" <= char <= "\ua69f"
+    )
+
+
+def _frdo_po_is_latin_letter(
+    char: str,
+) -> bool:
+    return (
+        "A" <= char <= "Z"
+        or "a" <= char <= "z"
+    )
+
+
+def _frdo_po_text_chars_valid(
+    value: object | None,
+    *,
+    extra_chars: str,
+    allow_cyrillic: bool = True,
+    allow_latin: bool = True,
+    allow_digits: bool = True,
+) -> bool:
+    candidate = str(
+        value
+        or ""
+    )
+
+    if not candidate:
+        return False
+
+    for char in candidate:
+        if (
+            allow_cyrillic
+            and _frdo_po_is_cyrillic_letter(
+                char
+            )
+        ):
+            continue
+
+        if (
+            allow_latin
+            and _frdo_po_is_latin_letter(
+                char
+            )
+        ):
+            continue
+
+        if (
+            allow_digits
+            and "0" <= char <= "9"
+        ):
+            continue
+
+        if char in extra_chars:
+            continue
+
+        return False
+
+    return True
+
+
+def _frdo_po_person_name_is_valid(
+    value: object | None,
+) -> bool:
+    candidate = str(
+        value
+        or ""
+    )
+
+    if not candidate:
+        return False
+
+    if candidate.startswith(
+        (
+            " ",
+            "-",
+        )
+    ):
+        return False
+
+    if candidate.endswith(
+        (
+            " ",
+            "-",
+        )
+    ):
+        return False
+
+    if re.search(
+        r"[ -]{2,}",
+        candidate,
+    ):
+        return False
+
+    return _frdo_po_text_chars_valid(
+        candidate,
+        extra_chars=".-()' ",
+        allow_cyrillic=True,
+        allow_latin=False,
+        allow_digits=False,
+    )
+
+
+def _frdo_po_snapshot_issue_date_is_valid(
+    value: object | None,
+) -> bool:
+    if isinstance(
+        value,
+        datetime,
+    ):
+        return True
+
+    if isinstance(
+        value,
+        date,
+    ):
+        return True
+
+    candidate = str(
+        value
+        or ""
+    ).strip()
+
+    if not candidate:
+        return False
+
+    for date_format in (
+        "%Y-%m-%d",
+        "%d.%m.%Y",
+    ):
+        try:
+            datetime.strptime(
+                candidate,
+                date_format,
+            )
+            return True
+        except ValueError:
+            pass
+
+    return False
+
+
+def _append_frdo_po_original_snapshot_exact_issues(
+    issues: list[RegistryReadinessIssue],
+    snapshot: object | None,
+) -> None:
+    if not isinstance(
+        snapshot,
+        dict,
+    ):
+        return
+
+    base_field = (
+        "frdo_context."
+        "original_document_snapshot_json"
+    )
+
+    document_type = snapshot.get(
+        "document_type"
+    )
+
+    _append_frdo_po_classifier_issue(
+        issues,
+        classifier="document_type",
+        value=document_type,
+        field=(
+            base_field
+            + ".document_type"
+        ),
+        code=(
+            "frdo.original_document."
+            "document_type_unsupported"
+        ),
+    )
+
+    document_series = snapshot.get(
+        "document_series"
+    )
+
+    if _text_present(
+        document_series
+    ):
+        series_text = str(
+            document_series
+        )
+
+        if len(
+            series_text
+        ) > 20:
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    "document_series_too_long"
+                ),
+                field=(
+                    base_field
+                    + ".document_series"
+                ),
+                message=(
+                    "Original document series "
+                    "must not exceed 20 characters."
+                ),
+            )
+
+        elif not _frdo_po_text_chars_valid(
+            series_text,
+            extra_chars=".-/ ",
+        ):
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    "document_series_invalid"
+                ),
+                field=(
+                    base_field
+                    + ".document_series"
+                ),
+                message=(
+                    "Original document series "
+                    "contains unsupported characters."
+                ),
+            )
+
+    document_number = snapshot.get(
+        "document_number"
+    )
+
+    if _text_present(
+        document_number
+    ):
+        number_text = str(
+            document_number
+        )
+
+        if len(
+            number_text
+        ) > 20:
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    "document_number_too_long"
+                ),
+                field=(
+                    base_field
+                    + ".document_number"
+                ),
+                message=(
+                    "Original document number "
+                    "must not exceed 20 characters."
+                ),
+            )
+
+        elif not (
+            number_text.isascii()
+            and number_text.isdigit()
+        ):
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    "document_number_invalid"
+                ),
+                field=(
+                    base_field
+                    + ".document_number"
+                ),
+                message=(
+                    "Original document number "
+                    "must contain ASCII digits only."
+                ),
+            )
+
+    registration_number = snapshot.get(
+        "registration_number"
+    )
+
+    if _text_present(
+        registration_number
+    ):
+        registration_text = str(
+            registration_number
+        )
+
+        if len(
+            registration_text
+        ) > 20:
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    "registration_number_too_long"
+                ),
+                field=(
+                    base_field
+                    + ".registration_number"
+                ),
+                message=(
+                    "Original registration number "
+                    "must not exceed 20 characters."
+                ),
+            )
+
+        elif not _frdo_po_text_chars_valid(
+            registration_text,
+            extra_chars="./ -()_",
+        ):
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    "registration_number_invalid"
+                ),
+                field=(
+                    base_field
+                    + ".registration_number"
+                ),
+                message=(
+                    "Original registration number "
+                    "contains unsupported characters."
+                ),
+            )
+
+    issue_date = snapshot.get(
+        "issue_date"
+    )
+
+    if (
+        _text_present(
+            issue_date
+        )
+        and not _frdo_po_snapshot_issue_date_is_valid(
+            issue_date
+        )
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "frdo.original_document."
+                "issue_date_invalid"
+            ),
+            field=(
+                base_field
+                + ".issue_date"
+            ),
+            message=(
+                "Original document issue date "
+                "must be a valid date."
+            ),
+        )
+
+    for attribute in (
+        "recipient_last_name",
+        "recipient_first_name",
+        "recipient_middle_name",
+    ):
+        value = snapshot.get(
+            attribute
+        )
+
+        if not _text_present(
+            value
+        ):
+            continue
+
+        value_text = str(
+            value
+        )
+
+        if len(
+            value_text
+        ) > 50:
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    + attribute
+                    + "_too_long"
+                ),
+                field=(
+                    base_field
+                    + "."
+                    + attribute
+                ),
+                message=(
+                    "Original recipient name field "
+                    "must not exceed 50 characters."
+                ),
+            )
+
+        elif not _frdo_po_person_name_is_valid(
+            value_text
+        ):
+            _append_issue(
+                issues,
+                code=(
+                    "frdo.original_document."
+                    + attribute
+                    + "_invalid"
+                ),
+                field=(
+                    base_field
+                    + "."
+                    + attribute
+                ),
+                message=(
+                    "Original recipient name field "
+                    "contains unsupported characters."
+                ),
+            )
 
 def _frdo_program_type(
     course: Any,
@@ -359,6 +878,8 @@ def _evaluate_frdo_readiness(
         learner=learner,
     )
 
+    program_type = _frdo_program_type(course)
+
     if learner_profile is None:
         _append_issue(
             issues,
@@ -450,21 +971,25 @@ def _evaluate_frdo_readiness(
         ).strip()
 
         if not citizenship:
-            _append_issue(
-                issues,
-                code=(
-                    "learner_profile."
-                    "citizenship_country_code_missing"
-                ),
-                field=(
-                    "learner_profile."
-                    "citizenship_country_code"
-                ),
-                message=(
-                    "Learner citizenship country code "
-                    "is missing."
-                ),
-            )
+            if (
+                program_type
+                not in FRDO_PO_PROGRAM_TYPES
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "learner_profile."
+                        "citizenship_country_code_missing"
+                    ),
+                    field=(
+                        "learner_profile."
+                        "citizenship_country_code"
+                    ),
+                    message=(
+                        "Learner citizenship country code "
+                        "is missing."
+                    ),
+                )
         elif (
             len(
                 citizenship
@@ -530,11 +1055,19 @@ def _evaluate_frdo_readiness(
                 ),
             )
 
-        if not _text_present(
-            getattr(
-                document,
-                "document_number",
-                None,
+        document_number = getattr(
+            document,
+            "document_number",
+            None,
+        )
+
+        if (
+            not _text_present(
+                document_number
+            )
+            and not _frdo_po_allows_blank_document_identifier(
+                program_type,
+                frdo_context,
             )
         ):
             _append_issue(
@@ -576,10 +1109,6 @@ def _evaluate_frdo_readiness(
                     "cannot be prepared for registry export."
                 ),
             )
-
-    program_type = _frdo_program_type(
-        course
-    )
 
     if (
         program_type
@@ -713,18 +1242,31 @@ def _evaluate_frdo_readiness(
     issued_date = None
 
     if document is not None:
-        _append_missing_text_issue(
-            issues,
-            source=document,
-            attribute="document_series",
-            code="document.series_missing",
-            field="document.document_series",
-            message=(
-                "Completion document series "
-                "or official no-series marker "
-                "is required for FRDO."
-            ),
+        document_series = getattr(
+            document,
+            "document_series",
+            None,
         )
+
+        if (
+            not _text_present(
+                document_series
+            )
+            and not _frdo_po_allows_blank_document_identifier(
+                program_type,
+                frdo_context,
+            )
+        ):
+            _append_issue(
+                issues,
+                code="document.series_missing",
+                field="document.document_series",
+                message=(
+                    "Completion document series "
+                    "or official no-series marker "
+                    "is required for FRDO."
+                ),
+            )
 
         issued_date = _frdo_date_value(
             getattr(
@@ -760,6 +1302,40 @@ def _evaluate_frdo_readiness(
             message=(
                 "Completion document registration "
                 "number is required."
+            ),
+        )
+
+    if (
+        program_type in FRDO_PO_PROGRAM_TYPES
+        and issued_date is not None
+        and issued_date
+        >= date(
+            2021,
+            1,
+            1,
+        )
+        and learner_profile is not None
+        and not _text_present(
+            getattr(
+                learner_profile,
+                "citizenship_country_code",
+                None,
+            )
+        )
+    ):
+        _append_issue(
+            issues,
+            code=(
+                "frdo.po."
+                "citizenship_country_code_missing"
+            ),
+            field=(
+                "learner_profile."
+                "citizenship_country_code"
+            ),
+            message=(
+                "Citizenship is required for "
+                "FRDO PO documents issued in 2021 or later."
             ),
         )
 
@@ -924,36 +1500,598 @@ def _evaluate_frdo_readiness(
         program_type
         in FRDO_PO_PROGRAM_TYPES
     ):
-        for attribute, code in (
-            (
-                "po_program_type",
-                (
-                    "frdo.po."
-                    "program_type_missing"
-                ),
+        _append_missing_text_issue(
+            issues,
+            source=frdo_context,
+            attribute="po_document_type",
+            code="frdo.po.document_type_missing",
+            field="frdo_context.po_document_type",
+            message=(
+                "Required FRDO PO field is missing."
             ),
-            (
-                "po_profession",
-                (
-                    "frdo.po."
-                    "profession_missing"
-                ),
-            ),
+        )
+
+        po_document_type = (
+            _frdo_po_context_classifier_value(
+                frdo_context,
+                "po_document_type",
+                "document_type",
+            )
+        )
+
+        if (
+            po_document_type
+            == FRDO_PO_DOCUMENT_TYPE_ART_CERTIFICATE
         ):
+            if _text_present(
+                getattr(
+                    frdo_context,
+                    "po_program_type",
+                    None,
+                )
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po."
+                        "program_type_must_be_blank_"
+                        "for_art_certificate"
+                    ),
+                    field=(
+                        "frdo_context."
+                        "po_program_type"
+                    ),
+                    message=(
+                        "Professional training program type "
+                        "must be blank for the art certificate."
+                    ),
+                )
+
+            if _text_present(
+                getattr(
+                    frdo_context,
+                    "po_profession",
+                    None,
+                )
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po."
+                        "profession_must_be_blank_"
+                        "for_art_certificate"
+                    ),
+                    field=(
+                        "frdo_context."
+                        "po_profession"
+                    ),
+                    message=(
+                        "Profession must be blank "
+                        "for the art certificate."
+                    ),
+                )
+
+        else:
             _append_missing_text_issue(
                 issues,
                 source=frdo_context,
-                attribute=attribute,
-                code=code,
+                attribute="po_profession",
+                code="frdo.po.profession_missing",
+                field="frdo_context.po_profession",
+                message=(
+                    "Required FRDO PO field is missing."
+                ),
+            )
+
+        if document is not None:
+            series_value = getattr(
+                document,
+                "document_series",
+                None,
+            )
+
+            if _text_present(
+                series_value
+            ):
+                series_text = str(
+                    series_value
+                )
+
+                if len(
+                    series_text
+                ) > 20:
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            "document_series_too_long"
+                        ),
+                        field=(
+                            "document.document_series"
+                        ),
+                        message=(
+                            "FRDO PO document series "
+                            "must not exceed 20 characters."
+                        ),
+                    )
+
+                elif not _frdo_po_text_chars_valid(
+                    series_text,
+                    extra_chars=".-/ ",
+                ):
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            "document_series_invalid"
+                        ),
+                        field=(
+                            "document.document_series"
+                        ),
+                        message=(
+                            "FRDO PO document series "
+                            "contains unsupported characters."
+                        ),
+                    )
+
+            number_value = getattr(
+                document,
+                "document_number",
+                None,
+            )
+
+            if _text_present(
+                number_value
+            ):
+                number_text = str(
+                    number_value
+                )
+
+                if len(
+                    number_text
+                ) > 40:
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            "document_number_too_long"
+                        ),
+                        field=(
+                            "document.document_number"
+                        ),
+                        message=(
+                            "FRDO PO document number "
+                            "must not exceed 40 characters."
+                        ),
+                    )
+
+                elif not _frdo_po_text_chars_valid(
+                    number_text,
+                    extra_chars=".-/ ",
+                ):
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            "document_number_invalid"
+                        ),
+                        field=(
+                            "document.document_number"
+                        ),
+                        message=(
+                            "FRDO PO document number "
+                            "contains unsupported characters."
+                        ),
+                    )
+
+            registration_value = getattr(
+                document,
+                "registration_number",
+                None,
+            )
+
+            if _text_present(
+                registration_value
+            ):
+                registration_text = str(
+                    registration_value
+                )
+
+                if len(
+                    registration_text
+                ) > 30:
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            "registration_number_too_long"
+                        ),
+                        field=(
+                            "document."
+                            "registration_number"
+                        ),
+                        message=(
+                            "FRDO PO registration number "
+                            "must not exceed 30 characters."
+                        ),
+                    )
+
+                elif not _frdo_po_text_chars_valid(
+                    registration_text,
+                    extra_chars=".\u2116-/ ()_",
+                ):
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            "registration_number_invalid"
+                        ),
+                        field=(
+                            "document."
+                            "registration_number"
+                        ),
+                        message=(
+                            "FRDO PO registration number "
+                            "contains unsupported characters."
+                        ),
+                    )
+
+        course_title = getattr(
+            course,
+            "title",
+            None,
+        )
+
+        if _text_present(
+            course_title
+        ):
+            title_text = str(
+                course_title
+            )
+
+            if len(
+                title_text
+            ) > 255:
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po."
+                        "program_name_too_long"
+                    ),
+                    field="course.title",
+                    message=(
+                        "FRDO PO program name "
+                        "must not exceed 255 characters."
+                    ),
+                )
+
+            elif not _frdo_po_text_chars_valid(
+                title_text,
+                extra_chars=(
+                    "().,:/- "
+                    "\u00ab\u00bb"
+                    "\"?\u2116&+#_;"
+                ),
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po."
+                        "program_name_invalid"
+                    ),
+                    field="course.title",
+                    message=(
+                        "FRDO PO program name "
+                        "contains unsupported characters."
+                    ),
+                )
+
+        start_date = _frdo_date_value(
+            getattr(
+                enrollment,
+                "started_at",
+                None,
+            )
+        )
+
+        end_date = _frdo_date_value(
+            getattr(
+                enrollment,
+                "completed_at",
+                None,
+            )
+        )
+
+        current_year = date.today().year
+
+        document_status_value = (
+            _frdo_po_context_classifier_value(
+                frdo_context,
+                "document_status",
+                "document_status",
+            )
+        )
+
+        if start_date is not None:
+            minimum_start_year = None
+
+            if (
+                document_status_value
+                == "\u041e\u0440\u0438\u0433\u0438\u043d\u0430\u043b"
+            ):
+                minimum_start_year = 1978
+
+            elif (
+                document_status_value
+                == "\u0414\u0443\u0431\u043b\u0438\u043a\u0430\u0442"
+            ):
+                minimum_start_year = 1955
+
+            if (
+                minimum_start_year is not None
+                and start_date.year
+                < minimum_start_year
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po."
+                        "start_year_before_minimum"
+                    ),
+                    field="enrollment.started_at",
+                    message=(
+                        "FRDO PO training start year "
+                        "is earlier than allowed "
+                        "for the document status."
+                    ),
+                )
+
+            if (
+                start_date.year
+                > current_year
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po.start_year_future"
+                    ),
+                    field="enrollment.started_at",
+                    message=(
+                        "FRDO PO training start year "
+                        "cannot be in the future."
+                    ),
+                )
+
+        if end_date is not None:
+            if (
+                end_date.year
+                > current_year
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po.end_year_future"
+                    ),
+                    field="enrollment.completed_at",
+                    message=(
+                        "FRDO PO training end year "
+                        "cannot be in the future."
+                    ),
+                )
+
+            if (
+                start_date is not None
+                and end_date.year
+                < start_date.year
+            ):
+                _append_issue(
+                    issues,
+                    code=(
+                        "frdo.po."
+                        "end_year_before_start"
+                    ),
+                    field="enrollment.completed_at",
+                    message=(
+                        "FRDO PO training end year "
+                        "cannot be earlier "
+                        "than start year."
+                    ),
+                )
+
+        if learner_profile is not None:
+            for attribute in (
+                "last_name",
+                "first_name",
+                "middle_name",
+            ):
+                value = getattr(
+                    learner_profile,
+                    attribute,
+                    None,
+                )
+
+                if not _text_present(
+                    value
+                ):
+                    continue
+
+                value_text = str(
+                    value
+                )
+
+                if len(
+                    value_text
+                ) > 50:
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            + attribute
+                            + "_too_long"
+                        ),
+                        field=(
+                            "learner_profile."
+                            + attribute
+                        ),
+                        message=(
+                            "FRDO PO recipient name "
+                            "must not exceed "
+                            "50 characters."
+                        ),
+                    )
+
+                elif not _frdo_po_person_name_is_valid(
+                    value_text
+                ):
+                    _append_issue(
+                        issues,
+                        code=(
+                            "frdo.po."
+                            + attribute
+                            + "_invalid"
+                        ),
+                        field=(
+                            "learner_profile."
+                            + attribute
+                        ),
+                        message=(
+                            "FRDO PO recipient name "
+                            "contains unsupported "
+                            "characters."
+                        ),
+                    )
+
+        for attribute, classifier, code in (
+            (
+                "document_status",
+                "document_status",
+                "frdo.document_status_unsupported",
+            ),
+            (
+                "loss_confirmation",
+                "loss_confirmation",
+                "frdo.loss_confirmation_unsupported",
+            ),
+            (
+                "exchange_confirmation",
+                "exchange_confirmation",
+                "frdo.exchange_confirmation_unsupported",
+            ),
+            (
+                "destruction_confirmation",
+                "destruction_confirmation",
+                "frdo.destruction_confirmation_unsupported",
+            ),
+            (
+                "po_document_type",
+                "document_type",
+                "frdo.po.document_type_unsupported",
+            ),
+            (
+                "po_program_type",
+                "po_program_type",
+                "frdo.po.program_type_unsupported",
+            ),
+            (
+                "po_profession",
+                "po_profession",
+                "frdo.po.profession_unsupported",
+            ),
+            (
+                "po_qualification",
+                "po_qualification",
+                "frdo.po.qualification_unsupported",
+            ),
+        ):
+            _append_frdo_po_classifier_issue(
+                issues,
+                classifier=classifier,
+                value=getattr(
+                    frdo_context,
+                    attribute,
+                    None,
+                ),
                 field=(
                     "frdo_context."
                     + attribute
                 ),
-                message=(
-                    "Required FRDO PO "
-                    "field is missing."
+                code=code,
+            )
+
+        if learner_profile is not None:
+            _append_frdo_po_classifier_issue(
+                issues,
+                classifier="sex",
+                value=getattr(
+                    learner_profile,
+                    "sex",
+                    None,
+                ),
+                field="learner_profile.sex",
+                code="learner_profile.sex_unsupported",
+            )
+
+            _append_frdo_po_classifier_issue(
+                issues,
+                classifier="citizenship_country_code",
+                value=getattr(
+                    learner_profile,
+                    "citizenship_country_code",
+                    None,
+                ),
+                field=(
+                    "learner_profile."
+                    "citizenship_country_code"
+                ),
+                code=(
+                    "learner_profile."
+                    "citizenship_country_code_unsupported"
                 ),
             )
+
+        if (
+            issued_date is not None
+            and issued_date
+            >= date(
+                2021,
+                1,
+                1,
+            )
+        ):
+            for attribute, classifier, code in (
+                (
+                    "study_form",
+                    "study_form",
+                    "frdo.study_form_unsupported",
+                ),
+                (
+                    "funding_source",
+                    "funding_source",
+                    "frdo.funding_source_unsupported",
+                ),
+                (
+                    "education_delivery_form",
+                    "education_delivery_form",
+                    (
+                        "frdo."
+                        "education_delivery_form_unsupported"
+                    ),
+                ),
+            ):
+                _append_frdo_po_classifier_issue(
+                    issues,
+                    classifier=classifier,
+                    value=getattr(
+                        frdo_context,
+                        attribute,
+                        None,
+                    ),
+                    field=(
+                        "frdo_context."
+                        + attribute
+                    ),
+                    code=code,
+                )
 
     document_status = str(
         getattr(
@@ -993,6 +2131,19 @@ def _evaluate_frdo_readiness(
                 "recipient_middle_name",
             ),
         )
+
+        if (
+            program_type
+            in FRDO_PO_PROGRAM_TYPES
+        ):
+            _append_frdo_po_original_snapshot_exact_issues(
+                issues,
+                getattr(
+                    frdo_context,
+                    "original_document_snapshot_json",
+                    None,
+                ),
+            )
 
     return RegistryReadinessResult(
         registry=REGISTRY_FRDO,

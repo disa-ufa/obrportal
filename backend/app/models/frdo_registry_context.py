@@ -86,6 +86,11 @@ class FrdoRegistryContext(
         nullable=True,
     )
 
+    po_document_type: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
     po_program_type: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,

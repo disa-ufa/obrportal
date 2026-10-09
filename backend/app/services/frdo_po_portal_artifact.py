@@ -12,7 +12,15 @@ from app.services.compliance_registry_contract import (
 )
 from app.services.frdo_po_portal_contract import (
     FrdoPoPortalContractUnavailable,
-    require_frdo_po_portal_contract,
+    read_verified_frdo_po_template_bytes,
+)
+from app.services.frdo_po_xlsx_formatter import (
+    FrdoPoXlsxFormatterError,
+    format_frdo_po_xlsx,
+)
+from app.services.frdo_po_xlsx_validator import (
+    FrdoPoXlsxValidatorError,
+    validate_frdo_po_xlsx,
 )
 
 
@@ -91,16 +99,35 @@ def prepare_frdo_po_portal_artifact(
     course = snapshot["course"]
 
     try:
-        require_frdo_po_portal_contract(
-            program_type=course[
-                "regulatory_program_type"
-            ],
+        template_bytes = (
+            read_verified_frdo_po_template_bytes(
+                program_type=course[
+                    "regulatory_program_type"
+                ],
+            )
         )
     except FrdoPoPortalContractUnavailable as exc:
         raise FrdoPoPortalArtifactUnavailable(
             str(exc)
         ) from exc
 
-    raise FrdoPoPortalArtifactUnavailable(
-        "FRDO PO XLSX formatter is unavailable"
-    )
+    try:
+        content = format_frdo_po_xlsx(
+            approval_snapshot=snapshot,
+            template_bytes=template_bytes,
+        )
+
+        validate_frdo_po_xlsx(
+            content=content,
+            approval_snapshot=snapshot,
+            template_bytes=template_bytes,
+        )
+
+        return content
+    except (
+        FrdoPoXlsxFormatterError,
+        FrdoPoXlsxValidatorError,
+    ) as exc:
+        raise FrdoPoPortalArtifactError(
+            str(exc)
+        ) from exc
