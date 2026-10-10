@@ -350,6 +350,53 @@ def main() -> None:
     require_occurs("frontend/src/components/admin/RoleForm.jsx", "<Field", 3)
     require_occurs("frontend/src/components/admin/UserForm.jsx", "<Field", 4)
 
+    # Real FRDO PO panel contract: create, download, submit and partial reconciliation.
+    require_contains(
+        "frontend/src/components/admin/FrdoPoBatchesPanel.jsx",
+        [
+            "export function FrdoPoBatchesPanel({ obligations, onRefresh })",
+            'data-testid="admin-registries-frdo-batches"',
+            'data-testid="admin-registries-frdo-batch-create"',
+            'data-testid="admin-registries-frdo-batch-results-form"',
+            'item.status === "approved"',
+            "selectedVisible.map((item) => item.id)",
+            "ids.length > 1001",
+            "prepareAdminFrdoSubmissionBatch(ids)",
+            "getAdminFrdoSubmissionBatches()",
+            "getAdminFrdoSubmissionBatch(batch.id)",
+            "downloadAdminFrdoSubmissionBatch(created.id)",
+            "downloadAdminFrdoSubmissionBatch(batch.id)",
+            "markAdminFrdoSubmissionBatchSubmitted(batch.id, {",
+            "external_reference: submissionReference.trim() || null",
+            "recordAdminFrdoSubmissionBatchResults(batch.id, {",
+            "source_description: sourceDescription.trim()",
+            "source_reference: sourceReference.trim() || null",
+            "item.result_status == null && forms[item.obligation_id]?.selected",
+            "if (!items.length)",
+            "result_status: form.result_status",
+            "form.result_status === \"accepted\"",
+            'batch.status === "submitted" && !detail.reconciled_at',
+            "setForms(Object.fromEntries(",
+            "if (onRefresh) await onRefresh();",
+            "Система не отправляет сведения во внешний реестр автоматически.",
+            "Подтвердить фактическую отправку",
+        ],
+    )
+
+    panel_source = read_text(
+        "frontend/src/components/admin/FrdoPoBatchesPanel.jsx"
+    )
+    for forbidden in (
+        "window.prompt(",
+        "window.alert(",
+        "localStorage.setItem(",
+        "sessionStorage.setItem(",
+    ):
+        if forbidden in panel_source:
+            raise SystemExit("FRDO PO panel has forbidden pattern: " + forbidden)
+
+    print("FRDO_PO_BATCH_PANEL_CONTRACT=PASS")
+
     print("Frontend admin detail components behavior smoke passed")
 
 
