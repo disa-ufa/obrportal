@@ -359,6 +359,7 @@ def main() -> None:
             'data-testid="admin-registries-frdo-batch-create"',
             'data-testid="admin-registries-frdo-batch-results-form"',
             'item.status === "approved"',
+            'item.regulatory_program_type === "vocational_training"',
             "selectedVisible.map((item) => item.id)",
             "ids.length > 1001",
             "prepareAdminFrdoSubmissionBatch(ids)",
