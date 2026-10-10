@@ -31,6 +31,7 @@ import {
 } from "../api/client";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { FrdoPoContextForm } from "../components/admin/FrdoPoContextForm";
+import { FrdoPoBatchesPanel } from "../components/admin/FrdoPoBatchesPanel";
 
 
 const T = {
@@ -2035,6 +2036,10 @@ export function AdminRegistriesPage() {
           </div>
         )}
       </section>
+
+      {activeRegistry === "frdo" ? (
+        <FrdoPoBatchesPanel obligations={obligations} onRefresh={load} />
+      ) : null}
 
       {activeRegistry === "mintrud" ? (
         <section
