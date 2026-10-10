@@ -205,7 +205,11 @@ def test_frdo_batch_http_lifecycle_and_audit():
     assert created["has_artifact"] is True
 
     detail = _assert_status(
-        _request("GET", detail_path, token=admin_token),
+        _request(
+            "GET",
+            detail_path,
+            token=admin_token,
+        ),
         200,
     )
 
@@ -245,7 +249,11 @@ def test_frdo_batch_http_lifecycle_and_audit():
 
     # Permission and lifecycle safeguards before submission.
     _assert_status(
-        _request("GET", detail_path, token=learner_token),
+        _request(
+            "GET",
+            detail_path,
+            token=learner_token,
+        ),
         403,
     )
 
