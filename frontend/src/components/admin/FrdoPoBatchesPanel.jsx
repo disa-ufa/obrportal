@@ -135,6 +135,12 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
       });
       const updated = await getAdminFrdoSubmissionBatch(batch.id);
       setDetail(updated);
+      setForms(Object.fromEntries(
+        (updated.items || []).map((item) => [
+          item.obligation_id,
+          pendingForm(item),
+        ])
+      ));
       await reload();
       if (onRefresh) await onRefresh();
     });
@@ -142,9 +148,17 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
   }
 
   function updateForm(obligationId, key, value) {
+    const item = (detail?.items || []).find(
+      (row) => row.obligation_id === obligationId
+    );
+    const defaults = pendingForm(item || {});
     setForms((previous) => ({
       ...previous,
-      [obligationId]: { ...previous[obligationId], [key]: value },
+      [obligationId]: {
+        ...defaults,
+        ...(previous[obligationId] || {}),
+        [key]: value,
+      },
     }));
   }
 
