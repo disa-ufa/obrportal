@@ -53,7 +53,12 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
   const [error, setError] = useState("");
 
   const approved = useMemo(
-    () => obligations.filter((item) => item.status === "approved"),
+    () => (obligations || []).filter(
+      (item) => (
+        item.status === "approved"
+        && item.regulatory_program_type === "vocational_training"
+      )
+    ),
     [obligations]
   );
   const approvedIds = useMemo(() => new Set(approved.map((item) => item.id)), [approved]);
@@ -217,7 +222,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
             </label>
           ))}
         </div>
-      ) : <p className="mt-3 text-xs text-slate-500">На текущей странице нет утверждённых записей.</p>}
+      ) : <p className="mt-3 text-xs text-slate-500">На текущей странице нет утверждённых записей профессионального обучения (ПО).</p>}
 
       <h3 className="mt-6 text-sm font-bold text-slate-900">История пакетов</h3>
       {loading ? <p className="mt-2 text-xs">Загрузка пакетов...</p> : null}
