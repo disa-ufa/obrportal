@@ -176,7 +176,7 @@ def create_frdo_fixture(
                 ),
                 phone=None,
                 full_name=(
-                    "?????? ???? ????????"
+                    "\u0418\u0432\u0430\u043d\u043e\u0432 \u0418\u0432\u0430\u043d \u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447"
                 ),
                 hashed_password=(
                     get_password_hash(
@@ -226,9 +226,9 @@ def create_frdo_fixture(
             if with_profile:
                 profile = LearnerProfile(
                     user_id=str(user.id),
-                    last_name="??????",
-                    first_name="????",
-                    middle_name="????????",
+                    last_name="\u0418\u0432\u0430\u043d\u043e\u0432",
+                    first_name="\u0418\u0432\u0430\u043d",
+                    middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
                     birth_date=date(
                         1990,
                         1,
@@ -273,12 +273,12 @@ def create_frdo_fixture(
                 document_series="FRDO",
                 document_number=(
                     "FRDO-API-"
-                    + suffix
+                    + suffix[:24]
                 ),
                 issued_at=now.date(),
                 registration_number=(
                     "REG-FRDO-"
-                    + suffix
+                    + suffix[:20]
                 ),
                 document_type=(
                     "?????????????"
@@ -334,19 +334,26 @@ def create_frdo_fixture(
                     obligation_id=str(
                         obligation.id
                     ),
-                    document_status="Original",
-                    loss_confirmation="No",
-                    exchange_confirmation="No",
-                    destruction_confirmation="No",
-                    study_form="Full-time",
-                    funding_source="Paid",
+                    document_status="\u041e\u0440\u0438\u0433\u0438\u043d\u0430\u043b",
+                    loss_confirmation="\u041d\u0435\u0442",
+                    exchange_confirmation="\u041d\u0435\u0442",
+                    destruction_confirmation="\u041d\u0435\u0442",
+                    study_form="\u041e\u0447\u043d\u0430\u044f",
+                    funding_source="\u041f\u043b\u0430\u0442\u043d\u043e\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435",
                     education_delivery_form=(
-                        "In organization"
+                        "\u0432 \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438"
+                    ),
+                    po_document_type=(
+                        "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+                        "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+                        "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+                        "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+                        "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
                     ),
                     po_program_type=(
-                        "Initial training"
+                        "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u043e\u0439 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0438 \u043f\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 \u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, \u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 \u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
                     ),
-                    po_profession="Worker",
+                    po_profession="\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
                     po_qualification=None,
                     dpo_professional_activity_area=None,
                     dpo_enlarged_specialty_group=None,
@@ -883,14 +890,21 @@ def test_frdo_admin_context_write_api() -> None:
             "education_delivery_form": (
                 "  In organization  "
             ),
+            "po_document_type": (
+                "  \u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+                "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+                "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+                "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+                "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e  "
+            ),
             "po_program_type": (
                 "  Initial training  "
             ),
             "po_profession": (
-                "  Worker  "
+                "  \u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f  "
             ),
             "po_qualification": (
-                "  Category 1  "
+                "  1  "
             ),
         }
 
@@ -943,25 +957,33 @@ def test_frdo_admin_context_write_api() -> None:
             context[
                 "document_status"
             ]
-            == "Original"
+            == "\u041e\u0440\u0438\u0433\u0438\u043d\u0430\u043b"
         )
         assert (
             context[
                 "po_program_type"
             ]
-            == "Initial training"
+            == (
+                "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 "
+                "\u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u043e\u0439 "
+                "\u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0438 "
+                "\u043f\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+                "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+                "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+                "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+            )
         )
         assert (
             context[
                 "po_profession"
             ]
-            == "Worker"
+            == "\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f"
         )
         assert (
             context[
                 "po_qualification"
             ]
-            == "Category 1"
+            == "1"
         )
 
         status_code, partial = (
@@ -970,7 +992,7 @@ def test_frdo_admin_context_write_api() -> None:
                 context_path,
                 {
                     "po_qualification": (
-                        "  Category 2  "
+                        "  2  "
                     ),
                 },
                 token=admin_token,
@@ -992,7 +1014,7 @@ def test_frdo_admin_context_write_api() -> None:
             ][
                 "po_qualification"
             ]
-            == "Category 2"
+            == "2"
         )
         assert (
             partial["status"]
@@ -1051,7 +1073,8 @@ def test_frdo_admin_context_write_api() -> None:
                 context_path,
                 {
                     "po_profession": (
-                        "Worker"
+                        "\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c "
+                        "\u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f"
                     ),
                 },
                 token=admin_token,
@@ -3277,15 +3300,26 @@ def count_frdo_registry_submission_attempts(
     )
 
 
-def test_frdo_portal_artifact_fail_closed_contract() -> None:
+def test_frdo_portal_artifact_working_reference_xlsx_contract() -> None:
+    from hashlib import sha256
+
+    from app.services.compliance_registry_contract import (
+        PROGRAM_TYPE_VOCATIONAL_TRAINING,
+    )
+    from app.services.frdo_po_portal_contract import (
+        FRDO_PO_TEMPLATE_CONTRACT_VERSION,
+        read_verified_frdo_po_template_bytes,
+    )
+    from app.services.frdo_po_xlsx_validator import (
+        validate_frdo_po_xlsx,
+    )
+
     fixture = create_frdo_fixture(
         with_profile=True,
         obligation_status="needs_approval",
     )
 
-    fixtures = [
-        fixture,
-    ]
+    artifact_path = None
 
     try:
         admin_token = login(
@@ -3302,24 +3336,26 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
             "obligation_id"
         ]
 
-        before_count = (
+        assert (
             count_frdo_registry_submission_attempts(
                 obligation_id
             )
+            == 0
         )
 
-        assert before_count == 0
-
         approve_path = (
-            "/api/v1/admin/frdo/obligations/"
+            "/api/v1/admin/"
+            "frdo/obligations/"
             + obligation_id
             + "/approve"
         )
 
-        status_code, approved = request_json(
-            "POST",
-            approve_path,
-            token=admin_token,
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
         )
 
         assert status_code == 200
@@ -3344,44 +3380,18 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
         ) == 64
 
         portal_path = (
-            "/api/v1/admin/frdo/obligations/"
+            "/api/v1/admin/"
+            "frdo/obligations/"
             + obligation_id
             + "/portal-artifact"
         )
 
-        status_code, conflict = request_json(
-            "POST",
-            portal_path,
-            token=admin_token,
-        )
-
-        after_count = (
-            count_frdo_registry_submission_attempts(
-                obligation_id
+        status_code, forbidden = (
+            request_json(
+                "POST",
+                portal_path,
+                token=learner_token,
             )
-        )
-
-        assert after_count == before_count
-        assert status_code == 409
-        assert isinstance(
-            conflict,
-            dict,
-        )
-        assert (
-            "Official FRDO PO portal upload "
-            "contract is not confirmed"
-            in str(
-                conflict.get(
-                    "detail",
-                    "",
-                )
-            )
-        )
-
-        status_code, forbidden = request_json(
-            "POST",
-            portal_path,
-            token=learner_token,
         )
 
         assert status_code == 403
@@ -3394,18 +3404,250 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
             count_frdo_registry_submission_attempts(
                 obligation_id
             )
-            == before_count
+            == 0
         )
 
-        status_code, missing = request_json(
-            "POST",
-            (
-                "/api/v1/admin/frdo/obligations/"
-                "00000000-0000-0000-"
-                "0000-000000000000/"
-                "portal-artifact"
-            ),
+        status_code, attempt = (
+            request_json(
+                "POST",
+                portal_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 201
+        assert isinstance(
+            attempt,
+            dict,
+        )
+
+        assert (
+            attempt["obligation_id"]
+            == obligation_id
+        )
+
+        assert (
+            attempt["attempt_no"]
+            == 1
+        )
+
+        assert (
+            attempt["artifact_kind"]
+            == "portal-upload-artifact"
+        )
+
+        assert (
+            attempt["transport"]
+            == "file"
+        )
+
+        assert (
+            attempt["schema_version"]
+            == FRDO_PO_TEMPLATE_CONTRACT_VERSION
+        )
+
+        assert (
+            attempt["has_artifact"]
+            is True
+        )
+
+        artifact_sha256 = attempt[
+            "artifact_sha256"
+        ]
+
+        assert isinstance(
+            artifact_sha256,
+            str,
+        )
+        assert len(
+            artifact_sha256
+        ) == 64
+
+        assert (
+            attempt["submitted_at"]
+            is None
+        )
+        assert (
+            attempt["result_status"]
+            is None
+        )
+
+        snapshot = attempt[
+            "snapshot_json"
+        ]
+
+        assert isinstance(
+            snapshot,
+            dict,
+        )
+        assert (
+            snapshot["registry"]
+            == "frdo"
+        )
+
+        artifact_path = (
+            get_frdo_attempt_artifact_path(
+                attempt["id"]
+            )
+        )
+
+        assert artifact_path is not None
+        assert artifact_path.endswith(
+            ".xlsx"
+        )
+
+        download_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + obligation_id
+            + "/attempts/"
+            + attempt["id"]
+            + "/download"
+        )
+
+        (
+            download_status,
+            xlsx_content,
+            headers,
+        ) = request_bytes(
+            "GET",
+            download_path,
             token=admin_token,
+        )
+
+        assert download_status == 200
+        assert isinstance(
+            xlsx_content,
+            bytes,
+        )
+        assert xlsx_content.startswith(
+            b"PK"
+        )
+
+        assert (
+            sha256(
+                xlsx_content
+            ).hexdigest()
+            == artifact_sha256
+        )
+
+        disposition = next(
+            (
+                value
+                for key, value
+                in headers.items()
+                if key.lower()
+                == "content-disposition"
+            ),
+            "",
+        )
+
+        assert (
+            "attachment"
+            in disposition.lower()
+        )
+        assert (
+            ".xlsx"
+            in disposition.lower()
+        )
+
+        validate_frdo_po_xlsx(
+            content=xlsx_content,
+            approval_snapshot=snapshot,
+            template_bytes=(
+                read_verified_frdo_po_template_bytes(
+                    program_type=(
+                        PROGRAM_TYPE_VOCATIONAL_TRAINING
+                    ),
+                )
+            ),
+        )
+
+        assert (
+            count_frdo_registry_submission_attempts(
+                obligation_id
+            )
+            == 1
+        )
+
+        status_code, attempts = (
+            request_json(
+                "GET",
+                (
+                    "/api/v1/admin/"
+                    "frdo/obligations/"
+                    + obligation_id
+                    + "/attempts"
+                ),
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            attempts,
+            list,
+        )
+        assert len(
+            attempts
+        ) == 1
+        assert (
+            attempts[0]["id"]
+            == attempt["id"]
+        )
+
+        async def _read_status():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    obligation = (
+                        await session.scalar(
+                            select(
+                                RegistryObligation
+                            ).where(
+                                RegistryObligation.id
+                                == obligation_id
+                            )
+                        )
+                    )
+
+                    assert obligation is not None
+
+                    return obligation.status
+            finally:
+                await engine.dispose()
+
+        assert (
+            asyncio.run(
+                _read_status()
+            )
+            == "exported"
+        )
+
+        status_code, missing = (
+            request_json(
+                "POST",
+                (
+                    "/api/v1/admin/"
+                    "frdo/obligations/"
+                    "00000000-0000-0000-"
+                    "0000-000000000000/"
+                    "portal-artifact"
+                ),
+                token=admin_token,
+            )
         )
 
         assert status_code == 404
@@ -3418,12 +3660,377 @@ def test_frdo_portal_artifact_fail_closed_contract() -> None:
             count_frdo_registry_submission_attempts(
                 obligation_id
             )
-            == before_count
+            == 1
+        )
+
+    finally:
+        delete_frdo_test_artifact(
+            artifact_path
+        )
+
+        cleanup_frdo_fixtures(
+            [
+                fixture,
+            ]
+        )
+
+
+def test_frdo_portal_artifact_training_reference_gap_returns_409_without_attempt() -> None:
+    fixture = create_frdo_fixture(
+        with_profile=True,
+        obligation_status="pending_data",
+    )
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        obligation_id = fixture[
+            "obligation_id"
+        ]
+
+        context_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + obligation_id
+            + "/context"
+        )
+
+        status_code, updated = (
+            request_json(
+                "PATCH",
+                context_path,
+                {
+                    "po_document_type": (
+                        "\u0421\u043f\u0440\u0430\u0432\u043a\u0430 "
+                        "\u043e\u0431 "
+                        "\u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0438"
+                    ),
+                },
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            updated,
+            dict,
+        )
+        assert (
+            updated["status"]
+            == "ready"
+        )
+
+        approve_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + obligation_id
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            approved,
+            dict,
+        )
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        assert (
+            count_frdo_registry_submission_attempts(
+                obligation_id
+            )
+            == 0
+        )
+
+        portal_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + obligation_id
+            + "/portal-artifact"
+        )
+
+        status_code, rejected = (
+            request_json(
+                "POST",
+                portal_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            rejected,
+            dict,
+        )
+
+        detail = str(
+            rejected.get(
+                "detail",
+                "",
+            )
+        )
+
+        assert (
+            "training_reference_"
+            "art_preprofessional_profession"
+            in detail
+        )
+
+        assert (
+            count_frdo_registry_submission_attempts(
+                obligation_id
+            )
+            == 0
+        )
+
+        async def _read_status():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    obligation = await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == obligation_id
+                        )
+                    )
+
+                    assert obligation is not None
+
+                    return obligation.status
+            finally:
+                await engine.dispose()
+
+        assert (
+            asyncio.run(
+                _read_status()
+            )
+            == "approved"
+        )
+
+        actions = get_frdo_audit_actions(
+            obligation_id
+        )
+
+        assert (
+            "admin.frdo_portal_artifact_prepared"
+            not in actions
         )
 
     finally:
         cleanup_frdo_fixtures(
-            fixtures
+            [
+                fixture,
+            ]
+        )
+
+
+def test_frdo_portal_artifact_rejects_stale_approval_without_attempt() -> None:
+    fixture = create_frdo_fixture(
+        with_profile=True,
+        obligation_status="needs_approval",
+    )
+
+    try:
+        admin_token = login(
+            ADMIN_EMAIL,
+            ADMIN_PASSWORD,
+        )
+
+        obligation_id = fixture[
+            "obligation_id"
+        ]
+
+        approve_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + obligation_id
+            + "/approve"
+        )
+
+        status_code, approved = (
+            request_json(
+                "POST",
+                approve_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 200
+        assert isinstance(
+            approved,
+            dict,
+        )
+        assert (
+            approved["status"]
+            == "approved"
+        )
+
+        async def _make_current_data_stale():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    course = await session.scalar(
+                        select(
+                            Course
+                        ).where(
+                            Course.id
+                            == fixture[
+                                "course_id"
+                            ]
+                        )
+                    )
+
+                    assert course is not None
+
+                    course.title = (
+                        course.title
+                        + " stale portal"
+                    )
+
+                    await session.commit()
+
+            finally:
+                await engine.dispose()
+
+        asyncio.run(
+            _make_current_data_stale()
+        )
+
+        assert (
+            count_frdo_registry_submission_attempts(
+                obligation_id
+            )
+            == 0
+        )
+
+        portal_path = (
+            "/api/v1/admin/"
+            "frdo/obligations/"
+            + obligation_id
+            + "/portal-artifact"
+        )
+
+        status_code, rejected = (
+            request_json(
+                "POST",
+                portal_path,
+                token=admin_token,
+            )
+        )
+
+        assert status_code == 409
+        assert isinstance(
+            rejected,
+            dict,
+        )
+
+        detail = str(
+            rejected.get(
+                "detail",
+                "",
+            )
+        ).lower()
+
+        assert "stale" in detail
+
+        assert (
+            count_frdo_registry_submission_attempts(
+                obligation_id
+            )
+            == 0
+        )
+
+        async def _read_status():
+            engine = create_async_engine(
+                str(
+                    settings.database_url
+                )
+            )
+
+            session_factory = (
+                async_sessionmaker(
+                    engine,
+                    expire_on_commit=False,
+                )
+            )
+
+            try:
+                async with session_factory() as session:
+                    obligation = await session.scalar(
+                        select(
+                            RegistryObligation
+                        ).where(
+                            RegistryObligation.id
+                            == obligation_id
+                        )
+                    )
+
+                    assert obligation is not None
+
+                    return obligation.status
+            finally:
+                await engine.dispose()
+
+        assert (
+            asyncio.run(
+                _read_status()
+            )
+            == "approved"
+        )
+
+        actions = get_frdo_audit_actions(
+            obligation_id
+        )
+
+        assert (
+            "admin.frdo_portal_artifact_prepared"
+            not in actions
+        )
+
+    finally:
+        cleanup_frdo_fixtures(
+            [
+                fixture,
+            ]
         )
 
 

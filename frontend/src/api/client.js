@@ -1316,6 +1316,51 @@ export async function getAdminFrdoObligations(
 }
 
 
+export async function getAdminFrdoPoClassifierCatalog() {
+  return request(
+    "/api/v1/admin/frdo/po/classifiers"
+  );
+}
+
+
+export async function searchAdminFrdoPoProfessions(
+  query = "",
+  limit = 50
+) {
+  const params = new URLSearchParams();
+
+  if (`${query || ""}`.trim()) {
+    params.set(
+      "q",
+      `${query}`.trim()
+    );
+  }
+
+  params.set(
+    "limit",
+    `${limit}`
+  );
+
+  return request(
+    `/api/v1/admin/frdo/po/professions?${params.toString()}`
+  );
+}
+
+
+export async function updateAdminFrdoObligationContext(
+  obligationId,
+  payload
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/context`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+
 export async function validateAdminFrdoObligation(
   obligationId
 ) {
@@ -1357,6 +1402,18 @@ export async function prepareAdminFrdoRegistryExport(
 ) {
   return request(
     `/api/v1/admin/frdo/obligations/${obligationId}/export`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
+export async function prepareAdminFrdoPortalArtifact(
+  obligationId
+) {
+  return request(
+    `/api/v1/admin/frdo/obligations/${obligationId}/portal-artifact`,
     {
       method: "POST",
     }
@@ -1703,4 +1760,83 @@ export async function recordAdminMintrudSubmissionAttemptResult(
       body: JSON.stringify(payload),
     }
   );
+}
+
+
+// FRDO PO batches: manual registry submission and result reconciliation.
+export async function prepareAdminFrdoSubmissionBatch(obligationIds) {
+  return request("/api/v1/admin/frdo/batches", {
+    method: "POST",
+    body: JSON.stringify({ obligation_ids: obligationIds }),
+  });
+}
+
+export async function getAdminFrdoSubmissionBatches() {
+  return request("/api/v1/admin/frdo/batches");
+}
+
+export async function getAdminFrdoSubmissionBatch(batchId) {
+  return request(`/api/v1/admin/frdo/batches/${batchId}`);
+}
+
+export async function markAdminFrdoSubmissionBatchSubmitted(batchId, payload) {
+  return request(`/api/v1/admin/frdo/batches/${batchId}/submitted`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function recordAdminFrdoSubmissionBatchResults(batchId, payload) {
+  return request(`/api/v1/admin/frdo/batches/${batchId}/results`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function downloadAdminFrdoSubmissionBatch(batchId) {
+  const accessToken = getStoredToken();
+  const response = await fetch(
+    buildApiUrl(`/api/v1/admin/frdo/batches/${batchId}/download`),
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const raw = await response.text();
+    let payload = null;
+    try {
+      payload = raw ? JSON.parse(raw) : null;
+    } catch {
+      payload = null;
+    }
+    const detail = payload?.detail || raw || `HTTP ${response.status}`;
+    const error = new Error(
+      typeof detail === "string" ? detail : JSON.stringify(detail)
+    );
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
+
+  const blob = await response.blob();
+  const filename = normalizeDownloadedFilename(
+    extractDownloadFilename(response, `frdo-po-batch-${batchId}.xlsx`),
+    blob
+  );
+  const objectUrl = window.URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
+  }
 }

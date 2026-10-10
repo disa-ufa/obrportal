@@ -34,6 +34,7 @@ def test_frdo_registry_context_model_contract() -> None:
         "study_form",
         "funding_source",
         "education_delivery_form",
+        "po_document_type",
         "po_program_type",
         "po_profession",
         "po_qualification",

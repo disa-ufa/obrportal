@@ -10,6 +10,7 @@ SHELL = ROOT / "frontend/src/components/layout/AppShell.jsx"
 RENDERER = ROOT / "frontend/src/routes/AdminPageRenderer.jsx"
 PAGE = ROOT / "frontend/src/pages/AdminRegistriesPage.jsx"
 CLIENT = ROOT / "frontend/src/api/client.js"
+FRDO_FORM = ROOT / "frontend/src/components/admin/FrdoPoContextForm.jsx"
 
 
 def require(condition, message):
@@ -22,6 +23,7 @@ shell = SHELL.read_text(encoding="utf-8")
 renderer = RENDERER.read_text(encoding="utf-8")
 page = PAGE.read_text(encoding="utf-8")
 client = CLIENT.read_text(encoding="utf-8")
+frdo_form = FRDO_FORM.read_text(encoding="utf-8")
 
 
 for marker in [
@@ -71,6 +73,9 @@ for marker in [
     "validateAdminMintrudObligation",
     "approveAdminFrdoObligation",
     "approveAdminMintrudObligation",
+    "updateAdminFrdoObligationContext",
+    "FRDO_PO_PROGRAM_TYPE",
+    "FrdoPoContextForm",
     "updateAdminMintrudObligationContext",
     "getAdminFrdoSubmissionAttempts",
     "getAdminMintrudSubmissionAttempts",
@@ -88,6 +93,10 @@ for marker in [
     "isHistoricalInternalLifecycle",
     'data-testid="admin-registry-legacy-internal-lifecycle"',
     "artifactDownloadLabel",
+    "prepareAdminFrdoPortalArtifact",
+    "admin-registries-frdo-portal-available",
+    "frdoPortalAvailableTitle",
+    "frdoPortalAvailable",
     "MINTRUD_CONTEXT_TEXT",
     "MINTRUD_REPORTING_SCENARIO_LABELS",
     "MINTRUD_KNOWLEDGE_RESULT_LABELS",
@@ -105,10 +114,26 @@ for marker in [
     )
 
 
+require(
+    "admin-registries-portal-unavailable"
+    not in page,
+    "obsolete FRDO portal unavailable UI remains",
+)
+
+require(
+    "prepareAdminFrdoRegistryExport"
+    not in page,
+    "FRDO UI still uses internal JSON export",
+)
+
+
 for name in [
     "getAdminFrdoObligations",
     "validateAdminFrdoObligation",
     "approveAdminFrdoObligation",
+    "updateAdminFrdoObligationContext",
+    "searchAdminFrdoPoProfessions",
+    "getAdminFrdoPoClassifierCatalog",
     "getAdminFrdoSubmissionAttempts",
     "downloadAdminFrdoSubmissionAttempt",
     "markAdminFrdoSubmissionAttemptSubmitted",
@@ -131,6 +156,59 @@ for name in [
         "client API missing: " + name,
     )
 
+
+
+for marker in [
+    'data-testid="admin-registries-frdo-po-context-form"',
+    "getAdminFrdoPoClassifierCatalog",
+    "searchAdminFrdoPoProfessions",
+    '"document_status"',
+    '"loss_confirmation"',
+    '"exchange_confirmation"',
+    '"destruction_confirmation"',
+    '"study_form"',
+    '"funding_source"',
+    '"education_delivery_form"',
+    '"po_document_type"',
+    '"po_program_type"',
+    '"po_profession"',
+    '"po_qualification"',
+    "payload.original_document_snapshot_json",
+    'data-testid="admin-registries-frdo-po-original-document"',
+    '"document_series"',
+    '"document_number"',
+    '"registration_number"',
+    '"issue_date"',
+    '"recipient_last_name"',
+    '"recipient_first_name"',
+    '"recipient_middle_name"',
+]:
+    require(
+        marker in frdo_form,
+        "FRDO PO form contract missing: "
+        + marker,
+    )
+
+for forbidden_classifier_value in [
+    '"Original"',
+    '"Duplicate"',
+    '"Paid"',
+    '"federal_budget"',
+    '"regional_budget"',
+    '"local_budget"',
+]:
+    require(
+        forbidden_classifier_value
+        not in frdo_form,
+        (
+            "hardcoded FRDO classifier value found: "
+            + forbidden_classifier_value
+        ),
+    )
+
+print(
+    "ADMIN_REGISTRIES_FRDO_PO_FORM=PASS"
+)
 
 for removed_technical_ui in [
     '<option value="">reporting_scenario</option>',

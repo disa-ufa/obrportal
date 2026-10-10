@@ -42,9 +42,9 @@ def learner():
 
 def profile(**overrides):
     values = {
-        "last_name": "??????",
-        "first_name": "????",
-        "middle_name": "????????",
+        "last_name": "\u0418\u0432\u0430\u043d\u043e\u0432",
+        "first_name": "\u0418\u0432\u0430\u043d",
+        "middle_name": "\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
         "birth_date": date(
             1990,
             1,
@@ -853,7 +853,7 @@ def test_frdo_po_official_contract_ready() -> None:
     )
 
     po_profile = profile(
-        middle_name="Middle",
+        middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
         snils="112-233-445 95",
         citizenship_country_code="643",
     )
@@ -866,8 +866,15 @@ def test_frdo_po_official_contract_ready() -> None:
         study_form="Full-time",
         funding_source="Paid",
         education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
         po_program_type="Initial training",
-        po_profession="Worker",
+        po_profession="\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
         po_qualification=None,
         dpo_professional_activity_area=None,
         dpo_enlarged_specialty_group=None,
@@ -923,7 +930,7 @@ def test_frdo_po_requires_context_and_legal_document_fields() -> None:
         course=po_course,
         learner=learner(),
         learner_profile=profile(
-            middle_name="Middle",
+            middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             snils=None,
         ),
         document=po_document,
@@ -983,6 +990,13 @@ def test_frdo_po_requires_six_hours_and_po_fields() -> None:
         study_form="Full-time",
         funding_source="Paid",
         education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
         po_program_type=None,
         po_profession=None,
         po_qualification=None,
@@ -999,7 +1013,7 @@ def test_frdo_po_requires_six_hours_and_po_fields() -> None:
         course=po_course,
         learner=learner(),
         learner_profile=profile(
-            middle_name="Middle",
+            middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             snils="112-233-445 95",
         ),
         document=po_document,
@@ -1010,7 +1024,6 @@ def test_frdo_po_requires_six_hours_and_po_fields() -> None:
 
     assert {
         "frdo.po.hours_below_minimum",
-        "frdo.po.program_type_missing",
         "frdo.po.profession_missing",
     }.issubset(
         set(
@@ -1058,8 +1071,15 @@ def test_frdo_post_2021_russian_document_requires_valid_snils() -> None:
         study_form="Full-time",
         funding_source="Paid",
         education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
         po_program_type="Initial training",
-        po_profession="Worker",
+        po_profession="\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
         po_qualification=None,
         dpo_professional_activity_area=None,
         dpo_enlarged_specialty_group=None,
@@ -1074,7 +1094,7 @@ def test_frdo_post_2021_russian_document_requires_valid_snils() -> None:
         course=po_course,
         learner=learner(),
         learner_profile=profile(
-            middle_name="Middle",
+            middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             snils=None,
             citizenship_country_code="643",
         ),
@@ -1088,7 +1108,7 @@ def test_frdo_post_2021_russian_document_requires_valid_snils() -> None:
         course=po_course,
         learner=learner(),
         learner_profile=profile(
-            middle_name="Middle",
+            middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             snils="111-111-111 11",
             citizenship_country_code="643",
         ),
@@ -1146,6 +1166,13 @@ def test_frdo_dpo_fails_closed_when_production_contract_unconfirmed() -> None:
         study_form="Full-time",
         funding_source="Paid",
         education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
         po_program_type=None,
         po_profession=None,
         po_qualification=None,
@@ -1173,7 +1200,7 @@ def test_frdo_dpo_fails_closed_when_production_contract_unconfirmed() -> None:
         course=dpo_course,
         learner=learner(),
         learner_profile=profile(
-            middle_name="Middle",
+            middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             snils="112-233-445 95",
         ),
         document=dpo_document,
@@ -1249,8 +1276,15 @@ def test_frdo_duplicate_requires_original_document_snapshot() -> None:
         study_form="Full-time",
         funding_source="Paid",
         education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
         po_program_type="Initial training",
-        po_profession="Worker",
+        po_profession="\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
         po_qualification=None,
         dpo_professional_activity_area=None,
         dpo_enlarged_specialty_group=None,
@@ -1265,7 +1299,7 @@ def test_frdo_duplicate_requires_original_document_snapshot() -> None:
         course=po_course,
         learner=learner(),
         learner_profile=profile(
-            middle_name="Middle",
+            middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
             snils="112-233-445 95",
         ),
         document=po_document,

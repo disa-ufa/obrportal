@@ -946,8 +946,15 @@ def test_frdo_po_snapshot_freezes_extended_inputs() -> None:
         study_form="Full-time",
         funding_source="Paid",
         education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
         po_program_type="Initial training",
-        po_profession="Worker",
+        po_profession="\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
         po_qualification=None,
         dpo_professional_activity_area=None,
         dpo_enlarged_specialty_group=None,
@@ -1010,7 +1017,9 @@ def test_frdo_po_snapshot_freezes_extended_inputs() -> None:
 
     assert snapshot["frdo_context"][
         "po_profession"
-    ] == "Worker"
+    ] == (
+        "\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f"
+    )
 
     assert (
         "prior_education_snapshot_json"

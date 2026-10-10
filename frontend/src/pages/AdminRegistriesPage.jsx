@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   approveAdminFrdoObligation,
   approveAdminMintrudObligation,
-  prepareAdminFrdoRegistryExport,
+  prepareAdminFrdoPortalArtifact,
   prepareAdminMintrudPortalArtifact,
   prepareAdminMintrudSubmissionBatch,
   downloadAdminMintrudSubmissionBatch,
@@ -24,11 +24,14 @@ import {
   recordAdminFrdoSubmissionAttemptResult,
   recordAdminMintrudSubmissionAttemptResult,
   recordAdminMintrudSubmissionBatchResult,
+  updateAdminFrdoObligationContext,
   updateAdminMintrudObligationContext,
   validateAdminFrdoObligation,
   validateAdminMintrudObligation,
 } from "../api/client";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { FrdoPoContextForm } from "../components/admin/FrdoPoContextForm";
+import { FrdoPoBatchesPanel } from "../components/admin/FrdoPoBatchesPanel";
 
 
 const T = {
@@ -44,7 +47,7 @@ const T = {
   reset: "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c",
   validate: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c",
   approve: "\u0423\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c",
-  prepareExport: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON",
+  prepareExport: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XLSX \u0434\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e",
   prepareMintrudPortalArtifact: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422",
   mintrudBatchPrepareDownload: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0438 \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u043f\u0430\u043a\u0435\u0442 XML",
   mintrudBatchSelected: "\u0412\u044b\u0431\u0440\u0430\u043d\u043e \u0434\u043b\u044f \u043f\u0430\u043a\u0435\u0442\u0430",
@@ -74,6 +77,7 @@ const T = {
   mintrudBatchStatusSubmitted: "\u041d\u0430\u0431\u043e\u0440 \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d",
   reopen: "\u041d\u0430\u0447\u0430\u0442\u044c \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435",
   attempts: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438",
+  frdoContext: "\u0414\u0430\u043d\u043d\u044b\u0435 \u0424\u0420\u0414\u041e",
   context: "\u0414\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
   save: "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c",
   cancel: "\u041e\u0442\u043c\u0435\u043d\u0430",
@@ -81,12 +85,12 @@ const T = {
   submitted: "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0440\u0443\u0447\u043d\u0443\u044e \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443",
   result: "\u0424\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",
   noRows: "\u0417\u0430\u043f\u0438\u0441\u0438 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
-  warning: "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 JSON \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u0442 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0439 \u0441\u043d\u0438\u043c\u043e\u043a \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0441\u043a\u043e\u0439 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0438 \u0430\u0443\u0434\u0438\u0442\u0430. \u042d\u0442\u043e \u043d\u0435 \u0444\u0430\u0439\u043b \u0434\u043b\u044f \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0438\u043b\u0438 \u041c\u0438\u043d\u0442\u0440\u0443\u0434 \u0438 \u043d\u0435 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0440\u0435\u0435\u0441\u0442\u0440\u0430.",
+  warning: "\u0414\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0437\u0430\u043a\u0440\u0435\u043f\u043b\u0451\u043d\u043d\u044b\u0439 \u0440\u0430\u0431\u043e\u0447\u0438\u0439 XLSX-\u0448\u0430\u0431\u043b\u043e\u043d. \u042d\u0442\u043e \u0440\u0430\u0431\u043e\u0447\u0438\u0439 \u044d\u0442\u0430\u043b\u043e\u043d \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u043f\u0438\u043b\u043e\u0442\u0430, \u0430 \u043d\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435, \u0447\u0442\u043e \u0448\u0430\u0431\u043b\u043e\u043d \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0439 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0439 \u0444\u043e\u0440\u043c\u043e\u0439 \u0424\u0420\u0414\u041e. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442 \u0444\u0430\u0439\u043b \u043f\u0435\u0440\u0435\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435\u043c; \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u0432\u0440\u0443\u0447\u043d\u0443\u044e.",
   mintrudWarning: "\u0414\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 XML \u043f\u043e \u0441\u0445\u0435\u043c\u0435 educated_person_import v1.0.9. \u0424\u0430\u0439\u043b \u043f\u0440\u0435\u0434\u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422; \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0441\u0438\u0441\u0442\u0435\u043c\u043e\u0439 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f.",
   mintrudPortalAvailableTitle: "XML \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
   mintrudPortalAvailable: "\u041f\u043e\u0441\u043b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422\u00bb. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442 XML v1.0.9 \u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 \u0435\u0433\u043e \u043f\u043e XSD. \u0417\u0430\u0442\u0435\u043c \u0441\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043b, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0435\u0433\u043e \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0432\u0440\u0443\u0447\u043d\u0443\u044e \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0432 \u041e\u0431\u0440\u041f\u043e\u0440\u0442\u0430\u043b\u0435.",
-  portalUnavailableTitle: "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
-  portalUnavailable: "\u0424\u0430\u0439\u043b \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u043f\u043e\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 \u0444\u043e\u0440\u043c\u0430\u0442 \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u043d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u0451\u0442 \u0442\u0430\u043a\u043e\u0439 \u0444\u0430\u0439\u043b \u0438 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442 \u0432\u043d\u0435\u0448\u043d\u044e\u044e \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u0434\u043e \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u0438 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u0430.",
+  frdoPortalAvailableTitle: "XLSX \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+  frdoPortalAvailable: "\u041f\u043e\u0441\u043b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XLSX \u0434\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e\u00bb. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442 \u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 XLSX \u043f\u043e \u0437\u0430\u043a\u0440\u0435\u043f\u043b\u0451\u043d\u043d\u043e\u043c\u0443 \u0440\u0430\u0431\u043e\u0447\u0435\u043c\u0443 \u0448\u0430\u0431\u043b\u043e\u043d\u0443. \u0417\u0430\u0442\u0435\u043c \u0441\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041f\u043e\u043f\u044b\u0442\u043a\u0438\u00bb, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0435\u0433\u043e \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0432\u0440\u0443\u0447\u043d\u0443\u044e, \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u0440\u0443\u0447\u043d\u0443\u044e \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442.",
 };
 
 
@@ -110,6 +114,9 @@ const INTERNAL_EXPORT_ARTIFACT =
 
 const PORTAL_UPLOAD_ARTIFACT =
   "portal-upload-artifact";
+
+const FRDO_PO_PROGRAM_TYPE = "vocational_training";
+
 
 const ARTIFACT_KIND_LABELS = {
   [INTERNAL_EXPORT_ARTIFACT]:
@@ -206,11 +213,22 @@ function artifactKindLabel(attempt) {
 }
 
 
-function artifactDownloadLabel(attempt) {
+function artifactDownloadLabel(
+  attempt,
+  registry
+) {
   if (
     attempt?.artifact_kind
     === PORTAL_UPLOAD_ARTIFACT
   ) {
+    if (registry === "frdo") {
+      return "\u0421\u043a\u0430\u0447\u0430\u0442\u044c XLSX \u0434\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e";
+    }
+
+    if (registry === "mintrud") {
+      return "\u0421\u043a\u0430\u0447\u0430\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422";
+    }
+
     return "\u0421\u043a\u0430\u0447\u0430\u0442\u044c \u0444\u0430\u0439\u043b \u0434\u043b\u044f \u043f\u043e\u0440\u0442\u0430\u043b\u0430";
   }
 
@@ -965,7 +983,7 @@ function AttemptList({
                 disabled={busy}
                 onClick={() => onDownload(attempt)}
               >
-                {artifactDownloadLabel(attempt)}
+                {artifactDownloadLabel(attempt, registry)}
               </button>
             ) : null}
 
@@ -1261,7 +1279,7 @@ export function AdminRegistriesPage() {
       list: getAdminFrdoObligations,
       validate: validateAdminFrdoObligation,
       approve: approveAdminFrdoObligation,
-      prepareExport: prepareAdminFrdoRegistryExport,
+      prepareExport: prepareAdminFrdoPortalArtifact,
       reopen: reopenAdminFrdoObligation,
       attempts: getAdminFrdoSubmissionAttempts,
       download: downloadAdminFrdoSubmissionAttempt,
@@ -1806,16 +1824,24 @@ export function AdminRegistriesPage() {
     await withAction(
       `context:${obligation.id}`,
       async () => {
-        await updateAdminMintrudObligationContext(
-          obligation.id,
-          payload
-        );
+        if (activeRegistry === "mintrud") {
+          await updateAdminMintrudObligationContext(
+            obligation.id,
+            payload
+          );
+        } else {
+          await updateAdminFrdoObligationContext(
+            obligation.id,
+            payload
+          );
+        }
 
         setEditingContextId("");
         await load();
       }
     );
   }
+
 
   async function download(
     obligation,
@@ -1984,15 +2010,15 @@ export function AdminRegistriesPage() {
 
         {activeRegistry === "frdo" ? (
           <div
-            data-testid="admin-registries-portal-unavailable"
-            className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"
+            data-testid="admin-registries-frdo-portal-available"
+            className="mt-3 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-900 ring-1 ring-emerald-200"
           >
-            <div className="font-semibold text-slate-900">
-              {T.portalUnavailableTitle}
+            <div className="font-semibold text-emerald-950">
+              {T.frdoPortalAvailableTitle}
             </div>
 
             <div className="mt-1">
-              {T.portalUnavailable}
+              {T.frdoPortalAvailable}
             </div>
           </div>
         ) : (
@@ -2010,6 +2036,10 @@ export function AdminRegistriesPage() {
           </div>
         )}
       </section>
+
+      {activeRegistry === "frdo" ? (
+        <FrdoPoBatchesPanel obligations={obligations} onRefresh={load} />
+      ) : null}
 
       {activeRegistry === "mintrud" ? (
         <section
@@ -2789,8 +2819,12 @@ export function AdminRegistriesPage() {
                                   </button>
                                 ) : null}
 
-                                {activeRegistry === "mintrud"
-                                  && canValidate ? (
+                                {canValidate
+                                  && (
+                                    activeRegistry === "mintrud"
+                                    || obligation.regulatory_program_type
+                                      === FRDO_PO_PROGRAM_TYPE
+                                  ) ? (
                                     <button
                                       type="button"
                                       className={SECONDARY}
@@ -2803,7 +2837,9 @@ export function AdminRegistriesPage() {
                                         )
                                       )}
                                     >
-                                      {T.context}
+                                      {activeRegistry === "mintrud"
+                                        ? T.context
+                                        : T.frdoContext}
                                     </button>
                                   ) : null}
 
@@ -2819,9 +2855,9 @@ export function AdminRegistriesPage() {
                             </div>
                           </div>
 
-                          {activeRegistry === "mintrud"
-                            && editingContextId === obligation.id ? (
-                              <div className="border-t border-slate-100 px-4 pb-4">
+                          {editingContextId === obligation.id ? (
+                            <div className="border-t border-slate-100 px-4 pb-4">
+                              {activeRegistry === "mintrud" ? (
                                 <MintrudContextForm
                                   obligation={obligation}
                                   busy={Boolean(busyKey)}
@@ -2831,8 +2867,19 @@ export function AdminRegistriesPage() {
                                     payload
                                   )}
                                 />
-                              </div>
-                            ) : null}
+                              ) : (
+                                <FrdoPoContextForm
+                                  obligation={obligation}
+                                  busy={Boolean(busyKey)}
+                                  onCancel={() => setEditingContextId("")}
+                                  onSave={(payload) => saveContext(
+                                    obligation,
+                                    payload
+                                  )}
+                                />
+                              )}
+                            </div>
+                          ) : null}
 
                           {expandedId === obligation.id ? (
                             <div className="border-t border-slate-100 p-4">

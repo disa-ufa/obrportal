@@ -33,13 +33,13 @@ class RegistrySubmissionBatch(
 
     __table_args__ = (
         CheckConstraint(
-            "registry = 'mintrud'",
+            "registry IN ('mintrud', 'frdo')",
             name="ck_registry_submission_batch_registry",
         ),
         CheckConstraint(
             (
                 "status IN "
-                "('exported', 'imported', 'submitted')"
+                "('exported', 'imported', 'submitted') AND (registry = 'mintrud' OR status != 'imported')"
             ),
             name="ck_registry_submission_batch_status",
         ),
@@ -52,7 +52,7 @@ class RegistrySubmissionBatch(
             name="ck_registry_submission_batch_transport",
         ),
         CheckConstraint(
-            "schema_version = '1.0.9'",
+            "((registry = 'mintrud' AND schema_version = '1.0.9') OR (registry = 'frdo' AND schema_version = 'frdo-po-working-reference-v1'))",
             name="ck_registry_submission_batch_schema_version",
         ),
         CheckConstraint(
@@ -60,7 +60,7 @@ class RegistrySubmissionBatch(
             name="ck_registry_submission_batch_obligation_count",
         ),
         CheckConstraint(
-            "record_count >= 1 AND record_count <= 5000",
+            "((registry = 'mintrud' AND record_count BETWEEN 1 AND 5000) OR (registry = 'frdo' AND record_count BETWEEN 1 AND 1001))",
             name="ck_registry_submission_batch_record_count",
         ),
     )
