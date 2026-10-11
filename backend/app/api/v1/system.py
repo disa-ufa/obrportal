@@ -1,3 +1,4 @@
+import asyncio
 import boto3
 import redis.asyncio as redis
 from botocore.config import Config
@@ -9,6 +10,23 @@ from app.db.session import engine
 from app.schemas.system import ReadinessResponse
 
 router = APIRouter()
+
+
+def _check_s3_buckets() -> None:
+    """Check S3 outside the FastAPI event loop."""
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=settings.s3_endpoint_url,
+        aws_access_key_id=settings.s3_access_key,
+        aws_secret_access_key=settings.s3_secret_key,
+        config=Config(
+            signature_version="s3v4",
+            connect_timeout=3,
+            read_timeout=3,
+            retries={"total_max_attempts": 1},
+        ),
+    )
+    s3.list_buckets()
 
 
 @router.get("/ready", response_model=ReadinessResponse)
@@ -31,14 +49,7 @@ async def ready() -> ReadinessResponse:
         redis_status = f"error: {type(exc).__name__}"
 
     try:
-        s3 = boto3.client(
-            "s3",
-            endpoint_url=settings.s3_endpoint_url,
-            aws_access_key_id=settings.s3_access_key,
-            aws_secret_access_key=settings.s3_secret_key,
-            config=Config(signature_version="s3v4"),
-        )
-        s3.list_buckets()
+        await asyncio.to_thread(_check_s3_buckets)
     except Exception as exc:  # noqa: BLE001
         storage_status = f"error: {type(exc).__name__}"
 
