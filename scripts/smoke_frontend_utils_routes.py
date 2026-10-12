@@ -623,6 +623,53 @@ def main() -> None:
         ],
     )
 
+    # Enrollment CSV regression coverage: the helper must stay wired to
+    # the admin page, and its new behavior must be exercised by Node tests.
+    require_contains(
+        "frontend/src/utils/adminEnrollmentsCsv.js",
+        [
+            "export function getEnrollmentExportActionRequired(",
+            "Object.prototype.hasOwnProperty.call(documentsById, enrollment.id)",
+            'return "unknown";',
+            'document.status === "available"',
+            "export function buildAdminEnrollmentsCsvRows(",
+            "status_label: statusLabelFor(enrollment.status)",
+            "action_required: getEnrollmentExportActionRequired(enrollment, documentsById)",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/utils/adminEnrollmentsCsv.test.js",
+        [
+            'test("CSV builder retains all 76 completed enrollments',
+            'test("CSV builder includes document and course links',
+            'test("CSV action-required value stays unknown',
+            'test("known missing organization or group',
+            "buildCsvContent(",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/pages/AdminEnrollmentsPage.jsx",
+        [
+            'from "../utils/adminEnrollmentsCsv";',
+            "const rows = buildAdminEnrollmentsCsvRows(",
+            "(status) => getStatusOption(status).label",
+        ],
+    )
+
+    require_contains(
+        ".github/workflows/ci.yml",
+        [
+            "node --test frontend/src/utils/adminEnrollmentsCsv.test.js",
+        ],
+    )
+
+    if "status_label: getStatusLabel(enrollment.status)" in read_text(
+        "frontend/src/pages/AdminEnrollmentsPage.jsx"
+    ):
+        raise SystemExit("Broken enrollment CSV status label call returned")
+
     print("Frontend utils/routes behavior smoke passed")
 
 
