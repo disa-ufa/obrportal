@@ -150,6 +150,7 @@ import {
 } from "../api/client";
 import { formatRuDateTime as formatDateTime } from "../utils/dateFormat";
 import { buildDatedCsvFilename, downloadCsvFile } from "../utils/exportCsv";
+import { buildAdminEnrollmentsCsvRows, getEnrollmentExportActionRequired } from "../utils/adminEnrollmentsCsv";
 
 const ENROLLMENT_CSV_EXPORT_COLUMNS = [
   { key: "id", label: "ID" },
@@ -919,36 +920,11 @@ function AdminEnrollmentsPage() {
   }
 
   function handleExportEnrollmentsCsv() {
-    const rows = visibleEnrollments.map((enrollment) => ({
-      id: enrollment.id,
-      user_id: enrollment.user_id || "",
-      user_email: enrollment.user_email || "",
-      user_full_name: enrollment.user_full_name || "",
-      course_id: enrollment.course_id || "",
-      course_title: enrollment.course_title || "",
-      course_slug: enrollment.course_slug || "",
-      organization_id: enrollment.organization_id || "",
-      organization_name: enrollment.organization_name || "",
-      learning_group_id: enrollment.learning_group_id || "",
-      learning_group_name: enrollment.learning_group_name || "",
-      status: enrollment.status || "",
-      status_label: getStatusLabel(enrollment.status),
-      started_at: enrollment.started_at || "",
-      completed_at: enrollment.completed_at || "",
-      action_required:
-        enrollment.status === "assigned" ||
-        enrollment.status === "completed"
-          ? "yes"
-          : "no",
-      documents_url: enrollment.id
-        ? `/admin/documents?enrollment_id=${enrollment.id}`
-        : "",
-      course_url: enrollment.course_slug
-        ? `/courses/${enrollment.course_slug}`
-        : "",
-      created_at: enrollment.created_at || "",
-      updated_at: enrollment.updated_at || "",
-    }));
+    const rows = buildAdminEnrollmentsCsvRows(
+      visibleEnrollments,
+      documentsById,
+      (status) => getStatusOption(status).label
+    );
 
     downloadCsvFile(
       buildDatedCsvFilename("obrportal-admin-enrollments"),
