@@ -89,6 +89,16 @@ test("CSV action-required value stays unknown until completed learner documents 
   );
 });
 
+test("failed document loading remains unknown instead of signaling missing documents", () => {
+  const enrollment = completedEnrollment();
+  const documentsById = { "enrollment-1": null };
+
+  assert.equal(getEnrollmentExportActionRequired(enrollment, documentsById), "unknown");
+  const [row] = buildAdminEnrollmentsCsvRows([enrollment], documentsById, statusLabelFor);
+  assert.equal(row.action_required, "unknown");
+  assert.equal(getEnrollmentExportActionRequired(enrollment, { "enrollment-1": [] }), "yes");
+});
+
 test("known missing organization or group and unstarted enrollment always require attention", () => {
   assert.equal(
     getEnrollmentExportActionRequired(completedEnrollment({ learning_group_id: null }), {}),

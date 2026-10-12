@@ -14,8 +14,11 @@ export function getEnrollmentExportActionRequired(enrollment, documentsById = {}
     }
 
     const documents = documentsById[enrollment.id];
-    const hasAvailableDocument = Array.isArray(documents)
-      && documents.some((document) => document.status === "available");
+    if (!Array.isArray(documents)) {
+      return "unknown";
+    }
+
+    const hasAvailableDocument = documents.some((document) => document.status === "available");
 
     return hasAvailableDocument ? "no" : "yes";
   }

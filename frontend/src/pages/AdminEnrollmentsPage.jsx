@@ -691,7 +691,7 @@ function AdminEnrollmentsPage() {
 
       setDocumentsById((current) => ({
         ...current,
-        [enrollment.id]: documentsResult.status === "fulfilled" ? toArray(documentsResult.value) : [],
+        [enrollment.id]: documentsResult.status === "fulfilled" ? toArray(documentsResult.value) : null,
       }));
 
       setQuizAttemptsById((current) => ({

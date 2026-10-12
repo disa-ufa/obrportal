@@ -630,6 +630,7 @@ def main() -> None:
         [
             "export function getEnrollmentExportActionRequired(",
             "Object.prototype.hasOwnProperty.call(documentsById, enrollment.id)",
+            'if (!Array.isArray(documents))',
             'return "unknown";',
             'document.status === "available"',
             "export function buildAdminEnrollmentsCsvRows(",
@@ -644,6 +645,7 @@ def main() -> None:
             'test("CSV builder retains all 76 completed enrollments',
             'test("CSV builder includes document and course links',
             'test("CSV action-required value stays unknown',
+            'test("failed document loading remains unknown',
             'test("known missing organization or group',
             "buildCsvContent(",
         ],
@@ -655,6 +657,7 @@ def main() -> None:
             'from "../utils/adminEnrollmentsCsv";',
             "const rows = buildAdminEnrollmentsCsvRows(",
             "(status) => getStatusOption(status).label",
+            'documentsResult.status === "fulfilled" ? toArray(documentsResult.value) : null',
         ],
     )
 
