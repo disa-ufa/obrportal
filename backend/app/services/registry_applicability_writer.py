@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import utcnow
@@ -18,7 +18,8 @@ from app.models.registry_applicability import (
     RegistryApplicabilityEvent,
     RegistryApplicabilityRecord,
 )
-from app.models.registry_obligation import RegistryObligation
+from app.models.registry_obligation import RegistryObligation, RegistrySubmissionAttempt
+from app.models.registry_submission_batch import RegistrySubmissionBatchItem
 from app.services.registry_applicability import RegistryApplicability
 
 
@@ -111,18 +112,43 @@ async def persist_registry_applicability(
         text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
         {"key": "registry-applicability:" + enrollment_id + ":" + evaluation.registry},
     )
-    legacy_status = await session.scalar(
-        select(RegistryObligation.status)
+    # Lock the parent enrollment first so existing classification checks
+    # serialize with other transactions using this writer. Producers of
+    # external artifacts must still enforce their own compatible guards.
+    obligation = await session.scalar(
+        select(RegistryObligation)
         .where(
             RegistryObligation.enrollment_id == enrollment_id,
             RegistryObligation.registry == evaluation.registry,
         )
         .with_for_update()
     )
-    if legacy_status in PROTECTED_LIFECYCLE_STATUSES:
-        raise ApplicabilityWriteConflict(
-            "Protected historical obligation requires supervised reconciliation"
+    if obligation is not None:
+        has_protected_fields = any((
+            obligation.status in PROTECTED_LIFECYCLE_STATUSES,
+            obligation.approved_at is not None,
+            obligation.approved_by_user_id is not None,
+            obligation.approval_snapshot_json is not None,
+            obligation.approval_fingerprint is not None,
+            obligation.approval_invalidated_at is not None,
+            obligation.submitted_at is not None,
+            obligation.accepted_at is not None,
+            bool(obligation.external_id),
+        ))
+        attempt_exists = await session.scalar(
+            select(RegistrySubmissionAttempt.id)
+            .where(RegistrySubmissionAttempt.obligation_id == obligation.id)
+            .limit(1)
         )
+        batch_item_exists = await session.scalar(
+            select(RegistrySubmissionBatchItem.id)
+            .where(RegistrySubmissionBatchItem.obligation_id == obligation.id)
+            .limit(1)
+        )
+        if has_protected_fields or attempt_exists is not None or batch_item_exists is not None:
+            raise ApplicabilityWriteConflict(
+                "Protected historical obligation requires supervised reconciliation"
+            )
 
     result = await session.execute(
         select(RegistryApplicabilityRecord)
