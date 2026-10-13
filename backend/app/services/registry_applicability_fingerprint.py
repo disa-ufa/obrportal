@@ -16,7 +16,7 @@ import json
 from app.services.compliance_registry_contract import REGISTRY_CODES
 
 
-INPUT_SCHEMA_VERSION = "registry-applicability-input-v1"
+INPUT_SCHEMA_VERSION = "registry-applicability-input-v2"
 
 
 @dataclass(frozen=True)
@@ -34,6 +34,8 @@ class RegistryApplicabilityInputs:
     reporting_scenario: str | None
     effective_date: date | None
     mintrud_program_codes: tuple[str, ...]
+    employer_name: str | None = None
+    employer_inn: str | None = None
 
 
 def _required(value: str, field: str) -> str:
@@ -77,6 +79,8 @@ def canonical_applicability_inputs(data: RegistryApplicabilityInputs) -> str:
         "issued_document_type",
         "organization_id",
         "reporting_scenario",
+        "employer_name",
+        "employer_inn",
     ):
         _optional(getattr(data, name), name)
 
@@ -108,6 +112,10 @@ def canonical_applicability_inputs(data: RegistryApplicabilityInputs) -> str:
         },
         "organization_id": data.organization_id,
         "reporting_scenario": data.reporting_scenario,
+        "employer": {
+            "name": data.employer_name,
+            "inn": data.employer_inn,
+        },
         "effective_date": (
             data.effective_date.isoformat() if data.effective_date else None
         ),
