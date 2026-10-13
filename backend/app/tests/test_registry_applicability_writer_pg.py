@@ -536,3 +536,125 @@ def test_pending_legacy_evidence_blocks_generic_writer(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("legacy_action", ["attempt", "approval"])
+def test_concurrent_legacy_evidence_commits_before_writer_reclassifies(
+    pg_applicability_db, legacy_action
+):
+    """Writer must wait on obligation row, then see committed legacy evidence.
+
+    IMPORTANT: This proves only the legacy-first ordering. The opposite
+    ordering remains unsafe until all approval/export paths check persisted
+    applicability under the same lock, and therefore must not be enabled.
+    """
+    from app.models.base import utcnow
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.services.compliance_registry_attempts import (
+        create_registry_submission_attempt,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        action_committed = asyncio.Event()
+        action_pending = asyncio.Event()
+        allow_legacy_commit = asyncio.Event()
+        try:
+            enrollment_id, _ = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                obligation = RegistryObligation(
+                    registry="frdo",
+                    enrollment_id=enrollment_id,
+                    status="pending_data",
+                    readiness_errors=[],
+                )
+                session.add(obligation)
+                await session.flush()
+                obligation_id = obligation.id
+
+            async def legacy_write():
+                async with maker.begin() as session:
+                    if legacy_action == "attempt":
+                        await create_registry_submission_attempt(
+                            session,
+                            obligation_id=obligation_id,
+                            snapshot={"isolated_test": True},
+                            generated_by_user_id=None,
+                        )
+                    else:
+                        row = (
+                            await session.execute(
+                                select(RegistryObligation)
+                                .where(RegistryObligation.id == obligation_id)
+                                .with_for_update()
+                            )
+                        ).scalar_one()
+                        row.approved_at = utcnow()
+                        row.approval_snapshot_json = {"isolated_test": True}
+                        await session.flush()
+                    action_pending.set()
+                    await asyncio.wait_for(allow_legacy_commit.wait(), timeout=8)
+                action_committed.set()
+
+            async def decision_write():
+                async with maker.begin() as session:
+                    return await persist_registry_applicability(
+                        session=session,
+                        enrollment_id=enrollment_id,
+                        evaluation=_evaluation("required"),
+                    )
+
+            legacy_task = asyncio.create_task(legacy_write())
+            decision_task = None
+            try:
+                await asyncio.wait_for(action_pending.wait(), timeout=8)
+                decision_task = asyncio.create_task(decision_write())
+                # This assertion confirms that the decision cannot complete
+                # while the competing legacy transaction owns the row lock.
+                with pytest.raises(asyncio.TimeoutError):
+                    await asyncio.wait_for(
+                        asyncio.shield(decision_task), timeout=0.25
+                    )
+            finally:
+                allow_legacy_commit.set()
+
+            await asyncio.wait_for(legacy_task, timeout=8)
+            assert action_committed.is_set()
+            assert decision_task is not None
+            with pytest.raises(ApplicabilityWriteConflict, match="historical"):
+                await asyncio.wait_for(decision_task, timeout=8)
+
+            async with maker() as session:
+                assert (
+                    await session.scalar(
+                        select(RegistryApplicabilityRecord.id).where(
+                            RegistryApplicabilityRecord.enrollment_id == enrollment_id
+                        )
+                    )
+                ) is None
+                assert (
+                    await session.scalar(
+                        select(RegistryApplicabilityEvent.id).where(
+                            RegistryApplicabilityEvent.enrollment_id == enrollment_id
+                        )
+                    )
+                ) is None
+                row = await session.get(RegistryObligation, obligation_id)
+                assert row.status == "pending_data"
+                if legacy_action == "attempt":
+                    assert await session.scalar(
+                        select(RegistrySubmissionAttempt.id).where(
+                            RegistrySubmissionAttempt.obligation_id == obligation_id
+                        )
+                    ) is not None
+                else:
+                    assert row.approved_at is not None
+                    assert row.approval_snapshot_json == {"isolated_test": True}
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
