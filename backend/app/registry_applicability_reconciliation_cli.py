@@ -64,6 +64,11 @@ WITH evidence AS (
                 FROM registry_submission_attempts att
                 WHERE att.obligation_id = o.id
             )
+            OR EXISTS (
+                SELECT 1
+                FROM registry_submission_batch_items bi
+                WHERE bi.obligation_id = o.id
+            )
         ) AS protected_evidence
     FROM registry_obligations o
     JOIN enrollments e ON e.id = o.enrollment_id
