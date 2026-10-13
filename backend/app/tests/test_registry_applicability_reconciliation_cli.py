@@ -68,6 +68,7 @@ def test_sql_checks_approval_artifacts_and_prior_attempts():
         "o.submitted_at IS NOT NULL",
         "o.accepted_at IS NOT NULL",
         "registry_submission_attempts",
+        "registry_submission_batch_items",
         "registry_applicability a",
     ):
         assert required in LEGACY_RECONCILIATION_SQL
