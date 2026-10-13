@@ -51,6 +51,8 @@ def test_deterministic_fingerprint_with_canonical_program_order():
         ("reporting_scenario", "employer"),
         ("effective_date", date(2026, 10, 14)),
         ("mintrud_program_codes", ("ИД34",)),
+        ("employer_name", "Другой работодатель"),
+        ("employer_inn", "0276000000"),
     ],
 )
 def test_significant_input_changes_invalidate_fingerprint(field, changed):
