@@ -381,6 +381,9 @@ def test_legacy_reconciliation_sql_on_disposable_postgres(pg_applicability_db):
                 ("mintrud", "pending_data", "occupational_safety_training", "attempt"),
                 ("frdo", "pending_data", "occupational_safety_training", "batch"),
             ]
+            # The disposable database is shared by earlier module tests.
+            # Capture its existing historical rows before inserting our cases.
+            baseline_report = await get_reconciliation_preview(pg_applicability_db)
             created = []
             for registry, status, program_type, proof in cases:
                 enrollment_id, _ = await _create_enrollment(maker)
@@ -425,10 +428,31 @@ def test_legacy_reconciliation_sql_on_disposable_postgres(pg_applicability_db):
                 )
 
             report = await get_reconciliation_preview(pg_applicability_db)
-            assert report["record_count"] == len(cases)
-            assert report["handling_counts"]["unresolved_manual_review"] == 1
-            assert report["handling_counts"]["candidate_required_for_review"] == 1
-            assert report["handling_counts"]["preserve_lifecycle_and_evidence"] == 3
+            # Only the five newly inserted cases should contribute to this
+            # report delta; never assume a module-scoped test DB was empty.
+            assert report["record_count"] - baseline_report["record_count"] == len(cases)
+            expected_deltas = {
+                "frdo": {
+                    "unresolved_manual_review": 1,
+                    "preserve_lifecycle_and_evidence": 2,
+                },
+                "mintrud": {
+                    "candidate_required_for_review": 1,
+                    "preserve_lifecycle_and_evidence": 1,
+                },
+            }
+            expected_counts = dict(baseline_report["handling_counts"])
+            expected_by_registry = {
+                registry: dict(counts)
+                for registry, counts in baseline_report["registry_counts"].items()
+            }
+            for registry, additions in expected_deltas.items():
+                registry_counts = expected_by_registry.setdefault(registry, {})
+                for handling, count in additions.items():
+                    expected_counts[handling] = expected_counts.get(handling, 0) + count
+                    registry_counts[handling] = registry_counts.get(handling, 0) + count
+            assert report["handling_counts"] == expected_counts
+            assert report["registry_counts"] == expected_by_registry
             assert report["database_writes"] == 0
             assert report["classification_applied"] is False
 
