@@ -77,7 +77,7 @@ async def test_mintrud_reads_course_document_context_and_catalog():
     session = db(
         Result(one=(enrollment(), course())),
         Result(one=document()),
-        Result(one=SimpleNamespace(reporting_scenario="external_training_provider")),
+        Result(one=SimpleNamespace(reporting_scenario="external_training_provider", employer_name="Тестовый работодатель", employer_inn="0276000001")),
         Result(all_rows=[("1.0.9", "ИД34")]),
     )
     result = await load_current_registry_applicability_inputs(
@@ -87,6 +87,8 @@ async def test_mintrud_reads_course_document_context_and_catalog():
     assert result.evaluation.status == "required"
     assert result.inputs.organization_id == "org-1"
     assert result.inputs.reporting_scenario == "external_training_provider"
+    assert result.inputs.employer_name == "Тестовый работодатель"
+    assert result.inputs.employer_inn == "0276000001"
     assert result.inputs.mintrud_program_codes == ("1.0.9:ИД34",)
     assert result.inputs.effective_date.isoformat() == "2026-10-13"
     assert len(result.fingerprint) == 64
