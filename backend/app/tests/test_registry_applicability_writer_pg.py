@@ -658,3 +658,170 @@ def test_concurrent_legacy_evidence_commits_before_writer_reclassifies(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("decision", "expected_code"),
+    [
+        ("not_required", "registry.applicability_not_required"),
+        ("needs_review", "registry.applicability_needs_review"),
+    ],
+)
+def test_opt_in_gate_rejects_decision_first_regardless_of_legacy_status(
+    pg_applicability_db, decision, expected_code
+):
+    """The opt-in guard correctly refuses a committed excluded/review decision."""
+    from app.services.registry_applicability_export_guard import (
+        RegistryApplicabilityGateError,
+        require_registry_applicability_for_submission,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, _ = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                obligation = RegistryObligation(
+                    registry="frdo", enrollment_id=enrollment_id,
+                    status="pending_data", readiness_errors=[],
+                )
+                session.add(obligation)
+                await session.flush()
+                obligation_id = obligation.id
+
+            async with maker.begin() as session:
+                await persist_registry_applicability(
+                    session=session, enrollment_id=enrollment_id,
+                    evaluation=_evaluation(decision),
+                )
+
+            async with maker.begin() as session:
+                obligation = (
+                    await session.execute(
+                        select(RegistryObligation)
+                        .where(RegistryObligation.id == obligation_id)
+                        .with_for_update()
+                    )
+                ).scalar_one()
+                with pytest.raises(RegistryApplicabilityGateError) as exc:
+                    await require_registry_applicability_for_submission(
+                        session=session, obligation=obligation,
+                        expected_input_fingerprint=None,
+                    )
+                assert exc.value.code == expected_code
+                assert obligation.status == "pending_data"
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("decision", ["not_required", "needs_review"])
+def test_known_gap_decision_first_does_not_yet_block_legacy_attempt(
+    pg_applicability_db, decision
+):
+    """Regression marker: legacy attempt path bypasses the new decision.
+
+    The outcome is an expected failure until EVERY approval/export/attempt
+    entry point runs an applicability gate under the same obligation lock.
+    The test deliberately marks only that confirmed unsafe outcome as XFAIL;
+    unexpected database errors remain ordinary CI failures.
+    """
+    from sqlalchemy import func
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.services.compliance_registry_attempts import (
+        RegistrySubmissionAttemptError,
+        create_registry_submission_attempt,
+    )
+    from app.services.registry_applicability_export_guard import (
+        RegistryApplicabilityGateError,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        decision_pending = asyncio.Event()
+        allow_commit = asyncio.Event()
+        try:
+            enrollment_id, _ = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                obligation = RegistryObligation(
+                    registry="frdo", enrollment_id=enrollment_id,
+                    status="pending_data", readiness_errors=[],
+                )
+                session.add(obligation)
+                await session.flush()
+                obligation_id = obligation.id
+
+            async def write_decision():
+                async with maker.begin() as session:
+                    await persist_registry_applicability(
+                        session=session, enrollment_id=enrollment_id,
+                        evaluation=_evaluation(decision),
+                    )
+                    decision_pending.set()
+                    await asyncio.wait_for(allow_commit.wait(), timeout=8)
+
+            async def create_legacy_attempt():
+                try:
+                    async with maker.begin() as session:
+                        await create_registry_submission_attempt(
+                            session,
+                            obligation_id=obligation_id,
+                            snapshot={"isolated_test": True},
+                            generated_by_user_id=None,
+                        )
+                except (RegistrySubmissionAttemptError, RegistryApplicabilityGateError):
+                    # Once the legacy route has been guarded it should reject
+                    # this attempt, leaving no evidence row behind.
+                    pass
+
+            writer = asyncio.create_task(write_decision())
+            attempt = None
+            try:
+                await asyncio.wait_for(decision_pending.wait(), timeout=8)
+                attempt = asyncio.create_task(create_legacy_attempt())
+                with pytest.raises(asyncio.TimeoutError):
+                    await asyncio.wait_for(asyncio.shield(attempt), timeout=0.25)
+            finally:
+                allow_commit.set()
+
+            await asyncio.wait_for(writer, timeout=8)
+            assert attempt is not None
+            await asyncio.wait_for(attempt, timeout=8)
+
+            async with maker() as session:
+                count = await session.scalar(
+                    select(func.count(RegistrySubmissionAttempt.id)).where(
+                        RegistrySubmissionAttempt.obligation_id == obligation_id
+                    )
+                )
+                row = await session.scalar(
+                    select(RegistryApplicabilityRecord).where(
+                        RegistryApplicabilityRecord.enrollment_id == enrollment_id,
+                        RegistryApplicabilityRecord.registry == "frdo",
+                    )
+                )
+                assert row is not None
+                assert row.decision == decision
+                assert row.decision_version == 1
+                assert await session.scalar(
+                    select(func.count(RegistryApplicabilityEvent.id)).where(
+                        RegistryApplicabilityEvent.enrollment_id == enrollment_id
+                    )
+                ) == 1
+                return count
+        finally:
+            await engine.dispose()
+
+    created_attempts = asyncio.run(scenario())
+    if created_attempts:
+        pytest.xfail(
+            "KNOWN GAP: legacy attempt creation ignores the committed "
+            + decision + " applicability decision"
+        )
+    assert created_attempts == 0
