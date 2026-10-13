@@ -146,6 +146,8 @@ async def load_current_registry_applicability_inputs(
         ),
         effective_date=issued_at,
         mintrud_program_codes=program_codes,
+        employer_name=(context.employer_name if context is not None else None),
+        employer_inn=(context.employer_inn if context is not None else None),
     )
     return CurrentRegistryApplicabilityInputs(
         inputs=inputs,
