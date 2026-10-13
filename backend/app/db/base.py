@@ -17,6 +17,10 @@ from app.models.mintrud_learn_program import (
 )
 from app.models.lesson_block import LessonBlock
 from app.models.organization import Organization
+from app.models.registry_applicability import (
+    RegistryApplicabilityEvent,
+    RegistryApplicabilityRecord,
+)
 from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
@@ -48,6 +52,8 @@ __all__ = [
     "MintrudLearnProgram",
     "CourseMintrudLearnProgram",
     "Organization",
+    "RegistryApplicabilityEvent",
+    "RegistryApplicabilityRecord",
     "RegistryObligation",
     "RegistrySubmissionAttempt",
     "RegistrySubmissionBatch",
