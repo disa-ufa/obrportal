@@ -32,6 +32,7 @@ import {
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { FrdoPoContextForm } from "../components/admin/FrdoPoContextForm";
 import { FrdoPoBatchesPanel } from "../components/admin/FrdoPoBatchesPanel";
+import { formatMintrudError, prepareAndDownloadMintrudBatch } from "../utils/mintrudWorkflow";
 
 
 const T = {
@@ -322,6 +323,12 @@ function formatReadinessIssue(item) {
 function getReadinessPresentation(
   obligation
 ) {
+  if (obligation?.registry === "mintrud" && obligation?.status === "approved") {
+    return {
+      kind: "review",
+      text: "Данные утверждены ранее. Перед XML система проверит актуальность снимка. При отказе проверьте данные и выполните повторное утверждение.",
+    };
+  }
   const issues = (
     obligation?.readiness_errors
     || []
@@ -473,7 +480,8 @@ function statusLabel(status) {
 }
 
 
-function formatApiError(error) {
+function formatApiError(error, registry) {
+  if (registry === "mintrud") return formatMintrudError(error, READINESS_LABELS);
   const detail = formatApiDetail(
     error?.payload?.detail
   );
@@ -1321,7 +1329,7 @@ export function AdminRegistriesPage() {
         setMintrudBatches([]);
       }
     } catch (err) {
-      setError(formatApiError(err));
+      setError(formatApiError(err, activeRegistry));
     } finally {
       setLoading(false);
     }
@@ -1355,7 +1363,7 @@ export function AdminRegistriesPage() {
       await callback();
       return true;
     } catch (err) {
-      setError(formatApiError(err));
+      setError(formatApiError(err, activeRegistry));
       return false;
     } finally {
       setBusyKey("");
@@ -1409,6 +1417,13 @@ export function AdminRegistriesPage() {
     await withAction(
       `approve:${obligation.id}`,
       async () => {
+        // The protected approve endpoint rechecks readiness and captures a fresh snapshot.
+        // /validate intentionally rejects the approved lifecycle state.
+        if (activeRegistry === "mintrud" && obligation.status === "approved") {
+          await api.approve(obligation.id);
+          await load();
+          return;
+        }
         const validated = await api.validate(
           obligation.id
         );
@@ -1416,7 +1431,9 @@ export function AdminRegistriesPage() {
         await load();
 
         const readinessErrors = (
-          validated?.readiness_errors
+          validated?.issues
+          || validated?.obligation?.readiness_errors
+          || validated?.readiness_errors
           || []
         );
 
@@ -1436,7 +1453,7 @@ export function AdminRegistriesPage() {
           ![
             "ready",
             "needs_approval",
-          ].includes(validated?.status)
+          ].includes(validated?.obligation?.status || validated?.status)
         ) {
           throw new Error(
             "\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0435 \u0433\u043e\u0442\u043e\u0432\u0430 \u043a \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044e."
@@ -1499,26 +1516,13 @@ export function AdminRegistriesPage() {
     await withAction(
       "mintrud-batch",
       async () => {
-        const batch = await (
-          prepareAdminMintrudSubmissionBatch(
-            obligationIds
-          )
-        );
-
-        if (!batch?.id) {
-          throw new Error(
-            "Batch id is missing in API response."
-          );
-        }
-
-        await (
-          downloadAdminMintrudSubmissionBatch(
-            batch.id
-          )
-        );
-
-        setSelectedMintrudIds([]);
-        await load();
+        await prepareAndDownloadMintrudBatch({
+          ids: obligationIds,
+          create: prepareAdminMintrudSubmissionBatch,
+          download: downloadAdminMintrudSubmissionBatch,
+          reload: load,
+          clearSelection: () => setSelectedMintrudIds([]),
+        });
       }
     );
   }
@@ -2658,7 +2662,7 @@ export function AdminRegistriesPage() {
                       "needs_approval",
                     ].includes(
                       obligation.status
-                    );
+                    ) || (activeRegistry === "mintrud" && obligation.status === "approved");
 
                     const canExport =
                       obligation.status === "approved";
@@ -2766,7 +2770,9 @@ export function AdminRegistriesPage() {
 
                               {obligation.last_error ? (
                                 <div className="mt-2 text-red-700">
-                                  {obligation.last_error}
+                                  {activeRegistry === "mintrud"
+                                    ? formatMintrudError({ message: obligation.last_error }, READINESS_LABELS)
+                                    : obligation.last_error}
                                 </div>
                               ) : null}
                             </div>
@@ -2791,7 +2797,8 @@ export function AdminRegistriesPage() {
                                     disabled={Boolean(busyKey)}
                                     onClick={() => approve(obligation)}
                                   >
-                                    {T.approve}
+                                    {activeRegistry === "mintrud" && obligation.status === "approved"
+                                      ? "Повторно утвердить" : T.approve}
                                   </button>
                                 ) : null}
 

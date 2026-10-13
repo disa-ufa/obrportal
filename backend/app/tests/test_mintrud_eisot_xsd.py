@@ -349,3 +349,11 @@ def test_tampered_xsd_is_rejected(
         validate_mintrud_eisot_xml_v109(
             _valid_xml()
         )
+
+
+def test_xsd_error_does_not_echo_invalid_personal_value():
+    content = _valid_xml().replace(b"2026-09-23", b"private-canary-invalid-date")
+    with pytest.raises(MintrudEisotXsdValidationError) as captured:
+        validate_mintrud_eisot_xml_v109(content)
+    assert "XSD validation failed" in str(captured.value)
+    assert "private-canary" not in str(captured.value)

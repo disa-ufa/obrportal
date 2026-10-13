@@ -64,9 +64,10 @@ def test_shared_freshness_validator_rebuilds_current_snapshot():
     )
 
     assert (
-        "is_registry_approval_current"
+        "evaluate_registry_approval"
         in source
     )
+    assert "not validation.is_current" in source
 
     assert (
         "Registry approval is stale"

@@ -21,7 +21,7 @@ from app.models.registry_obligation import (
 )
 from app.services.compliance_registry_approval import (
     build_registry_approval_snapshot,
-    is_registry_approval_current,
+    evaluate_registry_approval,
 )
 from app.services.mintrud_learn_programs import (
     load_course_mintrud_learn_programs,
@@ -1156,12 +1156,14 @@ async def validate_registry_approval_current(
         )
     )
 
-    if not is_registry_approval_current(
+    validation = evaluate_registry_approval(
         obligation,
         current_snapshot=current_approval_snapshot,
-    ):
+    )
+    if not validation.is_current:
         raise RegistrySubmissionAttemptError(
             "Registry approval is stale and must be reapproved before export"
+            + " (" + validation.reason + ")"
         )
 
 async def mark_registry_exported(

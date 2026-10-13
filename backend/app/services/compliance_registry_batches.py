@@ -330,7 +330,12 @@ def read_registry_submission_batch_artifact(
             "Registry submission batch artifact file is missing"
         )
 
-    content = absolute_path.read_bytes()
+    try:
+        content = absolute_path.read_bytes()
+    except OSError as exc:
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch artifact storage is unavailable"
+        ) from exc
 
     actual_sha256 = sha256(
         content
@@ -628,6 +633,13 @@ async def create_mintrud_registry_submission_batch(
         raise RegistrySubmissionBatchError(
             "Registry submission batch artifact "
             "storage path already exists"
+        ) from exc
+
+    except OSError as exc:
+        if saved_path:
+            delete_registry_submission_batch_artifact_safely(saved_path)
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch artifact storage is unavailable"
         ) from exc
 
     except Exception:

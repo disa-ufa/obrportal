@@ -673,6 +673,18 @@ def main() -> None:
     ):
         raise SystemExit("Broken enrollment CSV status label call returned")
 
+    require_contains(
+        "frontend/src/utils/mintrudWorkflow.js",
+        ["export function formatMintrudError", "export async function prepareAndDownloadMintrudBatch"],
+    )
+    require_contains(
+        "frontend/src/utils/mintrudWorkflow.test.js",
+        ["successful create followed by failed download", "unknown errors and readiness data"],
+    )
+    require_contains(
+        "frontend/src/pages/AdminRegistriesPage.jsx",
+        ["prepareAndDownloadMintrudBatch({", "validated?.obligation?.status", "Повторно утвердить"],
+    )
     print("Frontend utils/routes behavior smoke passed")
 
 
