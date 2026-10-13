@@ -357,3 +357,89 @@ def test_repeatable_read_keeps_course_classification_stable_during_update(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+def test_legacy_reconciliation_sql_on_disposable_postgres(pg_applicability_db):
+    """Real SQL checks prior attempts, batch membership and no DB mutation."""
+    from app.registry_applicability_reconciliation_cli import (
+        get_reconciliation_preview,
+    )
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.models.registry_submission_batch import (
+        RegistrySubmissionBatch,
+        RegistrySubmissionBatchItem,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            cases = [
+                ("frdo", "needs_approval", "occupational_safety_training", "review"),
+                ("mintrud", "pending_data", "occupational_safety_training", "required"),
+                ("frdo", "approved", "occupational_safety_training", "protected"),
+                ("mintrud", "pending_data", "occupational_safety_training", "attempt"),
+                ("frdo", "pending_data", "occupational_safety_training", "batch"),
+            ]
+            created = []
+            for registry, status, program_type, proof in cases:
+                enrollment_id, _ = await _create_enrollment(maker)
+                async with maker.begin() as session:
+                    enrollment = await session.get(Enrollment, enrollment_id)
+                    course = await session.get(Course, enrollment.course_id)
+                    course.regulatory_program_type = program_type
+                    course.frdo_requirement_mode = "auto"
+                    course.mintrud_requirement_mode = "auto"
+                    await session.flush()
+                    o = RegistryObligation(
+                        registry=registry, enrollment_id=enrollment_id,
+                        status=status, readiness_errors=[],
+                    )
+                    session.add(o)
+                    await session.flush()
+                    if proof == "attempt":
+                        session.add(RegistrySubmissionAttempt(
+                            obligation_id=o.id, attempt_no=1,
+                            snapshot_json={}, errors_json=[],
+                        ))
+                    if proof == "batch":
+                        batch = RegistrySubmissionBatch(
+                            registry="frdo", schema_version="frdo-po-working-reference-v1",
+                            obligation_count=1, record_count=1, artifact_path="test-only.xlsx",
+                            artifact_sha256="0" * 64,
+                        )
+                        session.add(batch)
+                        await session.flush()
+                        session.add(RegistrySubmissionBatchItem(
+                            batch_id=batch.id, obligation_id=o.id,
+                            position=0, record_count=1,
+                            approval_snapshot_json={}, approval_fingerprint="0" * 64,
+                        ))
+                    created.append((registry, proof, o.id))
+
+            async with maker() as session:
+                before = (
+                    (await session.scalar(select(text("count(*)")).select_from(RegistryObligation))),
+                    (await session.scalar(select(text("count(*)")).select_from(RegistrySubmissionAttempt))),
+                    (await session.scalar(select(text("count(*)")).select_from(RegistryApplicabilityRecord))),
+                )
+
+            report = await get_reconciliation_preview(pg_applicability_db)
+            assert report["record_count"] == len(cases)
+            assert report["handling_counts"]["unresolved_manual_review"] == 1
+            assert report["handling_counts"]["candidate_required_for_review"] == 1
+            assert report["handling_counts"]["preserve_lifecycle_and_evidence"] == 3
+            assert report["database_writes"] == 0
+            assert report["classification_applied"] is False
+
+            async with maker() as session:
+                after = (
+                    (await session.scalar(select(text("count(*)")).select_from(RegistryObligation))),
+                    (await session.scalar(select(text("count(*)")).select_from(RegistrySubmissionAttempt))),
+                    (await session.scalar(select(text("count(*)")).select_from(RegistryApplicabilityRecord))),
+                )
+            assert before == after
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
