@@ -293,3 +293,67 @@ def test_approved_legacy_obligation_requires_separate_reconciliation(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+def test_repeatable_read_keeps_course_classification_stable_during_update(
+    pg_applicability_db,
+):
+    """Concurrent course edit cannot create a mixed old/new snapshot."""
+    from app.services.registry_applicability_snapshot import (
+        load_consistent_registry_applicability_inputs,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        stable_engine = engine.execution_options(isolation_level="REPEATABLE READ")
+        stable_maker = async_sessionmaker(stable_engine, expire_on_commit=False)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, _ = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                enrollment = await session.get(Enrollment, enrollment_id)
+                course = await session.get(Course, enrollment.course_id)
+                course.regulatory_program_type = "occupational_safety_training"
+                course.frdo_requirement_mode = "auto"
+                await session.flush()
+                obligation = RegistryObligation(
+                    registry="frdo",
+                    enrollment_id=enrollment_id,
+                    status="needs_approval",
+                    readiness_errors=[],
+                )
+                session.add(obligation)
+                await session.flush()
+                obligation_id = obligation.id
+                course_id = course.id
+
+            async with stable_maker.begin() as snapshot:
+                # The first SELECT establishes the PostgreSQL snapshot.
+                obligation = await snapshot.get(RegistryObligation, obligation_id)
+                before = await load_consistent_registry_applicability_inputs(
+                    session=snapshot, obligation=obligation
+                )
+                assert before.evaluation.status == "needs_review"
+
+                async with maker.begin() as writer:
+                    updated = await writer.get(Course, course_id)
+                    updated.regulatory_program_type = "dpo_advanced_training"
+
+                after = await load_consistent_registry_applicability_inputs(
+                    session=snapshot, obligation=obligation
+                )
+                assert before.fingerprint == after.fingerprint
+                assert after.evaluation.status == "needs_review"
+
+            async with stable_maker.begin() as fresh:
+                obligation = await fresh.get(RegistryObligation, obligation_id)
+                changed = await load_consistent_registry_applicability_inputs(
+                    session=fresh, obligation=obligation
+                )
+                assert changed.evaluation.status == "required"
+                assert changed.fingerprint != before.fingerprint
+        finally:
+            await stable_engine.dispose()
+            await engine.dispose()
+
+    asyncio.run(scenario())
