@@ -1094,7 +1094,7 @@ function MintrudProgramMappingState({
                 MINTRUD_MAPPING_TEXT.searchPlaceholder
               }
               data-testid={`${prefix}course-mintrud-program-search`}
-              className={INPUT}
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </div>
 

@@ -100,6 +100,7 @@ def main():
         'title={RU.pageTitle}',
         'className="grid gap-4 md:grid-cols-3"',
         '<AdminCourseCatalogDiagnostics',
+        'className={INPUT}',
     ]
 
     present = [fragment for fragment in forbidden_fragments if fragment in source]
