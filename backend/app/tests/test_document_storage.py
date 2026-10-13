@@ -22,6 +22,32 @@ def test_normalize_relative_storage_path_accepts_safe_path() -> None:
     assert normalize_relative_storage_path(Path("documents/test.pdf")) == "documents/test.pdf"
 
 
+def test_exclusive_write_removes_partial_file_on_io_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "document_storage_dir", str(tmp_path))
+    original_open = Path.open
+
+    class FailingWrite:
+        def __init__(self, handle):
+            self.handle = handle
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            self.handle.close()
+        def write(self, content):
+            self.handle.write(content[:3])
+            self.handle.flush()
+            raise OSError("Simulated full disk")
+
+    def failing_open(path, mode="r", *args, **kwargs):
+        handle = original_open(path, mode, *args, **kwargs)
+        return FailingWrite(handle) if mode == "xb" else handle
+
+    monkeypatch.setattr(Path, "open", failing_open)
+    with pytest.raises(OSError, match="full disk"):
+        write_private_storage_file_exclusive("batch.xml", b"synthetic XML")
+    assert not (tmp_path / "batch.xml").exists()
+
+
 def test_normalize_relative_storage_path_rejects_unsafe_path() -> None:
     with pytest.raises(ValueError):
         normalize_relative_storage_path("../secret.pdf")

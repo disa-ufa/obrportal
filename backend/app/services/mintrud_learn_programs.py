@@ -342,6 +342,8 @@ class MintrudLearnProgramCatalogSyncResult:
 
 async def sync_mintrud_learn_program_catalog_v109(
     session: AsyncSession,
+    *,
+    dry_run: bool = False,
 ) -> MintrudLearnProgramCatalogSyncResult:
     result = await session.execute(
         select(
@@ -440,43 +442,42 @@ async def sync_mintrud_learn_program_catalog_v109(
         )
 
         if program is None:
-            session.add(
-                MintrudLearnProgram(
-                    learn_program_id=(
-                        canonical.learn_program_id
-                    ),
-                    code=canonical.code,
-                    title=canonical.title,
-                    schema_version=(
-                        canonical.schema_version
-                    ),
-                    is_active=True,
+            if not dry_run:
+                session.add(
+                    MintrudLearnProgram(
+                        learn_program_id=canonical.learn_program_id,
+                        code=canonical.code,
+                        title=canonical.title,
+                        schema_version=canonical.schema_version,
+                        is_active=True,
+                    )
                 )
-            )
             created += 1
             continue
 
         changed = False
 
         if program.code != canonical.code:
-            program.code = canonical.code
+            if not dry_run:
+                program.code = canonical.code
             changed = True
 
         if program.title != canonical.title:
-            program.title = canonical.title
+            if not dry_run:
+                program.title = canonical.title
             changed = True
 
         if (
             program.schema_version
             != canonical.schema_version
         ):
-            program.schema_version = (
-                canonical.schema_version
-            )
+            if not dry_run:
+                program.schema_version = canonical.schema_version
             changed = True
 
         if program.is_active is not True:
-            program.is_active = True
+            if not dry_run:
+                program.is_active = True
             changed = True
 
         if changed:
@@ -484,7 +485,8 @@ async def sync_mintrud_learn_program_catalog_v109(
         else:
             unchanged += 1
 
-    await session.flush()
+    if not dry_run:
+        await session.flush()
 
     return MintrudLearnProgramCatalogSyncResult(
         created=created,

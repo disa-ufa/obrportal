@@ -83,12 +83,18 @@ def write_private_storage_file_exclusive(
         exist_ok=True,
     )
 
-    with absolute_path.open(
-        "xb"
-    ) as file_handle:
-        file_handle.write(
-            content
-        )
+    created = False
+    try:
+        with absolute_path.open("xb") as file_handle:
+            created = True
+            file_handle.write(content)
+            file_handle.flush()
+    except OSError:
+        # The handle is closed before cleanup, including failed buffered flushes.
+        # Never remove an artifact that existed before the exclusive open.
+        if created:
+            absolute_path.unlink(missing_ok=True)
+        raise
 
     return safe_relative_path
 

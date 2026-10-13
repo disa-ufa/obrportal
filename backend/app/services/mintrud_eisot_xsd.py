@@ -186,7 +186,7 @@ def validate_mintrud_eisot_xml_v109(
             "line "
             + str(last_error.line)
             + ": "
-            + last_error.message
+            + last_error.type_name
         )
 
     raise MintrudEisotXsdValidationError(
