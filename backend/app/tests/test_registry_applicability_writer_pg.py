@@ -467,3 +467,72 @@ def test_legacy_reconciliation_sql_on_disposable_postgres(pg_applicability_db):
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("historical_evidence", ["approval", "attempt", "batch"])
+def test_pending_legacy_evidence_blocks_generic_writer(
+    pg_applicability_db, historical_evidence
+):
+    """A pending status must not erase approval or submission evidence."""
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.models.registry_submission_batch import (
+        RegistrySubmissionBatch,
+        RegistrySubmissionBatchItem,
+    )
+    from app.models.base import utcnow
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, _ = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                obligation = RegistryObligation(
+                    registry="frdo", enrollment_id=enrollment_id,
+                    status="pending_data", readiness_errors=[],
+                )
+                if historical_evidence == "approval":
+                    obligation.approved_at = utcnow()
+                    obligation.approval_snapshot_json = {}
+                session.add(obligation)
+                await session.flush()
+                if historical_evidence == "attempt":
+                    session.add(RegistrySubmissionAttempt(
+                        obligation_id=obligation.id, attempt_no=1,
+                        snapshot_json={}, errors_json=[],
+                    ))
+                elif historical_evidence == "batch":
+                    batch = RegistrySubmissionBatch(
+                        registry="frdo",
+                        schema_version="frdo-po-working-reference-v1",
+                        obligation_count=1, record_count=1,
+                        artifact_path="test-only.xlsx", artifact_sha256="0" * 64,
+                    )
+                    session.add(batch)
+                    await session.flush()
+                    session.add(RegistrySubmissionBatchItem(
+                        batch_id=batch.id, obligation_id=obligation.id,
+                        position=0, record_count=1,
+                        approval_snapshot_json={}, approval_fingerprint="0" * 64,
+                    ))
+                obligation_id = obligation.id
+
+            with pytest.raises(ApplicabilityWriteConflict, match="historical"):
+                async with maker.begin() as session:
+                    await persist_registry_applicability(
+                        session=session, enrollment_id=enrollment_id,
+                        evaluation=_evaluation("required"),
+                    )
+
+            async with maker() as session:
+                assert await session.scalar(
+                    select(RegistryApplicabilityRecord.id).where(
+                        RegistryApplicabilityRecord.enrollment_id == enrollment_id
+                    )
+                ) is None
+                row = await session.get(RegistryObligation, obligation_id)
+                assert row.status == "pending_data"
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
