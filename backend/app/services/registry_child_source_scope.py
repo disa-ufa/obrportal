@@ -94,16 +94,20 @@ def _make_scope(
 async def resolve_registry_document_scope(
     *, session: AsyncSession, document_id: str,
     proposed_enrollment_id: str | None | object = _UNCHANGED,
+    proposed_course_id: str | None | object = _UNCHANGED,
 ) -> RegistryChildDependencyScope:
-    """Resolve existing document and old/new owners; absence is not an owner.
+    """Resolve persisted old owner and validate the requested future state.
 
-    A proposed None means detach. No proposal means keep the current owner.
-    Document -> obligation cross-references are checked, not inferred.
+    Explicit None for course means let the linked enrollment supply its course,
+    matching admin document normalization. Requested IDs are validated against
+    fresh DB rows; they are never trusted as existing owner evidence.
     """
     _transaction(session)
     document_id = _uuid(document_id)
     if proposed_enrollment_id is not _UNCHANGED and proposed_enrollment_id is not None:
         proposed_enrollment_id = _uuid(proposed_enrollment_id)
+    if proposed_course_id is not _UNCHANGED and proposed_course_id is not None:
+        proposed_course_id = _uuid(proposed_course_id)
     with session.no_autoflush:
         doc = (await session.execute(
             select(DocumentRecord.id, DocumentRecord.enrollment_id,
@@ -114,6 +118,7 @@ async def resolve_registry_document_scope(
             raise RegistryActionLockError("registry.child_document_missing")
         doc_id, linked, user_id, course_id = tuple(doc)
         proposal = linked if proposed_enrollment_id is _UNCHANGED else proposed_enrollment_id
+        future_course_id = course_id if proposed_course_id is _UNCHANGED else proposed_course_id
         references = tuple(tuple(row) for row in (await session.execute(
             select(RegistryObligation.id, RegistryObligation.enrollment_id)
             .where(RegistryObligation.document_id == document_id)
@@ -127,13 +132,26 @@ async def resolve_registry_document_scope(
         enrollments = await _enrollments(session, tuple(
             sorted({item for item in (linked, proposal) if item is not None})
         ))
-        for enrollment_id, enrollment_course, learner_id, _ in enrollments:
-            if learner_id != user_id or (
-                course_id is not None and enrollment_course != course_id
+        by_enrollment = {row[0]: row for row in enrollments}
+        # Validate the persisted OLD relationship using the persisted course,
+        # even when the requested move supplies a different future course.
+        if linked is not None:
+            _, original_course, original_user, _ = by_enrollment[linked]
+            if original_user != user_id or (
+                course_id is not None and course_id != original_course
+            ):
+                raise RegistryActionLockError("registry.child_document_owner_mismatch")
+        # Validate the NEW relationship using the requested final course,
+        # never the document's old course. An explicit None is normalized
+        # to the enrollment's course by the existing admin API.
+        if proposal is not None:
+            _, future_enrollment_course, future_user, _ = by_enrollment[proposal]
+            if future_user != user_id or (
+                future_course_id is not None and future_course_id != future_enrollment_course
             ):
                 raise RegistryActionLockError("registry.child_document_owner_mismatch")
         evidence = (
-            (doc_id, linked, user_id, course_id, proposal),
+            (doc_id, linked, user_id, course_id, proposal, future_course_id),
             *references,
             *enrollments,
         )
@@ -266,14 +284,17 @@ async def _acquire_and_rediscover(
 async def acquire_registry_document_scope(
     *, session: AsyncSession, document_id: str,
     proposed_enrollment_id: str | None | object = _UNCHANGED,
+    proposed_course_id: str | None | object = _UNCHANGED,
 ) -> RegistryChildDependencyScope:
     before = await resolve_registry_document_scope(
         session=session, document_id=document_id,
         proposed_enrollment_id=proposed_enrollment_id,
+        proposed_course_id=proposed_course_id,
     )
     return await _acquire_and_rediscover(
         session=session, before=before, resolver=resolve_registry_document_scope,
         document_id=document_id, proposed_enrollment_id=proposed_enrollment_id,
+        proposed_course_id=proposed_course_id,
     )
 
 
