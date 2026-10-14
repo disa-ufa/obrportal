@@ -1435,6 +1435,8 @@ def test_action_lockset_reverse_batch_order_serializes_without_deadlock(
         )
         maker = async_sessionmaker(engine, expire_on_commit=False)
         first_locked = asyncio.Event()
+        second_started = asyncio.Event()
+        second_pid = None
         release_first = asyncio.Event()
         first_task = None
         second_task = None
@@ -1474,8 +1476,11 @@ def test_action_lockset_reverse_batch_order_serializes_without_deadlock(
                     return pid
 
             async def second():
+                nonlocal second_pid
                 async with maker.begin() as session:
                     pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    second_pid = pid
+                    second_started.set()
                     rows = await acquire_registry_new_action_lockset(
                         session=session,
                         source_fences=tuple(reversed(fences)),
@@ -1487,17 +1492,16 @@ def test_action_lockset_reverse_batch_order_serializes_without_deadlock(
             first_task = asyncio.create_task(first())
             await asyncio.wait_for(first_locked.wait(), timeout=8)
             second_task = asyncio.create_task(second())
-            # Verify the competing backend is waiting on a PostgreSQL lock.
-            # This is a contention regression test, not a sleep-based guess.
+            # Prove the second backend is blocked by the first transaction.
+            await asyncio.wait_for(second_started.wait(), timeout=6)
             async def observe_blocker():
                 async with engine.connect() as conn:
                     while True:
-                        blockers = await conn.scalar(text(
-                            "SELECT count(*) FROM pg_stat_activity "
-                            "WHERE wait_event_type = 'Lock' "
-                            "AND query LIKE '%pg_advisory_xact_lock%'"
-                        ))
-                        if blockers:
+                        blocked = await conn.scalar(
+                            text("SELECT cardinality(pg_blocking_pids(:pid)) > 0"),
+                            {"pid": second_pid},
+                        )
+                        if blocked:
                             return
                         await asyncio.sleep(0.01)
             await asyncio.wait_for(observe_blocker(), timeout=6)
