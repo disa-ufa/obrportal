@@ -3412,3 +3412,112 @@ def test_child_context_edge_races_preserve_history_pg(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("with_history", [False, True])
+@pytest.mark.parametrize("future_course", ["matching", "old", "none"])
+def test_child_document_atomic_course_and_enrollment_transition_pg(
+    pg_applicability_db, with_history, future_course,
+):
+    """Old course is validated against old enrollment; proposed course against new."""
+    from app.models.document_record import DocumentRecord
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import acquire_registry_document_scope
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            old, learner_id = await _create_enrollment(maker)
+            document_id = await _child_create_document(maker, old)
+            async with maker.begin() as session:
+                old_course = await session.scalar(
+                    select(Enrollment.course_id).where(Enrollment.id == old)
+                )
+                course = Course(slug="course-move-" + uuid4().hex, title="Course B")
+                session.add(course)
+                await session.flush()
+                new_course = course.id
+                enrollment = Enrollment(
+                    user_id=learner_id, course_id=new_course, status="completed",
+                )
+                session.add(enrollment)
+                await session.flush()
+                new = enrollment.id
+            if with_history:
+                async with maker.begin() as session:
+                    session.add(RegistryObligation(
+                        enrollment_id=old, document_id=document_id,
+                        registry="frdo", status="pending_data",
+                    ))
+            proposed = {
+                "matching": new_course,
+                "old": old_course,
+                "none": None,
+            }[future_course]
+            if with_history:
+                expected_error = "child_document_reassignment_with_history"
+            elif future_course == "old":
+                expected_error = "child_document_owner_mismatch"
+            else:
+                expected_error = None
+
+            async with maker.begin() as session:
+                if expected_error:
+                    with pytest.raises(RegistryActionLockError, match=expected_error):
+                        await acquire_registry_document_scope(
+                            session=session, document_id=document_id,
+                            proposed_enrollment_id=new, proposed_course_id=proposed,
+                        )
+                else:
+                    scope = await acquire_registry_document_scope(
+                        session=session, document_id=document_id,
+                        proposed_enrollment_id=new, proposed_course_id=proposed,
+                    )
+                    assert scope.current_enrollment_id == old
+                    assert scope.proposed_enrollment_id == new
+                    assert {root.resource_id for root in scope.roots} == {old, new}
+                    assert scope.evidence[0][-1] == proposed
+                    assert not session.new and not session.dirty and not session.deleted
+
+            async with maker() as session:
+                doc = await session.get(DocumentRecord, document_id)
+                assert doc.course_id == old_course and doc.enrollment_id == old
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_child_document_cannot_mask_invalid_persisted_course_with_proposed_course_pg(
+    pg_applicability_db,
+):
+    from app.models.document_record import DocumentRecord
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import resolve_registry_document_scope
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            old, learner = await _create_enrollment(maker)
+            document_id = await _child_create_document(maker, old)
+            async with maker.begin() as session:
+                bad = Course(slug="invalid-old-" + uuid4().hex, title="Invalid old course")
+                session.add(bad)
+                await session.flush()
+                document = await session.get(DocumentRecord, document_id)
+                document.course_id = bad.id
+            with pytest.raises(RegistryActionLockError, match="child_document_owner_mismatch"):
+                async with maker.begin() as session:
+                    enrollment_course = await session.scalar(
+                        select(Enrollment.course_id).where(Enrollment.id == old)
+                    )
+                    await resolve_registry_document_scope(
+                        session=session, document_id=document_id,
+                        proposed_enrollment_id=old, proposed_course_id=enrollment_course,
+                    )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
