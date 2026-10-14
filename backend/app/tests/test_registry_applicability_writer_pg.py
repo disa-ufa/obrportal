@@ -1835,3 +1835,79 @@ def test_scope_preflight_deterministic_first_child_insert_races(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_locked_fingerprint_preflight_rejects_changed_course_input(pg_applicability_db, registry):
+    """Real PostgreSQL: after a source edit, a stored required hash is stale."""
+    from app.services.registry_applicability_db_inputs import (
+        load_current_registry_applicability_inputs,
+    )
+    from app.services.registry_current_fingerprint_preflight import (
+        preflight_current_registry_fingerprint,
+    )
+    from app.services.registry_applicability_export_guard import RegistryApplicabilityGateError
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, actor_id = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                enrollment = await session.get(Enrollment, enrollment_id)
+                course = await session.get(Course, enrollment.course_id)
+                course.regulatory_program_type = (
+                    "dpo_advanced_training"
+                    if registry == "frdo" else "occupational_safety_training"
+                )
+                obligation = RegistryObligation(
+                    enrollment_id=enrollment_id, registry=registry,
+                    status="pending_data", readiness_errors=[],
+                )
+                session.add(obligation)
+                await session.flush()
+                obligation_id = obligation.id
+                current = await load_current_registry_applicability_inputs(
+                    session=session, obligation=obligation,
+                )
+                assert current.evaluation.status == "required"
+                await persist_registry_applicability(
+                    session=session, enrollment_id=enrollment_id,
+                    evaluation=current.evaluation,
+                    input_fingerprint=current.fingerprint,
+                )
+
+            async with maker.begin() as session:
+                evidence = await preflight_current_registry_fingerprint(
+                    session=session, actor_id=actor_id,
+                    registry=registry, obligation_id=obligation_id,
+                )
+                assert evidence.current_fingerprint == current.fingerprint
+
+            async with maker.begin() as session:
+                course = await session.get(Course, enrollment.course_id)
+                course.document_type = "updated-test-document-type"
+
+            with pytest.raises(
+                RegistryApplicabilityGateError,
+                match="registry.applicability_stale",
+            ):
+                async with maker.begin() as session:
+                    await preflight_current_registry_fingerprint(
+                        session=session, actor_id=actor_id,
+                        registry=registry, obligation_id=obligation_id,
+                    )
+            async with maker() as session:
+                decision = await session.scalar(
+                    select(RegistryApplicabilityRecord).where(
+                        RegistryApplicabilityRecord.enrollment_id == enrollment_id,
+                        RegistryApplicabilityRecord.registry == registry,
+                    )
+                )
+                assert decision.decision == "required"
+                assert decision.input_fingerprint == current.fingerprint
+                assert decision.decision_version == 1
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
