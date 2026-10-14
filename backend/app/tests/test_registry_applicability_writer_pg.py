@@ -1415,3 +1415,109 @@ def test_attempt_veto_does_not_apply_the_other_registry_decision(
         finally:
             await engine.dispose()
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_action_lockset_reverse_batch_order_serializes_without_deadlock(
+    pg_applicability_db, registry
+):
+    """Both opposite input orders must take an identical global lock order."""
+    from app.services.registry_action_lockset import (
+        RegistrySourceFence,
+        RegistryObligationTarget,
+        acquire_registry_new_action_lockset,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        first_locked = asyncio.Event()
+        release_first = asyncio.Event()
+        first_task = None
+        second_task = None
+        try:
+            targets = []
+            for _ in range(2):
+                enrollment_id, _ = await _create_enrollment(maker)
+                async with maker.begin() as session:
+                    row = RegistryObligation(
+                        enrollment_id=enrollment_id,
+                        registry=registry,
+                        status="pending_data",
+                        readiness_errors=[],
+                    )
+                    session.add(row)
+                    await session.flush()
+                    targets.append(RegistryObligationTarget(
+                        obligation_id=row.id,
+                        enrollment_id=enrollment_id,
+                        registry=registry,
+                    ))
+            fences = tuple(RegistrySourceFence(
+                kind="enrollment", resource_id=target.enrollment_id,
+            ) for target in targets)
+
+            async def first():
+                async with maker.begin() as session:
+                    pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    rows = await acquire_registry_new_action_lockset(
+                        session=session,
+                        source_fences=fences,
+                        obligation_targets=tuple(targets),
+                    )
+                    assert len(rows) == 2
+                    first_locked.set()
+                    await asyncio.wait_for(release_first.wait(), timeout=8)
+                    return pid
+
+            async def second():
+                async with maker.begin() as session:
+                    pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    rows = await acquire_registry_new_action_lockset(
+                        session=session,
+                        source_fences=tuple(reversed(fences)),
+                        obligation_targets=tuple(reversed(targets)),
+                    )
+                    assert len(rows) == 2
+                    return pid
+
+            first_task = asyncio.create_task(first())
+            await asyncio.wait_for(first_locked.wait(), timeout=8)
+            second_task = asyncio.create_task(second())
+            # Verify the competing backend is waiting on a PostgreSQL lock.
+            # This is a contention regression test, not a sleep-based guess.
+            async def observe_blocker():
+                async with engine.connect() as conn:
+                    while True:
+                        blockers = await conn.scalar(text(
+                            "SELECT count(*) FROM pg_stat_activity "
+                            "WHERE wait_event_type = 'Lock' "
+                            "AND query LIKE '%pg_advisory_xact_lock%'"
+                        ))
+                        if blockers:
+                            return
+                        await asyncio.sleep(0.01)
+            await asyncio.wait_for(observe_blocker(), timeout=6)
+            release_first.set()
+            await asyncio.wait_for(first_task, timeout=8)
+            await asyncio.wait_for(second_task, timeout=8)
+            async with maker() as session:
+                for target in targets:
+                    assert (
+                        await session.get(RegistryObligation, target.obligation_id)
+                    ).status == "pending_data"
+        finally:
+            release_first.set()
+            for task in (first_task, second_task):
+                if task is not None and not task.done():
+                    task.cancel()
+            await asyncio.gather(
+                *(task for task in (first_task, second_task) if task is not None),
+                return_exceptions=True,
+            )
+            await engine.dispose()
+
+    asyncio.run(scenario())
