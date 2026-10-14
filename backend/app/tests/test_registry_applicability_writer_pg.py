@@ -2730,3 +2730,184 @@ def test_child_first_insert_serializes_with_cooperating_source_writer(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("kind", ["document", "context"])
+@pytest.mark.parametrize("writer_first", [True, False])
+@pytest.mark.parametrize("commit_change", [True, False])
+def test_child_existing_link_change_serializes_and_refreshes_pg(
+    pg_applicability_db, kind, writer_first, commit_change,
+):
+    """Existing child old/new link change: two orders, commit/rollback, actual wait PIDs.
+
+    The writer here is an explicit cooperating synthetic participant; the live
+    admin document/context endpoints still do NOT adopt the source protocol.
+    """
+    from app.models.document_record import DocumentRecord
+    from app.models.frdo_registry_context import FrdoRegistryContext
+    from app.services.registry_action_lockset import (
+        RegistryActionLockError, RegistrySourceFence,
+        acquire_registry_source_write_fences,
+    )
+    from app.services.registry_child_source_scope import (
+        acquire_registry_context_scope,
+        acquire_registry_document_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task = None
+        started = asyncio.Event()
+        waiter_pid = None
+        try:
+            old_enrollment_id, learner_id = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                course = Course(
+                    slug="relink-" + uuid4().hex, title="Second child course",
+                )
+                session.add(course)
+                await session.flush()
+                next_enrollment = Enrollment(
+                    user_id=learner_id, course_id=course.id,
+                    status="completed",
+                )
+                session.add(next_enrollment)
+                await session.flush()
+                new_enrollment_id = next_enrollment.id
+
+            if kind == "document":
+                child_id = await _child_create_document(maker, old_enrollment_id)
+                # Optional course allows moving between different courses of same user.
+                async with maker.begin() as session:
+                    child = await session.get(DocumentRecord, child_id)
+                    child.course_id = None
+            else:
+                old_obligation = await _child_create_obligation(
+                    maker, old_enrollment_id, "frdo",
+                )
+                next_obligation = await _child_create_obligation(
+                    maker, new_enrollment_id, "frdo",
+                )
+                child_id = await _child_create_context(
+                    maker, old_obligation, "frdo",
+                )
+
+            async def read_action(session):
+                if kind == "document":
+                    return await acquire_registry_document_scope(
+                        session=session, document_id=child_id,
+                        proposed_enrollment_id=new_enrollment_id,
+                    )
+                return await acquire_registry_context_scope(
+                    session=session, registry="frdo", context_id=child_id,
+                )
+
+            async def edit_child(session):
+                model = DocumentRecord if kind == "document" else FrdoRegistryContext
+                child = await session.get(model, child_id)
+                if kind == "document":
+                    child.enrollment_id = new_enrollment_id
+                else:
+                    child.obligation_id = next_obligation
+                await session.flush()
+
+            async def writer_fences(session):
+                await acquire_registry_source_write_fences(
+                    session=session, source_fences=(
+                        RegistrySourceFence("enrollment", old_enrollment_id),
+                        RegistrySourceFence("enrollment", new_enrollment_id),
+                    ),
+                )
+
+            async def waiter_reads():
+                nonlocal waiter_pid
+                async with maker.begin() as session:
+                    waiter_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started.set()
+                    return await read_action(session)
+
+            async def waiter_writes():
+                nonlocal waiter_pid
+                async with maker() as session:
+                    await session.begin()
+                    try:
+                        waiter_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                        started.set()
+                        await writer_fences(session)
+                        await edit_child(session)
+                        if commit_change:
+                            await session.commit()
+                        else:
+                            await session.rollback()
+                    except BaseException:
+                        await session.rollback()
+                        raise
+
+            if writer_first:
+                async with maker() as writer:
+                    await writer.begin()
+                    try:
+                        blocker_pid = await writer.scalar(text("SELECT pg_backend_pid()"))
+                        await writer_fences(writer)
+                        task = asyncio.create_task(waiter_reads())
+                        await asyncio.wait_for(started.wait(), 8)
+                        await _wait_for_pg_blocker(engine, waiter_pid, blocker_pid)
+                        await edit_child(writer)
+                        if commit_change:
+                            await writer.commit()
+                        else:
+                            await writer.rollback()
+                    finally:
+                        if writer.in_transaction():
+                            await writer.rollback()
+                if commit_change:
+                    with pytest.raises(RegistryActionLockError, match=(
+                        "child_scope_changed_during_lock"
+                    )):
+                        await asyncio.wait_for(task, 8)
+                else:
+                    result = await asyncio.wait_for(task, 8)
+                    assert result.current_enrollment_id == old_enrollment_id
+            else:
+                async with maker.begin() as reader:
+                    blocker_pid = await reader.scalar(text("SELECT pg_backend_pid()"))
+                    result = await read_action(reader)
+                    assert result.current_enrollment_id == old_enrollment_id
+                    task = asyncio.create_task(waiter_writes())
+                    await asyncio.wait_for(started.wait(), 8)
+                    await _wait_for_pg_blocker(engine, waiter_pid, blocker_pid)
+                await asyncio.wait_for(task, 8)
+
+            async with maker() as session:
+                if kind == "document":
+                    actual = await session.scalar(
+                        select(DocumentRecord.enrollment_id).where(
+                            DocumentRecord.id == child_id,
+                        )
+                    )
+                    assert actual == (
+                        new_enrollment_id if commit_change else old_enrollment_id
+                    )
+                else:
+                    actual = await session.scalar(
+                        select(FrdoRegistryContext.obligation_id).where(
+                            FrdoRegistryContext.id == child_id,
+                        )
+                    )
+                    assert actual == (
+                        next_obligation if commit_change else old_obligation
+                    )
+                # Never rewrite history or create an applicability audit event.
+                assert await session.scalar(select(RegistryApplicabilityEvent.id)) is None
+        finally:
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
