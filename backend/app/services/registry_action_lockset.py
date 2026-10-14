@@ -184,8 +184,16 @@ async def acquire_registry_new_action_lockset(
     # Source keys precede writer-compatible decision keys, then row locks.
     await _acquire_advisory_keys(session=session, keys=sources + decision_keys)
 
+    return await _lock_registry_obligations(session=session, targets=targets)
+
+
+async def _lock_registry_obligations(
+    *, session: AsyncSession, targets: tuple[RegistryObligationTarget, ...],
+) -> tuple[RegistryObligation, ...]:
+    """Shared last phase; callers must already hold source/decision fences."""
+
     locked: list[RegistryObligation] = []
-    for target in targets:
+    for target in sorted(targets, key=lambda item: item.obligation_id):
         obligation = await session.scalar(
             select(RegistryObligation)
             .where(RegistryObligation.id == target.obligation_id)

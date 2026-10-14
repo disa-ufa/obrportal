@@ -31,6 +31,8 @@ from app.services.registry_applicability_writer import (
     ApplicabilityWriteConflict,
     persist_registry_applicability,
 )
+from app.services.registry_action_lockset import RegistrySourceFence
+from app.services.registry_source_write_scope import acquire_discovered_registry_source_write_scope
 
 
 @pytest.fixture(scope="module")
@@ -1907,6 +1909,487 @@ def test_locked_fingerprint_preflight_rejects_changed_course_input(pg_applicabil
                 assert decision.decision == "required"
                 assert decision.input_fingerprint == current.fingerprint
                 assert decision.decision_version == 1
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+async def _source_scope_fixture(maker):
+    from app.models.document_record import DocumentRecord
+    from app.models.learner_profile import LearnerProfile
+    from app.models.mintrud_registry_context import MintrudRegistryContext
+
+    enrollment_id, learner_id = await _create_enrollment(maker)
+    async with maker.begin() as session:
+        enrollment = await session.get(Enrollment, enrollment_id)
+        document = DocumentRecord(
+            enrollment_id=enrollment_id, course_id=enrollment.course_id,
+            user_id=learner_id, document_number="writer-order-" + uuid4().hex,
+            document_type="test", title="before",
+        )
+        profile = LearnerProfile(user_id=learner_id, first_name="before")
+        session.add_all([document, profile])
+        await session.flush()
+        obligations = {}
+        for registry in ("frdo", "mintrud"):
+            obligation = RegistryObligation(
+                enrollment_id=enrollment_id, registry=registry,
+                status="pending_data", readiness_errors=[], document_id=document.id,
+            )
+            session.add(obligation)
+            await session.flush()
+            obligations[registry] = obligation.id
+        context = MintrudRegistryContext(
+            obligation_id=obligations["mintrud"], protocol_number="before",
+        )
+        course = await session.get(Course, enrollment.course_id)
+        course.title = "before"
+        session.add(context)
+        await session.flush()
+        return enrollment_id, learner_id, enrollment.course_id, obligations, {
+            "course": (Course, enrollment.course_id, "title"),
+            "learner": (LearnerProfile, profile.id, "first_name"),
+            "document": (DocumentRecord, document.id, "title"),
+            "mintrud_context": (MintrudRegistryContext, context.id, "protocol_number"),
+        }
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("source", ["course", "learner", "document", "mintrud_context"])
+@pytest.mark.parametrize("writer_first", [True, False])
+@pytest.mark.parametrize("commit_writer", [True, False])
+def test_discovered_source_writer_orders_real_edits_against_action(
+    pg_applicability_db, registry, source, writer_first, commit_writer,
+):
+    """Both orders, actual PG blockers, real source writes and rollback release.
+
+    The action only reads under the dormant lockset; this is NOT an API-level
+    authorization/readiness test and intentionally makes no approval or export.
+    """
+    from app.services.registry_action_scope import acquire_discovered_registry_action_scope
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db, connect_args={
+            "server_settings": {"statement_timeout": "12000"},
+        })
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        tasks = []
+        started = {name: asyncio.Event() for name in ("writer", "action")}
+        locked = {name: asyncio.Event() for name in started}
+        release = {name: asyncio.Event() for name in started}
+        pids = {}
+        try:
+            enrollment, actor, course, obligations, sources = await _source_scope_fixture(maker)
+            model, row_id, field = sources[source]
+            root = RegistrySourceFence(
+                source if source in {"course", "learner"} else "enrollment",
+                course if source == "course" else actor if source == "learner" else enrollment,
+            )
+
+            async def writer():
+                async with maker() as session:
+                    await session.begin()
+                    pids["writer"] = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started["writer"].set()
+                    rows, scope = await acquire_discovered_registry_source_write_scope(
+                        session=session, roots=(root,),
+                    )
+                    assert {row.id for row in rows} == set(obligations.values())
+                    assert [row.id for row in rows] == sorted(obligations.values())
+                    assert {target.registry for target in scope.targets} == {"frdo", "mintrud"}
+                    row = await session.get(model, row_id, populate_existing=True)
+                    setattr(row, field, "after")
+                    await session.flush()
+                    locked["writer"].set()
+                    await asyncio.wait_for(release["writer"].wait(), 8)
+                    if commit_writer:
+                        await session.commit()
+                    else:
+                        await session.rollback()
+
+            async def action():
+                async with maker.begin() as session:
+                    # Keep a deliberately stale identity in this transaction.
+                    cached = await session.get(model, row_id)
+                    pids["action"] = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started["action"].set()
+                    await acquire_discovered_registry_action_scope(
+                        session=session, actor_id=actor, registry=registry,
+                        obligation_ids=(obligations[registry],),
+                    )
+                    fresh = await session.get(model, row_id, populate_existing=True)
+                    assert fresh is cached
+                    assert getattr(fresh, field) == (
+                        "after" if writer_first and commit_writer else "before"
+                    )
+                    locked["action"].set()
+                    await asyncio.wait_for(release["action"].wait(), 8)
+
+            first, second = ("writer", "action") if writer_first else ("action", "writer")
+            runners = {"writer": writer, "action": action}
+            tasks.append(asyncio.create_task(runners[first]()))
+            await asyncio.wait_for(locked[first].wait(), 8)
+            tasks.append(asyncio.create_task(runners[second]()))
+            await asyncio.wait_for(started[second].wait(), 8)
+            await _wait_for_pg_blocker(engine, pids[second], pids[first])
+            assert not locked[second].is_set()
+            release[first].set()
+            await asyncio.wait_for(tasks[0], 8)
+            await asyncio.wait_for(locked[second].wait(), 8)
+            release[second].set()
+            await asyncio.wait_for(tasks[1], 8)
+            async with maker() as session:
+                row = await session.get(model, row_id)
+                assert getattr(row, field) == ("after" if commit_writer else "before")
+                rows = (await session.scalars(select(RegistryObligation).where(
+                    RegistryObligation.id.in_(obligations.values()),
+                ))).all()
+                assert all(row.status == "pending_data" and row.approved_at is None for row in rows)
+                assert await session.scalar(select(RegistryApplicabilityRecord.id).where(
+                    RegistryApplicabilityRecord.enrollment_id == enrollment,
+                )) is None
+        finally:
+            for event in release.values():
+                event.set()
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("change", ["enrollment_insert", "obligation_insert", "reassignment"])
+def test_source_writer_rejects_scope_growth_or_reassignment_after_wait(
+    pg_applicability_db, monkeypatch, change,
+):
+    from app.services import registry_source_write_scope as writer_scope
+    from app.services.registry_action_lockset import (
+        RegistryActionLockError, acquire_registry_source_write_fences,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db, connect_args={
+            "server_settings": {"statement_timeout": "12000"},
+        })
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task = None
+        discovered, resume, started = asyncio.Event(), asyncio.Event(), asyncio.Event()
+        pid = None
+        real_discover = writer_scope.discover_registry_source_write_scope
+        calls = 0
+
+        async def pause_first_discovery(**kwargs):
+            nonlocal calls
+            snapshot = await real_discover(**kwargs)
+            calls += 1
+            if calls == 1:
+                discovered.set()
+                await asyncio.wait_for(resume.wait(), 8)
+            return snapshot
+
+        monkeypatch.setattr(writer_scope, "discover_registry_source_write_scope", pause_first_discovery)
+        try:
+            enrollment, learner = await _create_enrollment(maker)
+            other_enrollment, other_learner = await _create_enrollment(maker)
+            async with maker() as session:
+                course = (await session.get(Enrollment, enrollment)).course_id
+                other_course = (await session.get(Enrollment, other_enrollment)).course_id
+            root = RegistrySourceFence(
+                "course" if change == "enrollment_insert" else "enrollment",
+                course if change == "enrollment_insert" else enrollment,
+            )
+
+            async def waiter():
+                nonlocal pid
+                async with maker.begin() as session:
+                    # Stale identity must not hide scalar dependency changes.
+                    cached = await session.get(Enrollment, enrollment)
+                    assert cached.course_id == course
+                    pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started.set()
+                    await writer_scope.acquire_discovered_registry_source_write_scope(
+                        session=session, roots=(root,),
+                    )
+                    pytest.fail("Changed scope must never reach source mutation")
+
+            task = asyncio.create_task(waiter())
+            await asyncio.wait_for(discovered.wait(), 8)
+            async with maker.begin() as session:
+                blocker = await session.scalar(text("SELECT pg_backend_pid()"))
+                await acquire_registry_source_write_fences(
+                    session=session, source_fences=(root,),
+                )
+                if change == "enrollment_insert":
+                    session.add(Enrollment(user_id=other_learner, course_id=course))
+                elif change == "obligation_insert":
+                    session.add(RegistryObligation(
+                        enrollment_id=enrollment, registry="mintrud", status="pending_data",
+                    ))
+                else:
+                    row = await session.get(Enrollment, enrollment)
+                    row.course_id = other_course
+                await session.flush()
+                resume.set()
+                await _wait_for_pg_blocker(engine, pid, blocker)
+            with pytest.raises(RegistryActionLockError, match="writer_scope_changed_during_lock"):
+                await asyncio.wait_for(task, 8)
+            # A NEW transaction succeeds with the complete new scope.
+            async with maker.begin() as session:
+                _, scope = await writer_scope.acquire_discovered_registry_source_write_scope(
+                    session=session, roots=(root,),
+                )
+                if change == "enrollment_insert":
+                    assert len(scope.enrollments) == 2
+                elif change == "obligation_insert":
+                    assert len(scope.targets) == 1
+                else:
+                    assert scope.enrollments[0][1] == other_course
+        finally:
+            resume.set()
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_source_writer_fences_first_decision_without_obligation(pg_applicability_db, registry):
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db, connect_args={
+            "server_settings": {"statement_timeout": "12000"},
+        })
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task = None
+        started = asyncio.Event()
+        pid = None
+        try:
+            enrollment, _ = await _create_enrollment(maker)
+
+            async def decision_writer():
+                nonlocal pid
+                async with maker.begin() as session:
+                    pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started.set()
+                    await persist_registry_applicability(
+                        session=session, enrollment_id=enrollment,
+                        evaluation=_veto_evaluation(registry, "required"),
+                        input_fingerprint="a" * 64,
+                    )
+
+            async with maker.begin() as session:
+                blocker = await session.scalar(text("SELECT pg_backend_pid()"))
+                rows, scope = await acquire_discovered_registry_source_write_scope(
+                    session=session, roots=(RegistrySourceFence("enrollment", enrollment),),
+                )
+                assert rows == () and scope.targets == ()
+                task = asyncio.create_task(decision_writer())
+                await asyncio.wait_for(started.wait(), 8)
+                await _wait_for_pg_blocker(engine, pid, blocker)
+            await asyncio.wait_for(task, 8)
+            async with maker() as session:
+                assert await session.scalar(select(RegistryApplicabilityRecord.id).where(
+                    RegistryApplicabilityRecord.enrollment_id == enrollment,
+                    RegistryApplicabilityRecord.registry == registry,
+                )) is not None
+        finally:
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("reverse_roots", [True, False])
+def test_source_writer_uses_sorted_sql_locks_and_preserves_all_statuses(
+    pg_applicability_db, reverse_roots,
+):
+    from sqlalchemy import event
+    from app.services.registry_action_lockset import normalize_registry_source_fences
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        captured = []
+        try:
+            enrollment, learner = await _create_enrollment(maker)
+            second, _ = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                course = (await session.get(Enrollment, enrollment)).course_id
+                for enrollment_id, registry, status in (
+                    (enrollment, "frdo", "pending_data"),
+                    (enrollment, "mintrud", "approved"),
+                    (second, "frdo", "exported"),
+                    (second, "mintrud", "submitted"),
+                ):
+                    session.add(RegistryObligation(
+                        enrollment_id=enrollment_id, registry=registry, status=status,
+                        approval_snapshot_json={"synthetic": status},
+                        approval_fingerprint="history-" + status,
+                    ))
+            roots = (RegistrySourceFence("course", course),
+                     RegistrySourceFence("learner", learner),
+                     RegistrySourceFence("enrollment", second))
+            if reverse_roots:
+                roots = tuple(reversed(roots))
+
+            def capture(conn, cursor, statement, parameters, context, executemany):
+                if "pg_advisory_xact_lock" in statement or "FOR UPDATE" in statement:
+                    captured.append((statement, parameters[0]))
+
+            event.listen(engine.sync_engine, "before_cursor_execute", capture)
+            async with maker.begin() as session:
+                rows, scope = await acquire_discovered_registry_source_write_scope(
+                    session=session, roots=roots + (roots[0],),
+                )
+                expected_sources = normalize_registry_source_fences(source_fences=scope.source_fences)
+                expected_decisions = tuple(sorted(
+                    "registry-applicability:" + row[0] + ":" + registry
+                    for row in scope.enrollments for registry in ("frdo", "mintrud")
+                ))
+                assert [key for sql, key in captured if "pg_advisory" in sql] == list(
+                    expected_sources + expected_decisions
+                )
+                row_locks = [(sql, key) for sql, key in captured if "FOR UPDATE" in sql]
+                assert [key for _, key in row_locks] == sorted(row.id for row in rows)
+                assert len(rows) == 4
+                assert all("registry_obligations" in sql for sql, _ in row_locks)
+                assert {row.status for row in rows} == {"pending_data", "approved", "exported", "submitted"}
+                assert all(row.approval_fingerprint == "history-" + row.status for row in rows)
+                assert all(row.approval_snapshot_json == {"synthetic": row.status} for row in rows)
+                assert not session.new and not session.dirty and not session.deleted
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("precondition", [
+    "no_transaction", "nested", "new", "dirty", "deleted", "repeatable_read",
+    "missing", "unsupported", "empty", "noncanonical",
+])
+def test_source_writer_rejects_unsafe_entry_without_writing(pg_applicability_db, precondition):
+    from app.services.registry_action_lockset import RegistryActionLockError
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment, learner = await _create_enrollment(maker)
+            async with maker() as session:
+                if precondition != "no_transaction":
+                    await session.begin()
+                root = RegistrySourceFence("enrollment", enrollment)
+                if precondition == "nested":
+                    await session.begin_nested()
+                elif precondition == "new":
+                    session.add(Course(slug="must-not-flush", title="must-not-flush"))
+                elif precondition in {"dirty", "deleted"}:
+                    row = await session.get(User, learner)
+                    if precondition == "dirty":
+                        row.full_name = "must-not-flush"
+                    else:
+                        await session.delete(row)
+                elif precondition == "repeatable_read":
+                    await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+                elif precondition == "missing":
+                    root = RegistrySourceFence("enrollment", str(uuid4()))
+                elif precondition == "unsupported":
+                    root = RegistrySourceFence("actor", learner)
+                elif precondition == "noncanonical":
+                    root = RegistrySourceFence("enrollment", enrollment.upper())
+                with pytest.raises(RegistryActionLockError):
+                    await acquire_discovered_registry_source_write_scope(
+                        session=session, roots=() if precondition == "empty" else (root,),
+                    )
+                await session.rollback()
+            async with maker() as session:
+                assert (await session.get(User, learner)).full_name is None
+                assert await session.get(Enrollment, enrollment) is not None
+                assert await session.scalar(select(Course.id).where(Course.slug == "must-not-flush")) is None
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_source_writer_rechecks_membership_after_waiting_on_decision(pg_applicability_db, registry):
+    from app.services.registry_action_lockset import RegistryActionLockError
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db, connect_args={
+            "server_settings": {"statement_timeout": "12000"},
+        })
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task, pid = None, None
+        started = asyncio.Event()
+        try:
+            enrollment, _ = await _create_enrollment(maker)
+
+            async def waiter():
+                nonlocal pid
+                async with maker.begin() as session:
+                    pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started.set()
+                    await acquire_discovered_registry_source_write_scope(
+                        session=session, roots=(RegistrySourceFence("enrollment", enrollment),),
+                    )
+
+            async with maker.begin() as session:
+                blocker = await session.scalar(text("SELECT pg_backend_pid()"))
+                # Simulate a legacy participant that holds only a decision key.
+                await session.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": "registry-applicability:" + enrollment + ":" + registry},
+                )
+                session.add(RegistryObligation(
+                    enrollment_id=enrollment, registry=registry, status="pending_data",
+                ))
+                await session.flush()
+                task = asyncio.create_task(waiter())
+                await asyncio.wait_for(started.wait(), 8)
+                await _wait_for_pg_blocker(engine, pid, blocker)
+            with pytest.raises(RegistryActionLockError, match="writer_scope_changed_during_lock"):
+                await asyncio.wait_for(task, 8)
+        finally:
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("kind", ["course", "learner"])
+def test_source_writer_handles_existing_parent_without_enrollments(pg_applicability_db, kind):
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            async with maker.begin() as session:
+                parent = (
+                    Course(slug="empty-" + uuid4().hex, title="empty") if kind == "course"
+                    else User(email=uuid4().hex + "@example.invalid", hashed_password="unused")
+                )
+                session.add(parent)
+                await session.flush()
+                parent_id = parent.id
+            root = RegistrySourceFence(kind, parent_id)
+            async with maker.begin() as session:
+                rows, scope = await acquire_discovered_registry_source_write_scope(
+                    session=session, roots=(root,),
+                )
+                assert rows == () and scope.enrollments == ()
+                assert scope.source_fences == (root,)
         finally:
             await engine.dispose()
 
