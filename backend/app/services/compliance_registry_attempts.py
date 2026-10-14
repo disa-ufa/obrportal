@@ -6,15 +6,17 @@ from hashlib import sha256
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.course import Course
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.frdo_registry_context import FrdoRegistryContext
 from app.models.learner_profile import LearnerProfile
 from app.models.mintrud_registry_context import MintrudRegistryContext
+from app.models.registry_applicability import RegistryApplicabilityRecord
 from app.models.registry_obligation import (
     RegistryObligation,
     RegistrySubmissionAttempt,
@@ -230,6 +232,34 @@ async def create_registry_submission_attempt(
         raise RegistrySubmissionAttemptError(
             "Registry obligation was not found"
         )
+
+    if settings.registry_attempt_applicability_veto_enabled:
+        # The obligation lock is shared with persist_registry_applicability.
+        # Do NOT acquire its advisory lock here: that would invert lock order.
+        # READ COMMITTED gives the decision SELECT a fresh snapshot after a
+        # waiting row lock; repeatable snapshots can miss a concurrent insert
+        # because the decision writer locks, but does not UPDATE, the obligation.
+        isolation = str((await session.execute(
+            text("SHOW transaction_isolation")
+        )).scalar_one()).lower()
+        if isolation != "read committed":
+            raise RegistrySubmissionAttemptError(
+                "registry.attempt_veto_requires_read_committed"
+            )
+        # Select a scalar to avoid accepting a stale ORM identity-map decision.
+        decision = await session.scalar(
+            select(RegistryApplicabilityRecord.decision).where(
+                RegistryApplicabilityRecord.enrollment_id == obligation.enrollment_id,
+                RegistryApplicabilityRecord.registry == obligation.registry,
+            )
+        )
+        if decision in {"not_required", "needs_review"}:
+            raise RegistrySubmissionAttemptError("registry.applicability_" + decision)
+        if decision is not None and decision != "required":
+            raise RegistrySubmissionAttemptError("registry.applicability_invalid")
+        # Missing/required retains LEGACY behavior; neither is an export grant.
+        # Fingerprint freshness, approval/batch/download gates and historical
+        # reconciliation are separate prerequisites for any full activation.
 
     max_attempt_no = (
         await session.scalar(
