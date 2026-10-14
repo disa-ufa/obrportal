@@ -2456,7 +2456,6 @@ def test_child_document_real_db_ownership_and_old_new_parents(pg_applicability_d
             first, learner_id = await _create_enrollment(maker)
             linked_doc = await _child_create_document(maker, first)
             async with maker.begin() as session:
-                enrollment = await session.get(Enrollment, first)
                 second_course = Course(slug="child-second-" + uuid4().hex, title="Another")
                 session.add(second_course)
                 await session.flush()
@@ -2906,6 +2905,510 @@ def test_child_existing_link_change_serializes_and_refreshes_pg(
                 if not task.done():
                     task.cancel()
                 await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+async def _child_history_fixture(maker, enrollment_ids):
+    """Nonempty synthetic history for BOTH registries; never production data."""
+    from app.models.base import utcnow
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.models.registry_submission_batch import (
+        RegistrySubmissionBatch, RegistrySubmissionBatchItem,
+    )
+
+    obligations = {}
+    for enrollment_id in enrollment_ids:
+        for registry in ("frdo", "mintrud"):
+            async with maker.begin() as session:
+                await persist_registry_applicability(
+                    session=session, enrollment_id=enrollment_id,
+                    evaluation=_veto_evaluation(registry, "required"),
+                    input_fingerprint="a" * 64,
+                )
+                obligation = RegistryObligation(
+                    enrollment_id=enrollment_id, registry=registry,
+                    status="exported", approved_at=utcnow(),
+                    approval_snapshot_json={"history": enrollment_id, "registry": registry},
+                    approval_fingerprint="a" * 64,
+                )
+                batch = RegistrySubmissionBatch(
+                    registry=registry, status="exported",
+                    schema_version=("1.0.9" if registry == "mintrud"
+                                    else "frdo-po-working-reference-v1"),
+                    obligation_count=1, record_count=1,
+                    artifact_path="synthetic/m213/history", artifact_sha256="b" * 64,
+                )
+                session.add_all([obligation, batch])
+                await session.flush()
+                session.add_all([
+                    RegistrySubmissionAttempt(
+                        obligation_id=obligation.id, attempt_no=1,
+                        snapshot_json={"history": enrollment_id, "registry": registry},
+                        artifact_sha256="b" * 64, errors_json=[],
+                    ),
+                    RegistrySubmissionBatchItem(
+                        batch_id=batch.id, obligation_id=obligation.id, position=0,
+                        approval_snapshot_json=obligation.approval_snapshot_json,
+                        approval_fingerprint="a" * 64, record_count=1,
+                    ),
+                ])
+                obligations[enrollment_id, registry] = obligation.id
+    return obligations
+
+
+async def _child_history_snapshot(maker, enrollment_ids):
+    """Compare every persisted history column, including IDs/versions/counts."""
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.models.registry_submission_batch import (
+        RegistrySubmissionBatch, RegistrySubmissionBatchItem,
+    )
+
+    obligation_ids = select(RegistryObligation.id).where(
+        RegistryObligation.enrollment_id.in_(enrollment_ids),
+    )
+    batch_ids = select(RegistrySubmissionBatchItem.batch_id).where(
+        RegistrySubmissionBatchItem.obligation_id.in_(obligation_ids),
+    )
+    queries = (
+        (RegistryApplicabilityRecord,
+         RegistryApplicabilityRecord.enrollment_id.in_(enrollment_ids)),
+        (RegistryApplicabilityEvent,
+         RegistryApplicabilityEvent.enrollment_id.in_(enrollment_ids)),
+        (RegistrySubmissionAttempt,
+         RegistrySubmissionAttempt.obligation_id.in_(obligation_ids)),
+        (RegistrySubmissionBatchItem,
+         RegistrySubmissionBatchItem.obligation_id.in_(obligation_ids)),
+        (RegistrySubmissionBatch, RegistrySubmissionBatch.id.in_(batch_ids)),
+    )
+    async with maker() as session:
+        history = {}
+        for model, condition in queries:
+            history[model.__tablename__] = (await session.execute(
+                select(model.__table__).where(condition).order_by(model.id)
+            )).mappings().all()
+        # document_id and updated_at can change in the explicit synthetic
+        # writer/FK cascade. All approval/lifecycle evidence must remain exact.
+        columns = [column for column in RegistryObligation.__table__.c
+                   if column.name not in {"document_id", "updated_at"}]
+        history["registry_obligations"] = (await session.execute(
+            select(*columns).where(RegistryObligation.id.in_(obligation_ids))
+            .order_by(RegistryObligation.id)
+        )).mappings().all()
+        return history
+
+
+async def _child_second_enrollment(maker, learner_id):
+    async with maker.begin() as session:
+        course = Course(slug="m213-" + uuid4().hex, title="Synthetic second course")
+        session.add(course)
+        await session.flush()
+        enrollment = Enrollment(user_id=learner_id, course_id=course.id, status="completed")
+        session.add(enrollment)
+        await session.flush()
+        return enrollment.id
+
+
+async def _child_race(
+    engine, maker, *, read, mutate, roots, writer_first, commit_change, error,
+):
+    """Schedule two real transactions and prove the exact PG blocker edge.
+
+    A mutation only starts after the reader is demonstrably blocked, or after
+    the writer's own wait ends. No lock/resolver mocks or elapsed-time verdicts.
+    """
+    from app.services.registry_action_lockset import RegistryActionLockError
+
+    started = asyncio.Event()
+    mutation_flushed = asyncio.Event()
+    waiter_pid = None
+    task = None
+
+    async def lock_writer(session):
+        await acquire_discovered_registry_source_write_scope(session=session, roots=roots)
+
+    async def finish_writer(session):
+        await mutate(session)
+        await session.flush()
+        mutation_flushed.set()
+        if commit_change:
+            await session.commit()
+        else:
+            await session.rollback()
+
+    async def waiting_reader():
+        nonlocal waiter_pid
+        async with maker.begin() as session:
+            waiter_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+            started.set()
+            return await read(session)
+
+    async def waiting_writer():
+        nonlocal waiter_pid
+        async with maker() as session:
+            await session.begin()
+            try:
+                waiter_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                started.set()
+                await lock_writer(session)
+                await finish_writer(session)
+            finally:
+                if session.in_transaction():
+                    await session.rollback()
+
+    async def prove_wait(blocker_pid):
+        await asyncio.wait_for(started.wait(), 8)
+        await _wait_for_pg_blocker(engine, waiter_pid, blocker_pid)
+        assert waiter_pid != blocker_pid
+        assert not task.done()
+        assert not mutation_flushed.is_set()
+        async with engine.connect() as observer:
+            assert await observer.scalar(text(
+                "SELECT wait_event_type FROM pg_stat_activity WHERE pid = :pid"
+            ), {"pid": waiter_pid}) == "Lock"
+
+    try:
+        if writer_first:
+            async with maker() as writer:
+                await writer.begin()
+                try:
+                    blocker_pid = await writer.scalar(text("SELECT pg_backend_pid()"))
+                    await lock_writer(writer)
+                    task = asyncio.create_task(waiting_reader())
+                    await prove_wait(blocker_pid)
+                    await finish_writer(writer)
+                finally:
+                    if writer.in_transaction():
+                        await writer.rollback()
+            if commit_change:
+                with pytest.raises(RegistryActionLockError) as caught:
+                    await asyncio.wait_for(task, 8)
+                assert str(caught.value) == "registry." + error
+            else:
+                assert await asyncio.wait_for(task, 8) is not None
+        else:
+            async with maker.begin() as reader:
+                blocker_pid = await reader.scalar(text("SELECT pg_backend_pid()"))
+                before = await read(reader)
+                task = asyncio.create_task(waiting_writer())
+                await prove_wait(blocker_pid)
+                assert await read(reader) == before
+            await asyncio.wait_for(task, 8)
+        assert mutation_flushed.is_set()
+    finally:
+        if task is not None:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("writer_first", [True, False], ids=["writer-first", "reader-first"])
+@pytest.mark.parametrize("commit_change", [True, False], ids=["commit", "rollback"])
+@pytest.mark.parametrize("change,error", [
+    ("delete", "child_document_missing"),
+    ("detach", "child_unlinked"),
+    ("move", "child_scope_changed_during_lock"),
+    ("foreign_learner", "child_document_owner_mismatch"),
+    ("bad_reference", "child_document_reference_mismatch"),
+    ("new_history_reference", "child_document_reassignment_with_history"),
+])
+def test_child_document_edge_races_preserve_history_pg(
+    pg_applicability_db, registry, writer_first, commit_change, change, error,
+):
+    from app.models.document_record import DocumentRecord
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import acquire_registry_document_scope
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            old, learner_id = await _create_enrollment(maker)
+            if change == "foreign_learner":
+                new, _ = await _create_enrollment(maker)
+            else:
+                new = await _child_second_enrollment(maker, learner_id)
+            document_id = await _child_create_document(maker, old)
+            obligations = await _child_history_fixture(maker, (old, new))
+            async with maker.begin() as session:
+                document = await session.get(DocumentRecord, document_id)
+                document.course_id = None
+                if change == "delete":
+                    for name in ("frdo", "mintrud"):
+                        obligation = await session.get(RegistryObligation, obligations[old, name])
+                        obligation.document_id = document_id
+
+            before_history = await _child_history_snapshot(maker, (old, new))
+            assert all(len(rows) == 4 for rows in before_history.values())
+            async with maker() as session:
+                before_document = (await session.execute(select(DocumentRecord.__table__).where(
+                    DocumentRecord.id == document_id,
+                ))).mappings().one()
+            proposal = {}
+            if change in {"detach", "new_history_reference"}:
+                proposal["proposed_enrollment_id"] = None
+            elif change == "move":
+                proposal["proposed_enrollment_id"] = new
+
+            async def read(session):
+                # Keep a stale ORM object alive across the real wait. Scalar
+                # rediscovery must still observe the committed relationship.
+                cached = await session.get(DocumentRecord, document_id)
+                result = await acquire_registry_document_scope(
+                    session=session, document_id=document_id, **proposal,
+                )
+                assert cached is not None
+                assert not session.new and not session.dirty and not session.deleted
+                return result
+
+            async def mutate(session):
+                document = await session.get(DocumentRecord, document_id)
+                if change == "delete":
+                    await session.delete(document)
+                elif change == "detach":
+                    document.enrollment_id = None
+                elif change in {"move", "foreign_learner"}:
+                    document.enrollment_id = new
+                else:
+                    owner = new if change == "bad_reference" else old
+                    obligation = await session.get(RegistryObligation, obligations[owner, registry])
+                    obligation.document_id = document_id
+
+            await _child_race(
+                engine, maker, read=read, mutate=mutate,
+                roots=tuple(RegistrySourceFence("enrollment", eid) for eid in (old, new)),
+                writer_first=writer_first, commit_change=commit_change, error=error,
+            )
+            assert await _child_history_snapshot(maker, (old, new)) == before_history
+            async with maker() as session:
+                documents = (await session.execute(select(DocumentRecord.__table__).where(
+                    DocumentRecord.id == document_id,
+                ))).mappings().all()
+                assert len(documents) == (0 if commit_change and change == "delete" else 1)
+                if not commit_change:
+                    assert documents == [before_document]
+                elif documents:
+                    expected_owner = (None if change == "detach" else new
+                                      if change in {"move", "foreign_learner"} else old)
+                    assert documents[0]["enrollment_id"] == expected_owner
+                references = dict((await session.execute(
+                    select(RegistryObligation.id, RegistryObligation.document_id)
+                    .where(RegistryObligation.enrollment_id.in_((old, new)))
+                )).all())
+                expected_references = {oid: None for oid in obligations.values()}
+                if change == "delete" and not commit_change:
+                    for name in ("frdo", "mintrud"):
+                        expected_references[obligations[old, name]] = document_id
+                if commit_change and change in {"bad_reference", "new_history_reference"}:
+                    owner = new if change == "bad_reference" else old
+                    expected_references[obligations[owner, registry]] = document_id
+                assert references == expected_references
+
+            # Retry only in a fresh transaction. A successful move now has
+            # exactly the new root; deleted/invalid sources remain rejected.
+            if commit_change and change != "move":
+                with pytest.raises(RegistryActionLockError) as caught:
+                    async with maker.begin() as session:
+                        await read(session)
+                assert str(caught.value) == "registry." + error
+            else:
+                async with maker.begin() as session:
+                    result = await read(session)
+                    assert result.current_enrollment_id == (new if commit_change else old)
+                    expected_roots = ({new} if commit_change else {old, new}
+                                      if change == "move" else {old})
+                    assert {root.resource_id for root in result.roots} == expected_roots
+            assert await _child_history_snapshot(maker, (old, new)) == before_history
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("case,error", [
+    ("other_learner", "child_document_owner_mismatch"),
+    ("missing_target", "child_enrollment_missing"),
+    ("detach_history", "child_document_reassignment_with_history"),
+    ("move_history", "child_document_reassignment_with_history"),
+    ("unlinked_reference", "child_document_reference_mismatch"),
+])
+def test_child_document_invalid_proposals_do_not_write_pg(pg_applicability_db, registry, case, error):
+    from app.models.document_record import DocumentRecord
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import acquire_registry_document_scope
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            old, learner_id = await _create_enrollment(maker)
+            if case == "other_learner":
+                new, _ = await _create_enrollment(maker)
+            else:
+                new = await _child_second_enrollment(maker, learner_id)
+            document_id = await _child_create_document(maker, old)
+            obligations = await _child_history_fixture(maker, (old, new))
+            async with maker.begin() as session:
+                document = await session.get(DocumentRecord, document_id)
+                # Avoid a course mismatch masking the learner mismatch.
+                document.course_id = None
+                if case in {"detach_history", "move_history", "unlinked_reference"}:
+                    obligation = await session.get(RegistryObligation, obligations[old, registry])
+                    obligation.document_id = document_id
+                if case == "unlinked_reference":
+                    document.enrollment_id = None
+            before_history = await _child_history_snapshot(maker, (old, new))
+            async with maker() as session:
+                before_document = (await session.execute(select(DocumentRecord.__table__).where(
+                    DocumentRecord.id == document_id,
+                ))).mappings().one()
+                before_references = (await session.execute(select(RegistryObligation.__table__).where(
+                    RegistryObligation.enrollment_id.in_((old, new)),
+                ).order_by(RegistryObligation.id))).mappings().all()
+            proposal = (None if case == "detach_history" else str(uuid4())
+                        if case == "missing_target" else new)
+            # Repeated rejected attempts each start with a fresh transaction.
+            for _ in range(2):
+                with pytest.raises(RegistryActionLockError) as caught:
+                    async with maker.begin() as session:
+                        await acquire_registry_document_scope(
+                            session=session, document_id=document_id,
+                            proposed_enrollment_id=proposal,
+                        )
+                assert str(caught.value) == "registry." + error
+            assert await _child_history_snapshot(maker, (old, new)) == before_history
+            async with maker() as session:
+                assert (await session.execute(select(DocumentRecord.__table__).where(
+                    DocumentRecord.id == document_id,
+                ))).mappings().all() == [before_document]
+                assert (await session.execute(select(RegistryObligation.__table__).where(
+                    RegistryObligation.enrollment_id.in_((old, new)),
+                ).order_by(RegistryObligation.id))).mappings().all() == before_references
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("lookup", ["context_id", "obligation_id"])
+@pytest.mark.parametrize("change", ["delete", "replace", "reparent"])
+@pytest.mark.parametrize("writer_first", [True, False], ids=["writer-first", "reader-first"])
+@pytest.mark.parametrize("commit_change", [True, False], ids=["commit", "rollback"])
+def test_child_context_edge_races_preserve_history_pg(
+    pg_applicability_db, registry, lookup, change, writer_first, commit_change,
+):
+    from app.models.frdo_registry_context import FrdoRegistryContext
+    from app.models.mintrud_registry_context import MintrudRegistryContext
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import (
+        acquire_registry_context_scope, acquire_registry_context_upsert_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        model = FrdoRegistryContext if registry == "frdo" else MintrudRegistryContext
+        try:
+            old, learner_id = await _create_enrollment(maker)
+            new = await _child_second_enrollment(maker, learner_id)
+            obligations = await _child_history_fixture(maker, (old, new))
+            parent, next_parent = obligations[old, registry], obligations[new, registry]
+            context_id = await _child_create_context(maker, parent, registry)
+            replacement_id = str(uuid4())
+            before_history = await _child_history_snapshot(maker, (old, new))
+            assert all(len(rows) == 4 for rows in before_history.values())
+
+            async def contexts():
+                async with maker() as session:
+                    return (await session.execute(select(model.__table__).where(
+                        model.obligation_id.in_((parent, next_parent)),
+                    ).order_by(model.id))).mappings().all()
+
+            before_contexts = await contexts()
+
+            async def read(session):
+                cached = await session.get(model, context_id)
+                if lookup == "context_id":
+                    result = await acquire_registry_context_scope(
+                        session=session, registry=registry, context_id=context_id,
+                    )
+                    assert cached is not None
+                else:
+                    result = await acquire_registry_context_upsert_scope(
+                        session=session, registry=registry, obligation_id=parent,
+                    )
+                assert not session.new and not session.dirty and not session.deleted
+                return result
+
+            async def mutate(session):
+                context = await session.get(model, context_id)
+                if change == "reparent":
+                    context.obligation_id = next_parent
+                else:
+                    await session.delete(context)
+                    await session.flush()
+                    if change == "replace":
+                        session.add(model(id=replacement_id, obligation_id=parent))
+
+            error = ("child_context_missing"
+                     if lookup == "context_id" and change != "reparent"
+                     else "child_scope_changed_during_lock")
+            await _child_race(
+                engine, maker, read=read, mutate=mutate,
+                roots=tuple(RegistrySourceFence("enrollment", eid) for eid in (old, new)),
+                writer_first=writer_first, commit_change=commit_change, error=error,
+            )
+            assert await _child_history_snapshot(maker, (old, new)) == before_history
+            after_contexts = await contexts()
+            if not commit_change:
+                assert after_contexts == before_contexts
+            elif change == "delete":
+                assert after_contexts == []
+            else:
+                assert len(after_contexts) == 1
+                assert after_contexts[0]["id"] == (
+                    replacement_id if change == "replace" else context_id
+                )
+                assert after_contexts[0]["obligation_id"] == (
+                    parent if change == "replace" else next_parent
+                )
+
+            if commit_change and lookup == "context_id" and change != "reparent":
+                with pytest.raises(RegistryActionLockError, match="child_context_missing"):
+                    async with maker.begin() as session:
+                        await read(session)
+                # The old ID never silently aliases the replacement. A fresh
+                # upsert resolves exactly the new ID (or explicit absence).
+                async with maker.begin() as session:
+                    fresh = await acquire_registry_context_upsert_scope(
+                        session=session, registry=registry, obligation_id=parent,
+                    )
+                    assert fresh.evidence[0][-1] == (
+                        replacement_id if change == "replace" else None
+                    )
+            else:
+                async with maker.begin() as session:
+                    fresh = await read(session)
+                    expected_owner = (new if commit_change and change == "reparent"
+                                      and lookup == "context_id" else old)
+                    assert fresh.current_enrollment_id == expected_owner
+                    assert tuple(root.resource_id for root in fresh.roots) == (expected_owner,)
+                    expected_context = context_id
+                    if commit_change and lookup == "obligation_id":
+                        expected_context = replacement_id if change == "replace" else None
+                    assert fresh.evidence[0][-1] == expected_context
+            assert await _child_history_snapshot(maker, (old, new)) == before_history
+        finally:
             await engine.dispose()
 
     asyncio.run(scenario())

@@ -80,3 +80,70 @@ async def test_child_lock_preflight_stable_scope_is_not_authorization():
         )
     assert isinstance(scope, RegistryChildDependencyScope)
     assert scope == before
+
+
+@pytest.mark.parametrize("entrypoint", [
+    "resolve_registry_document_scope", "acquire_registry_document_scope",
+    "resolve_registry_document_creation_scope", "acquire_registry_document_creation_scope",
+    "resolve_registry_context_scope", "acquire_registry_context_scope",
+    "resolve_registry_context_upsert_scope", "acquire_registry_context_upsert_scope",
+])
+@pytest.mark.parametrize("state,error", [
+    ("inactive", "child_fresh_transaction_required"),
+    ("nested", "child_fresh_transaction_required"),
+    ("new", "child_pending_changes"),
+    ("dirty", "child_pending_changes"),
+    ("deleted", "child_pending_changes"),
+])
+@pytest.mark.asyncio
+async def test_child_entrypoints_reject_unsafe_transaction_before_sql(entrypoint, state, error):
+    from unittest.mock import Mock
+
+    from app.services import registry_child_source_scope as child
+
+    session = SimpleNamespace(
+        in_transaction=Mock(return_value=state != "inactive"),
+        in_nested_transaction=Mock(return_value=state == "nested"),
+        new=[object()] if state == "new" else [],
+        dirty=[object()] if state == "dirty" else [],
+        deleted=[object()] if state == "deleted" else [],
+        execute=AsyncMock(), scalars=AsyncMock(), flush=AsyncMock(), commit=AsyncMock(),
+    )
+    if "document_creation" in entrypoint:
+        kwargs = {"enrollment_id": ident(), "expected_user_id": ident()}
+    elif "document_scope" in entrypoint:
+        kwargs = {"document_id": ident()}
+    elif "context_upsert" in entrypoint:
+        kwargs = {"registry": "frdo", "obligation_id": ident()}
+    else:
+        kwargs = {"registry": "mintrud", "context_id": ident()}
+    with pytest.raises(RegistryActionLockError) as caught:
+        await getattr(child, entrypoint)(session=session, **kwargs)
+    assert str(caught.value) == "registry." + error
+    for method in (session.execute, session.scalars, session.flush, session.commit):
+        method.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error", [
+    "child_document_missing", "child_context_missing", "child_document_owner_mismatch",
+    "child_document_reference_mismatch", "child_document_reassignment_with_history",
+    "child_unlinked",
+])
+async def test_child_rediscovery_failure_never_falls_back_to_old_scope(error):
+    before = _make_scope(
+        kind="document", source_id=ident(), current=ident(),
+        proposed=None, evidence=(("old",),),
+    )
+    resolver = AsyncMock(side_effect=RegistryActionLockError("registry." + error))
+    with patch(
+        "app.services.registry_child_source_scope.acquire_discovered_registry_source_write_scope",
+        new_callable=AsyncMock,
+    ) as lock, pytest.raises(RegistryActionLockError) as caught:
+        await _acquire_and_rediscover(
+            session=SimpleNamespace(), before=before, resolver=resolver,
+            document_id=before.source_id,
+        )
+    assert str(caught.value) == "registry." + error
+    lock.assert_awaited_once()
+    resolver.assert_awaited_once()
