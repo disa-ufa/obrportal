@@ -14,10 +14,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.frdo_registry_context import FrdoRegistryContext
+from app.models.mintrud_learn_program import CourseMintrudLearnProgram
+from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_obligation import RegistryObligation
 from app.services.registry_action_lockset import (
     RegistryActionLockError,
@@ -37,6 +41,10 @@ class RegistrySourceScopeRow:
     learner_id: str
     organization_id: str | None
     document_id: str | None
+    # These are actual linked child rows, not just obligation.document_id.
+    # Their absence is significant when a concurrent source writer inserts one.
+    enrollment_document_id: str | None = None
+    registry_context_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +54,8 @@ class RegistryDiscoveredActionScope:
     rows: tuple[RegistrySourceScopeRow, ...]
     source_fences: tuple[RegistrySourceFence, ...]
     targets: tuple[RegistryObligationTarget, ...]
+    # Mintrud course<->catalog membership (including empty) is part of scope.
+    mintrud_mapping_memberships: tuple[tuple[str, str], ...] = ()
 
 
 def _canonical_id(raw: str) -> str:
@@ -81,6 +91,7 @@ def build_registry_action_scope(
     registry: str,
     obligation_ids: tuple[str, ...],
     rows: tuple[RegistrySourceScopeRow, ...],
+    mintrud_mapping_memberships: tuple[tuple[str, str], ...] = (),
 ) -> RegistryDiscoveredActionScope:
     """Make source keys only from verified DB rows, never request-supplied scope."""
     actor, ids = _validate_request(
@@ -111,8 +122,13 @@ def build_registry_action_scope(
             fences.add(RegistrySourceFence(
                 "organization", _canonical_id(item.organization_id),
             ))
-        if item.document_id is not None:
-            _canonical_id(item.document_id)
+        for dependent_id in (
+            item.document_id,
+            item.enrollment_document_id,
+            item.registry_context_id,
+        ):
+            if dependent_id is not None:
+                _canonical_id(dependent_id)
         targets.append(RegistryObligationTarget(
             obligation_id=obligation_id,
             enrollment_id=enrollment_id,
@@ -120,6 +136,20 @@ def build_registry_action_scope(
         ))
     if discovered_ids != set(ids):
         raise RegistryActionLockError("registry.scope_missing_obligation")
+
+    # Reject mapping rows outside the locked course scope or from another
+    # registry, rather than allowing caller-supplied memberships to be trusted.
+    discovered_courses = {item.course_id for item in rows}
+    memberships: set[tuple[str, str]] = set()
+    if registry != "mintrud" and mintrud_mapping_memberships:
+        raise RegistryActionLockError("registry.scope_unexpected_mapping")
+    for member in mintrud_mapping_memberships:
+        if not isinstance(member, tuple) or len(member) != 2:
+            raise RegistryActionLockError("registry.scope_invalid_mapping")
+        course_id, program_id = (_canonical_id(value) for value in member)
+        if course_id not in discovered_courses or (course_id, program_id) in memberships:
+            raise RegistryActionLockError("registry.scope_invalid_mapping")
+        memberships.add((course_id, program_id))
 
     ordered_fences = tuple(sorted(fences, key=lambda item: (item.kind, item.resource_id)))
     ordered_targets = tuple(sorted(targets, key=lambda item: item.obligation_id))
@@ -130,6 +160,7 @@ def build_registry_action_scope(
         rows=tuple(sorted(rows, key=lambda item: item.obligation_id)),
         source_fences=ordered_fences,
         targets=ordered_targets,
+        mintrud_mapping_memberships=tuple(sorted(memberships)),
     )
 
 
@@ -155,16 +186,54 @@ async def discover_registry_action_scope(
             Enrollment.user_id,
             Enrollment.organization_id,
             RegistryObligation.document_id,
+            DocumentRecord.id,
+            func.coalesce(FrdoRegistryContext.id, MintrudRegistryContext.id),
         )
         .join(Enrollment, Enrollment.id == RegistryObligation.enrollment_id)
+        .outerjoin(DocumentRecord, DocumentRecord.enrollment_id == Enrollment.id)
+        .outerjoin(
+            FrdoRegistryContext,
+            and_(
+                FrdoRegistryContext.obligation_id == RegistryObligation.id,
+                RegistryObligation.registry == "frdo",
+            ),
+        )
+        .outerjoin(
+            MintrudRegistryContext,
+            and_(
+                MintrudRegistryContext.obligation_id == RegistryObligation.id,
+                RegistryObligation.registry == "mintrud",
+            ),
+        )
         .where(RegistryObligation.id.in_(obligation_ids))
         .order_by(RegistryObligation.id)
     )
     result = (await session.execute(query)).all()
     rows = tuple(RegistrySourceScopeRow(*record) for record in result)
+
+    # Membership is independently queried because joining a many-to-many table
+    # into the obligation select would duplicate the obligation rows.
+    memberships: tuple[tuple[str, str], ...] = ()
+    if registry == "mintrud" and rows:
+        course_ids = tuple(sorted({row.course_id for row in rows}))
+        memberships = tuple((
+            await session.execute(
+                select(
+                    CourseMintrudLearnProgram.course_id,
+                    CourseMintrudLearnProgram.mintrud_learn_program_id,
+                )
+                .where(CourseMintrudLearnProgram.course_id.in_(course_ids))
+                .order_by(
+                    CourseMintrudLearnProgram.course_id,
+                    CourseMintrudLearnProgram.mintrud_learn_program_id,
+                )
+            )
+        ).all())
+
     return build_registry_action_scope(
         actor_id=actor_id, registry=registry,
         obligation_ids=obligation_ids, rows=rows,
+        mintrud_mapping_memberships=memberships,
     )
 
 
@@ -191,6 +260,8 @@ async def acquire_discovered_registry_action_scope(
         source_fences=before.source_fences,
         obligation_targets=before.targets,
     )
+    # Under READ COMMITTED, a child committed by a cooperating writer while
+    # we waited for its parent fence must be visible to this second discovery.
     after = await discover_registry_action_scope(
         session=session, actor_id=actor_id,
         registry=registry, obligation_ids=obligation_ids,
