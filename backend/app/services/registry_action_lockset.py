@@ -3,8 +3,9 @@
 NOT WIRED into approval, attempts, batch creation or production. A lockset
 does not authorize submission: caller must separately validate permissions,
 readiness, fresh canonical applicability, approvals and historical policy.
-Source writers do not yet participate in these fences; therefore this module
-alone CANNOT guarantee commit-time freshness. Do not activate a global gate.
+Source writers do not yet participate in these fences in production. The
+separate opt-in source-writer helper below only coordinates participating callers
+and CANNOT guarantee commit-time freshness. Do not activate a global gate.
 
 Caller owns a READ COMMITTED transaction and must NOT have pre-acquired later
 row/advisory locks. The protocol is:
@@ -59,6 +60,22 @@ def _canonical_uuid(value: str) -> str:
     return normalized
 
 
+def normalize_registry_source_fences(
+    *,
+    source_fences: tuple[RegistrySourceFence, ...],
+) -> tuple[str, ...]:
+    """One canonical namespace/order for future readers AND source writers."""
+    if not source_fences:
+        raise RegistryActionLockError("registry.lockset_empty")
+    source_keys: set[str] = set()
+    for source in source_fences:
+        if not isinstance(source, RegistrySourceFence) or source.kind not in _SOURCE_KINDS:
+            raise RegistryActionLockError("registry.lockset_invalid_source")
+        resource_id = _canonical_uuid(source.resource_id)
+        source_keys.add("registry-source:v1:" + source.kind + ":" + resource_id)
+    return tuple(sorted(source_keys))
+
+
 def normalize_registry_lockset(
     *,
     source_fences: tuple[RegistrySourceFence, ...],
@@ -67,16 +84,11 @@ def normalize_registry_lockset(
     """Validate and sort all keys BEFORE any lock is taken."""
     if not source_fences or not obligation_targets:
         raise RegistryActionLockError("registry.lockset_empty")
-
-    source_keys: set[str] = set()
-    enrollment_fences: set[str] = set()
-    for source in source_fences:
-        if not isinstance(source, RegistrySourceFence) or source.kind not in _SOURCE_KINDS:
-            raise RegistryActionLockError("registry.lockset_invalid_source")
-        resource_id = _canonical_uuid(source.resource_id)
-        source_keys.add("registry-source:v1:" + source.kind + ":" + resource_id)
-        if source.kind == "enrollment":
-            enrollment_fences.add(resource_id)
+    source_keys = normalize_registry_source_fences(source_fences=source_fences)
+    enrollment_fences = {
+        source.resource_id for source in source_fences
+        if source.kind == "enrollment"
+    }
 
     ids: set[str] = set()
     pairs: set[tuple[str, str]] = set()
@@ -101,10 +113,50 @@ def normalize_registry_lockset(
         for enrollment_id, registry in pairs
     ))
     return (
-        tuple(sorted(source_keys)),
+        source_keys,
         decision_keys,
         tuple(sorted(targets, key=lambda target: target.obligation_id)),
     )
+
+
+async def _assert_read_committed(session: AsyncSession) -> None:
+    level = str(
+        (await session.execute(text("SHOW transaction_isolation"))).scalar_one()
+    ).strip().lower().replace("_", " ")
+    if level != "read committed":
+        raise RegistryActionLockError("registry.lockset_requires_read_committed")
+
+
+async def _acquire_advisory_keys(
+    *, session: AsyncSession, keys: tuple[str, ...],
+) -> None:
+    # One SELECT per key: IN/ORDER BY does not enforce lock order.
+    for key in keys:
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+            {"key": key},
+        )
+
+
+async def acquire_registry_source_write_fences(
+    *, session: AsyncSession, source_fences: tuple[RegistrySourceFence, ...],
+) -> tuple[str, ...]:
+    """Dormant cooperating source-writer primitive; never grants eligibility.
+
+    Call before ANY source or obligation row locks or writes. Caller owns a
+    READ COMMITTED transaction and its commit/rollback. Inserting a child must
+    fence its parent, including when the child does not yet exist.
+
+    Do NOT partially wire into production: other source/approval/batch paths
+    currently take conflicting lock orders. The protocol must be reviewed and
+    adopted consistently across all writers before new-action API activation.
+    """
+    if not session.in_transaction():
+        raise RegistryActionLockError("registry.lockset_transaction_required")
+    keys = normalize_registry_source_fences(source_fences=source_fences)
+    await _assert_read_committed(session)
+    await _acquire_advisory_keys(session=session, keys=keys)
+    return keys
 
 
 async def acquire_registry_new_action_lockset(
@@ -127,19 +179,10 @@ async def acquire_registry_new_action_lockset(
         source_fences=source_fences,
         obligation_targets=obligation_targets,
     )
-    level = str(
-        (await session.execute(text("SHOW transaction_isolation"))).scalar_one()
-    ).strip().lower().replace("_", " ")
-    if level != "read committed":
-        raise RegistryActionLockError("registry.lockset_requires_read_committed")
+    await _assert_read_committed(session)
 
-    # Stable order; each SELECT acquires one transaction-scoped lock.
-    # Decision keys deliberately match the generic writer's existing keys.
-    for key in sources + decision_keys:
-        await session.execute(
-            text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-            {"key": key},
-        )
+    # Source keys precede writer-compatible decision keys, then row locks.
+    await _acquire_advisory_keys(session=session, keys=sources + decision_keys)
 
     locked: list[RegistryObligation] = []
     for target in targets:
