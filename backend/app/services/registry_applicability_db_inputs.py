@@ -61,6 +61,10 @@ async def load_current_registry_applicability_inputs(
             select(Enrollment, Course)
             .join(Course, Course.id == Enrollment.course_id)
             .where(Enrollment.id == obligation.enrollment_id)
+            # READ COMMITTED row visibility is not enough when SQLAlchemy's
+            # identity map still holds a source loaded before a competing
+            # transaction committed. This loader is dormant, never a gate alone.
+            .execution_options(populate_existing=True)
         )
     ).one_or_none()
     if pair is None:
@@ -71,6 +75,7 @@ async def load_current_registry_applicability_inputs(
         await session.execute(
             select(DocumentRecord)
             .where(DocumentRecord.enrollment_id == enrollment.id)
+            .execution_options(populate_existing=True)
         )
     ).scalar_one_or_none()
 
@@ -91,6 +96,7 @@ async def load_current_registry_applicability_inputs(
             await session.execute(
                 select(MintrudRegistryContext)
                 .where(MintrudRegistryContext.obligation_id == obligation.id)
+                .execution_options(populate_existing=True)
             )
         ).scalar_one_or_none()
 
