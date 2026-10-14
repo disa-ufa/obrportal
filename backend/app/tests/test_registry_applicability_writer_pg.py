@@ -2394,3 +2394,339 @@ def test_source_writer_handles_existing_parent_without_enrollments(pg_applicabil
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+# ---- M2.1.2: real-PostgreSQL coverage of dormant trusted child ownership ----
+
+async def _child_create_document(maker, enrollment_id):
+    from app.models.document_record import DocumentRecord
+
+    async with maker.begin() as session:
+        enrollment = await session.get(Enrollment, enrollment_id)
+        document = DocumentRecord(
+            enrollment_id=enrollment_id,
+            course_id=enrollment.course_id,
+            user_id=enrollment.user_id,
+            document_type="Certificate",
+            document_number="CHILD-" + uuid4().hex,
+            title="Synthetic completion",
+            status="draft",
+        )
+        session.add(document)
+        await session.flush()
+        return document.id
+
+
+async def _child_create_obligation(maker, enrollment_id, registry):
+    async with maker.begin() as session:
+        obligation = RegistryObligation(
+            enrollment_id=enrollment_id,
+            registry=registry,
+            status="pending_data",
+        )
+        session.add(obligation)
+        await session.flush()
+        return obligation.id
+
+
+async def _child_create_context(maker, obligation_id, registry):
+    from app.models.frdo_registry_context import FrdoRegistryContext
+    from app.models.mintrud_registry_context import MintrudRegistryContext
+
+    model = FrdoRegistryContext if registry == "frdo" else MintrudRegistryContext
+    async with maker.begin() as session:
+        context = model(obligation_id=obligation_id)
+        session.add(context)
+        await session.flush()
+        return context.id
+
+
+def test_child_document_real_db_ownership_and_old_new_parents(pg_applicability_db):
+    from app.models.document_record import DocumentRecord
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import (
+        acquire_registry_document_scope,
+        resolve_registry_document_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            first, learner_id = await _create_enrollment(maker)
+            linked_doc = await _child_create_document(maker, first)
+            async with maker.begin() as session:
+                enrollment = await session.get(Enrollment, first)
+                second_course = Course(slug="child-second-" + uuid4().hex, title="Another")
+                session.add(second_course)
+                await session.flush()
+                second = Enrollment(
+                    user_id=learner_id, course_id=second_course.id, status="completed",
+                )
+                session.add(second)
+                await session.flush()
+                second_id = second.id
+
+            async with maker.begin() as session:
+                linked = await acquire_registry_document_scope(
+                    session=session, document_id=linked_doc,
+                )
+                assert linked.current_enrollment_id == first
+                assert linked.proposed_enrollment_id == first
+                assert tuple(root.resource_id for root in linked.roots) == (first,)
+                assert not session.new and not session.dirty
+            # Current course conflicts with second enrollment: reject the proposed move.
+            with pytest.raises(RegistryActionLockError, match="child_document_owner_mismatch"):
+                async with maker.begin() as session:
+                    await resolve_registry_document_scope(
+                        session=session, document_id=linked_doc,
+                        proposed_enrollment_id=second_id,
+                    )
+
+            # Nullable document course allows a genuine old/new enrollment union.
+            async with maker.begin() as session:
+                document = await session.get(DocumentRecord, linked_doc)
+                document.course_id = None
+            async with maker.begin() as session:
+                old_new = await acquire_registry_document_scope(
+                    session=session, document_id=linked_doc,
+                    proposed_enrollment_id=second_id,
+                )
+                assert {root.resource_id for root in old_new.roots} == {first, second_id}
+                assert old_new.current_enrollment_id == first
+                assert old_new.proposed_enrollment_id == second_id
+                assert not session.new and not session.dirty
+
+            # Independent obligation.document_id cannot establish ownership.
+            async with maker.begin() as session:
+                session.add(RegistryObligation(
+                    enrollment_id=second_id, registry="frdo", document_id=linked_doc,
+                    status="pending_data",
+                ))
+            with pytest.raises(
+                RegistryActionLockError, match="child_document_reference_mismatch",
+            ):
+                async with maker.begin() as session:
+                    await resolve_registry_document_scope(
+                        session=session, document_id=linked_doc,
+                    )
+            async with maker() as session:
+                assert await session.get(DocumentRecord, linked_doc) is not None
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_child_standalone_document_does_not_infer_enrollment(pg_applicability_db):
+    from app.models.document_record import DocumentRecord
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import resolve_registry_document_scope
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, user_id = await _create_enrollment(maker)
+            async with maker.begin() as session:
+                enrollment = await session.get(Enrollment, enrollment_id)
+                document = DocumentRecord(
+                    user_id=user_id, course_id=enrollment.course_id,
+                    enrollment_id=None,
+                    document_number="STANDALONE-" + uuid4().hex,
+                    document_type="Certificate", title="Standalone",
+                )
+                session.add(document)
+                await session.flush()
+                document_id = document.id
+            with pytest.raises(RegistryActionLockError, match="child_unlinked"):
+                async with maker.begin() as session:
+                    await resolve_registry_document_scope(
+                        session=session, document_id=document_id,
+                    )
+            async with maker.begin() as session:
+                discovered = await resolve_registry_document_scope(
+                    session=session, document_id=document_id,
+                    proposed_enrollment_id=enrollment_id,
+                )
+                assert discovered.current_enrollment_id is None
+                assert discovered.proposed_enrollment_id == enrollment_id
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_child_context_real_db_existing_absent_and_mismatched_registry(
+    pg_applicability_db, registry,
+):
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_child_source_scope import (
+        acquire_registry_context_scope,
+        acquire_registry_context_upsert_scope,
+        resolve_registry_context_upsert_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, _ = await _create_enrollment(maker)
+            obligation_id = await _child_create_obligation(
+                maker, enrollment_id, registry,
+            )
+            async with maker.begin() as session:
+                before = await acquire_registry_context_upsert_scope(
+                    session=session, registry=registry, obligation_id=obligation_id,
+                )
+                assert before.current_enrollment_id == enrollment_id
+                assert before.evidence[0][-1] is None
+                assert not session.new and not session.dirty
+
+            other = "mintrud" if registry == "frdo" else "frdo"
+            with pytest.raises(RegistryActionLockError, match="child_registry_mismatch"):
+                async with maker.begin() as session:
+                    await resolve_registry_context_upsert_scope(
+                        session=session, registry=other, obligation_id=obligation_id,
+                    )
+
+            context_id = await _child_create_context(maker, obligation_id, registry)
+            async with maker.begin() as session:
+                present = await acquire_registry_context_scope(
+                    session=session, registry=registry, context_id=context_id,
+                )
+                assert present.source_id == obligation_id
+                assert present.evidence[0][-1] == context_id
+                assert present.roots[0].resource_id == enrollment_id
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("kind", ["document", "context"])
+@pytest.mark.parametrize("writer_first", [True, False])
+def test_child_first_insert_serializes_with_cooperating_source_writer(
+    pg_applicability_db, registry, kind, writer_first,
+):
+    """Prove actual PG blocker PIDs in BOTH orders, not timing-based contention."""
+    from app.models.document_record import DocumentRecord
+    from app.models.frdo_registry_context import FrdoRegistryContext
+    from app.models.mintrud_registry_context import MintrudRegistryContext
+    from app.services.registry_action_lockset import (
+        RegistryActionLockError, RegistrySourceFence,
+        acquire_registry_source_write_fences,
+    )
+    from app.services.registry_child_source_scope import (
+        acquire_registry_document_creation_scope,
+        acquire_registry_context_upsert_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task = None
+        started = asyncio.Event()
+        waiter_pid = None
+        try:
+            enrollment_id, learner_id = await _create_enrollment(maker)
+            obligation_id = (
+                await _child_create_obligation(maker, enrollment_id, registry)
+                if kind == "context" else None
+            )
+
+            async def action(session):
+                if kind == "document":
+                    return await acquire_registry_document_creation_scope(
+                        session=session, enrollment_id=enrollment_id,
+                        expected_user_id=learner_id,
+                    )
+                return await acquire_registry_context_upsert_scope(
+                    session=session, registry=registry, obligation_id=obligation_id,
+                )
+
+            async def insert_child(session):
+                if kind == "document":
+                    course_id = await session.scalar(
+                        select(Enrollment.course_id).where(Enrollment.id == enrollment_id)
+                    )
+                    session.add(DocumentRecord(
+                        user_id=learner_id, course_id=course_id,
+                        enrollment_id=enrollment_id,
+                        document_type="Certificate",
+                        document_number="FIRST-CHILD-" + uuid4().hex,
+                        title="First linked child",
+                    ))
+                else:
+                    model = FrdoRegistryContext if registry == "frdo" else MintrudRegistryContext
+                    session.add(model(obligation_id=obligation_id))
+                await session.flush()
+
+            async def wait_then_insert():
+                nonlocal waiter_pid
+                async with maker.begin() as session:
+                    waiter_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started.set()
+                    await acquire_registry_source_write_fences(
+                        session=session,
+                        source_fences=(RegistrySourceFence("enrollment", enrollment_id),),
+                    )
+                    await insert_child(session)
+
+            async def wait_then_resolve():
+                nonlocal waiter_pid
+                async with maker.begin() as session:
+                    waiter_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    started.set()
+                    return await action(session)
+
+            if writer_first:
+                async with maker.begin() as writer:
+                    blocker_pid = await writer.scalar(text("SELECT pg_backend_pid()"))
+                    await acquire_registry_source_write_fences(
+                        session=writer,
+                        source_fences=(RegistrySourceFence("enrollment", enrollment_id),),
+                    )
+                    task = asyncio.create_task(wait_then_resolve())
+                    await asyncio.wait_for(started.wait(), 8)
+                    await _wait_for_pg_blocker(engine, waiter_pid, blocker_pid)
+                    await insert_child(writer)
+                # The reader discovered no child, waited, then MUST reject the newly committed child.
+                with pytest.raises(
+                    RegistryActionLockError,
+                    match="child_document_already_exists|child_scope_changed_during_lock",
+                ):
+                    await asyncio.wait_for(task, 8)
+            else:
+                async with maker.begin() as action_session:
+                    blocker_pid = await action_session.scalar(text("SELECT pg_backend_pid()"))
+                    scope = await action(action_session)
+                    assert scope.current_enrollment_id in {None, enrollment_id}
+                    task = asyncio.create_task(wait_then_insert())
+                    await asyncio.wait_for(started.wait(), 8)
+                    await _wait_for_pg_blocker(engine, waiter_pid, blocker_pid)
+                await asyncio.wait_for(task, 8)
+
+            async with maker() as session:
+                if kind == "document":
+                    assert await session.scalar(select(DocumentRecord.id).where(
+                        DocumentRecord.enrollment_id == enrollment_id,
+                    )) is not None
+                else:
+                    model = FrdoRegistryContext if registry == "frdo" else MintrudRegistryContext
+                    assert await session.scalar(select(model.id).where(
+                        model.obligation_id == obligation_id,
+                    )) is not None
+        finally:
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+
+    asyncio.run(scenario())
