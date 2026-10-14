@@ -1621,16 +1621,28 @@ def test_opt_in_source_writer_fence_waits_for_action_lockset(pg_applicability_db
 
 
 @pytest.mark.parametrize("registry", ["frdo", "mintrud"])
-def test_scope_preflight_detects_concurrent_first_context_insert(pg_applicability_db, registry):
-    """A cooperating writer inserts an absent child while preflight waits."""
+@pytest.mark.parametrize("child_kind", ["context", "document"])
+@pytest.mark.parametrize("reader_first", [True, False], ids=["stale-read-first", "action-lock-first"])
+def test_scope_preflight_deterministic_first_child_insert_races(
+    pg_applicability_db, monkeypatch, registry, child_kind, reader_first,
+):
+    """Force both transaction orders and observe actual PostgreSQL blockers.
+
+    stale-read-first: the reader finishes its FIRST unlocked discovery; the
+    cooperating writer then inserts and holds a parent fence. The reader must
+    block, see the newly committed child, and raise a scope-change conflict.
+
+    action-lock-first: the reader finishes both scope reads and holds the
+    source fence. The cooperating writer must block until it is released.
+    """
+    from app.models.document_record import DocumentRecord
     from app.models.frdo_registry_context import FrdoRegistryContext
     from app.models.mintrud_registry_context import MintrudRegistryContext
+    from app.services import registry_action_scope as scope_module
     from app.services.registry_action_lockset import (
-        RegistrySourceFence, RegistryActionLockError,
+        RegistryActionLockError,
+        RegistrySourceFence,
         acquire_registry_source_write_fences,
-    )
-    from app.services.registry_action_scope import (
-        acquire_discovered_registry_action_scope,
     )
 
     async def scenario():
@@ -1641,61 +1653,183 @@ def test_scope_preflight_detects_concurrent_first_context_insert(pg_applicabilit
         maker = async_sessionmaker(engine, expire_on_commit=False)
         enrollment_id, actor_id = await _create_enrollment(maker)
         async with maker.begin() as session:
-            row = RegistryObligation(
-                enrollment_id=enrollment_id, registry=registry,
-                status="pending_data", readiness_errors=[],
+            enrollment = await session.get(Enrollment, enrollment_id)
+            learner_id = enrollment.user_id
+            course_id = enrollment.course_id
+            obligation = RegistryObligation(
+                enrollment_id=enrollment_id,
+                registry=registry,
+                status="pending_data",
+                readiness_errors=[],
             )
-            session.add(row)
+            session.add(obligation)
             await session.flush()
-            obligation_id = row.id
-        fence = (RegistrySourceFence("enrollment", enrollment_id),)
-        writer_locked = asyncio.Event()
-        allow_insert = asyncio.Event()
-        writer_task = None
+            obligation_id = obligation.id
+
+        first_discovery_finished = asyncio.Event()
+        resume_reader = asyncio.Event()
+        reader_has_lockset = asyncio.Event()
+        resume_reader_transaction = asyncio.Event()
+        writer_inserted = asyncio.Event()
+        resume_writer_transaction = asyncio.Event()
+        writer_started = asyncio.Event()
+        reader_pid = None
+        writer_pid = None
+        first_call_done = False
         reader_task = None
+        writer_task = None
+
+        original_discover = scope_module.discover_registry_action_scope
+
+        async def synchronized_discover(**kwargs):
+            nonlocal first_call_done
+            snapshot = await original_discover(**kwargs)
+            if reader_first and not first_call_done:
+                first_call_done = True
+                row = snapshot.rows[0]
+                assert (
+                    row.enrollment_document_id is None
+                    if child_kind == "document"
+                    else row.registry_context_id is None
+                )
+                first_discovery_finished.set()
+                await asyncio.wait_for(resume_reader.wait(), timeout=8)
+            return snapshot
+
+        monkeypatch.setattr(
+            scope_module, "discover_registry_action_scope",
+            synchronized_discover,
+        )
+
+        async def reader():
+            nonlocal reader_pid
+            async with maker.begin() as session:
+                reader_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                rows, snapshot = await scope_module.acquire_discovered_registry_action_scope(
+                    session=session,
+                    actor_id=actor_id,
+                    registry=registry,
+                    obligation_ids=(obligation_id,),
+                )
+                assert len(rows) == 1
+                assert snapshot.targets[0].obligation_id == obligation_id
+                reader_has_lockset.set()
+                await asyncio.wait_for(resume_reader_transaction.wait(), timeout=8)
+
+        async def writer():
+            nonlocal writer_pid
+            async with maker.begin() as session:
+                writer_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                writer_started.set()
+                # This must be acquired BEFORE the first child insertion.
+                await acquire_registry_source_write_fences(
+                    session=session,
+                    source_fences=(RegistrySourceFence("enrollment", enrollment_id),),
+                )
+                if child_kind == "context":
+                    context_type = (
+                        FrdoRegistryContext if registry == "frdo"
+                        else MintrudRegistryContext
+                    )
+                    session.add(context_type(obligation_id=obligation_id))
+                else:
+                    session.add(DocumentRecord(
+                        user_id=learner_id,
+                        course_id=course_id,
+                        enrollment_id=enrollment_id,
+                        document_number="scope-race-" + uuid4().hex,
+                        document_type="test-document",
+                        title="Isolated test document",
+                        status="available",
+                    ))
+                await session.flush()
+                writer_inserted.set()
+                await asyncio.wait_for(resume_writer_transaction.wait(), timeout=8)
+
+        async def assert_postgres_wait(waiter, blocker):
+            # pg_blocking_pids is PostgreSQL's observed lock graph, not a
+            # test-local event or a timing guess.
+            async with engine.connect() as observer:
+                for _ in range(250):
+                    blockers = await observer.scalar(
+                        text("SELECT pg_blocking_pids(:pid)"),
+                        {"pid": waiter},
+                    )
+                    if blocker in blockers:
+                        return
+                    await asyncio.sleep(0.02)
+            pytest.fail("Expected PostgreSQL blocker was not observed")
+
         try:
-            async def writer():
-                async with maker.begin() as session:
-                    await acquire_registry_source_write_fences(
-                        session=session, source_fences=fence,
-                    )
-                    writer_locked.set()
-                    await asyncio.wait_for(allow_insert.wait(), timeout=8)
-                    kind = FrdoRegistryContext if registry == "frdo" else MintrudRegistryContext
-                    session.add(kind(obligation_id=obligation_id))
-                    await session.flush()
-
-            async def reader():
-                async with maker.begin() as session:
-                    await acquire_discovered_registry_action_scope(
-                        session=session, actor_id=actor_id, registry=registry,
-                        obligation_ids=(obligation_id,),
-                    )
-
-            writer_task = asyncio.create_task(writer())
-            await asyncio.wait_for(writer_locked.wait(), timeout=8)
             reader_task = asyncio.create_task(reader())
-            # Give the preflight a chance to discover a missing child before
-            # releasing its source fence. This is a contention test, not a
-            # deterministic guarantee of the interleaving.
-            await asyncio.sleep(0.2)
-            allow_insert.set()
-            await asyncio.wait_for(writer_task, timeout=8)
-            try:
-                await asyncio.wait_for(reader_task, timeout=8)
-            except RegistryActionLockError as exc:
-                assert str(exc) == "registry.scope_changed_during_lock"
+
+            if reader_first:
+                await asyncio.wait_for(first_discovery_finished.wait(), timeout=8)
+                writer_task = asyncio.create_task(writer())
+                await asyncio.wait_for(writer_inserted.wait(), timeout=8)
+
+                # First read was visibly completed BEFORE the writer's insert.
+                # Reader can now only proceed into the locked step.
+                resume_reader.set()
+                await asyncio.wait_for(
+                    assert_postgres_wait(reader_pid, writer_pid), timeout=7,
+                )
+                resume_writer_transaction.set()
+                await asyncio.wait_for(writer_task, timeout=8)
+                with pytest.raises(
+                    RegistryActionLockError,
+                    match="registry.scope_changed_during_lock",
+                ):
+                    await asyncio.wait_for(reader_task, timeout=8)
+                assert not reader_has_lockset.is_set()
             else:
-                # If discovery started only after writer commit, both snapshots
-                # legitimately contain the inserted context.
-                pass
+                await asyncio.wait_for(reader_has_lockset.wait(), timeout=8)
+                writer_task = asyncio.create_task(writer())
+                await asyncio.wait_for(writer_started.wait(), timeout=8)
+                await asyncio.wait_for(
+                    assert_postgres_wait(writer_pid, reader_pid), timeout=7,
+                )
+                resume_reader_transaction.set()
+                await asyncio.wait_for(reader_task, timeout=8)
+                await asyncio.wait_for(writer_inserted.wait(), timeout=8)
+                resume_writer_transaction.set()
+                await asyncio.wait_for(writer_task, timeout=8)
+
+            async with maker() as session:
+                stored = await session.get(RegistryObligation, obligation_id)
+                assert stored.status == "pending_data"
+                assert stored.document_id is None
+                assert await session.scalar(
+                    select(RegistryApplicabilityRecord.id).where(
+                        RegistryApplicabilityRecord.enrollment_id == enrollment_id,
+                        RegistryApplicabilityRecord.registry == registry,
+                    )
+                ) is None
+                if child_kind == "context":
+                    context_type = (
+                        FrdoRegistryContext if registry == "frdo"
+                        else MintrudRegistryContext
+                    )
+                    assert await session.scalar(
+                        select(context_type.id).where(
+                            context_type.obligation_id == obligation_id,
+                        )
+                    ) is not None
+                else:
+                    assert await session.scalar(
+                        select(DocumentRecord.id).where(
+                            DocumentRecord.enrollment_id == enrollment_id,
+                        )
+                    ) is not None
         finally:
-            allow_insert.set()
-            for task in (writer_task, reader_task):
+            resume_reader.set()
+            resume_reader_transaction.set()
+            resume_writer_transaction.set()
+            for task in (reader_task, writer_task):
                 if task is not None and not task.done():
                     task.cancel()
             await asyncio.gather(
-                *(task for task in (writer_task, reader_task) if task is not None),
+                *(task for task in (reader_task, writer_task) if task is not None),
                 return_exceptions=True,
             )
             await engine.dispose()
