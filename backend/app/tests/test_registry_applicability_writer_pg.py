@@ -3521,3 +3521,67 @@ def test_child_document_cannot_mask_invalid_persisted_course_with_proposed_cours
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("unsafe", ["new", "dirty", "deleted", "nested", "repeatable_read"])
+def test_action_scope_pg_preflight_rejects_unsafe_transaction_without_flush(
+    pg_applicability_db, registry, unsafe,
+):
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_action_scope import (
+        acquire_discovered_registry_action_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        marker = "scope-no-flush-" + uuid4().hex
+        try:
+            enrollment_id, actor_id = await _create_enrollment(maker)
+            async with maker.begin() as seed:
+                obligation = RegistryObligation(
+                    enrollment_id=enrollment_id, registry=registry,
+                    status="pending_data",
+                )
+                seed.add(obligation)
+                await seed.flush()
+                obligation_id = obligation.id
+            async with maker() as session:
+                await session.begin()
+                if unsafe == "new":
+                    session.add(Course(slug=marker, title="Must not flush"))
+                elif unsafe in {"dirty", "deleted"}:
+                    user = await session.get(User, actor_id)
+                    if unsafe == "dirty":
+                        user.full_name = marker
+                    else:
+                        await session.delete(user)
+                elif unsafe == "nested":
+                    await session.begin_nested()
+                elif unsafe == "repeatable_read":
+                    await session.execute(text(
+                        "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"
+                    ))
+                with pytest.raises(RegistryActionLockError, match=(
+                    "scope_fresh_transaction_required"
+                    if unsafe == "nested" else
+                    "scope_pending_changes"
+                    if unsafe in {"new", "dirty", "deleted"} else
+                    "lockset_requires_read_committed"
+                )):
+                    await acquire_discovered_registry_action_scope(
+                        session=session, actor_id=actor_id, registry=registry,
+                        obligation_ids=(obligation_id,),
+                    )
+                await session.rollback()
+            async with maker() as check:
+                assert await check.scalar(
+                    select(Course.id).where(Course.slug == marker)
+                ) is None
+                assert (await check.get(User, actor_id)).full_name != marker
+                assert await check.get(RegistryObligation, obligation_id) is not None
+        finally:
+            await engine.dispose()
+
+    asyncio.run(scenario())
