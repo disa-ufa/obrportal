@@ -256,6 +256,7 @@ jobs:
       - name: Run backend pytest
         run: |
           docker compose exec -T -e MINTRUD_CATALOG_TEST_DATABASE_URL=postgresql+asyncpg://obrportal:obrportal_password@postgres:5432/obrportal backend pytest app/tests/test_mintrud_catalog_cli.py -q
+          docker compose exec -T -e REGISTRY_APPLICABILITY_TEST_DATABASE_URL=postgresql+asyncpg://obrportal:obrportal_password@postgres:5432/obrportal backend pytest app/tests/test_registry_applicability_writer_pg.py -q
           docker compose exec -T backend pytest app/tests -q
 
       - name: Run auth RBAC and organization cabinet smoke checks
