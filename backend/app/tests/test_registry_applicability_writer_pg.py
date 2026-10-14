@@ -1525,3 +1525,96 @@ def test_action_lockset_reverse_batch_order_serializes_without_deadlock(
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_opt_in_source_writer_fence_waits_for_action_lockset(pg_applicability_db, registry):
+    """Real PostgreSQL: a cooperating writer cannot cross the action's fence."""
+    from app.services.registry_action_lockset import (
+        RegistrySourceFence,
+        RegistryObligationTarget,
+        acquire_registry_new_action_lockset,
+        acquire_registry_source_write_fences,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        enrollment_id, _ = await _create_enrollment(maker)
+        async with maker.begin() as session:
+            enrollment = await session.get(Enrollment, enrollment_id)
+            course_id = enrollment.course_id
+            row = RegistryObligation(
+                enrollment_id=enrollment_id, registry=registry,
+                status="pending_data", readiness_errors=[],
+            )
+            session.add(row)
+            await session.flush()
+            obligation_id = row.id
+        fences = (
+            RegistrySourceFence("course", course_id),
+            RegistrySourceFence("enrollment", enrollment_id),
+        )
+        action_started = asyncio.Event()
+        writer_started = asyncio.Event()
+        release_action = asyncio.Event()
+        writer_pid = None
+        action_task = None
+        writer_task = None
+        try:
+            async def action():
+                async with maker.begin() as session:
+                    await acquire_registry_new_action_lockset(
+                        session=session,
+                        source_fences=fences,
+                        obligation_targets=(RegistryObligationTarget(
+                            obligation_id, enrollment_id, registry,
+                        ),),
+                    )
+                    action_started.set()
+                    await asyncio.wait_for(release_action.wait(), timeout=8)
+
+            async def writer():
+                nonlocal writer_pid
+                async with maker.begin() as session:
+                    writer_pid = await session.scalar(text("SELECT pg_backend_pid()"))
+                    writer_started.set()
+                    await acquire_registry_source_write_fences(
+                        session=session, source_fences=tuple(reversed(fences)),
+                    )
+
+            action_task = asyncio.create_task(action())
+            await asyncio.wait_for(action_started.wait(), timeout=8)
+            writer_task = asyncio.create_task(writer())
+            await asyncio.wait_for(writer_started.wait(), timeout=8)
+            async def check_blocked():
+                async with engine.connect() as connection:
+                    for _ in range(500):
+                        blocked = await connection.scalar(text(
+                            "SELECT cardinality(pg_blocking_pids(:pid)) > 0"
+                        ), {"pid": writer_pid})
+                        if blocked:
+                            return
+                        await asyncio.sleep(0.01)
+                    pytest.fail("Writer did not wait for the action fence")
+            await asyncio.wait_for(check_blocked(), timeout=7)
+            release_action.set()
+            await asyncio.wait_for(action_task, timeout=8)
+            await asyncio.wait_for(writer_task, timeout=8)
+            async with maker() as session:
+                assert (await session.get(RegistryObligation, obligation_id)).status == "pending_data"
+        finally:
+            release_action.set()
+            for task in (action_task, writer_task):
+                if task is not None and not task.done():
+                    task.cancel()
+            await asyncio.gather(
+                *(task for task in (action_task, writer_task) if task is not None),
+                return_exceptions=True,
+            )
+            await engine.dispose()
+
+    asyncio.run(scenario())
