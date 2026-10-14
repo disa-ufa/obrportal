@@ -25,6 +25,7 @@ from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_obligation import RegistryObligation
 from app.services.registry_action_lockset import (
     RegistryActionLockError,
+    _assert_read_committed,
     RegistryObligationTarget,
     RegistrySourceFence,
     acquire_registry_new_action_lockset,
@@ -164,6 +165,18 @@ def build_registry_action_scope(
     )
 
 
+def _require_clean_action_transaction(session: AsyncSession) -> None:
+    """Reject ORM writes or savepoints BEFORE any SQL that might autoflush.
+
+    This cannot detect earlier explicit SQL writes/locks; the caller must still
+    supply a fresh transaction with no pre-acquired locks or flushed changes.
+    """
+    if not session.in_transaction() or session.in_nested_transaction():
+        raise RegistryActionLockError("registry.scope_fresh_transaction_required")
+    if session.new or session.dirty or session.deleted:
+        raise RegistryActionLockError("registry.scope_pending_changes")
+
+
 async def discover_registry_action_scope(
     *,
     session: AsyncSession,
@@ -171,64 +184,69 @@ async def discover_registry_action_scope(
     registry: str,
     obligation_ids: tuple[str, ...],
 ) -> RegistryDiscoveredActionScope:
-    """Read the obligation/enrollment relationship without acquiring locks."""
-    if not session.in_transaction():
-        raise RegistryActionLockError("registry.scope_transaction_required")
+    """Read trusted relationship without writes, autoflush or row locks.
+
+    Requires READ COMMITTED and a clean, non-nested active transaction. Never
+    use an in-memory ORM object or request-supplied owner to determine scope.
+    """
+    _require_clean_action_transaction(session)
     _validate_request(
         actor_id=actor_id, registry=registry, obligation_ids=obligation_ids,
     )
-    query = (
-        select(
-            RegistryObligation.id,
-            RegistryObligation.enrollment_id,
-            RegistryObligation.registry,
-            Enrollment.course_id,
-            Enrollment.user_id,
-            Enrollment.organization_id,
-            RegistryObligation.document_id,
-            DocumentRecord.id,
-            func.coalesce(FrdoRegistryContext.id, MintrudRegistryContext.id),
-        )
-        .join(Enrollment, Enrollment.id == RegistryObligation.enrollment_id)
-        .outerjoin(DocumentRecord, DocumentRecord.enrollment_id == Enrollment.id)
-        .outerjoin(
-            FrdoRegistryContext,
-            and_(
-                FrdoRegistryContext.obligation_id == RegistryObligation.id,
-                RegistryObligation.registry == "frdo",
-            ),
-        )
-        .outerjoin(
-            MintrudRegistryContext,
-            and_(
-                MintrudRegistryContext.obligation_id == RegistryObligation.id,
-                RegistryObligation.registry == "mintrud",
-            ),
-        )
-        .where(RegistryObligation.id.in_(obligation_ids))
-        .order_by(RegistryObligation.id)
-    )
-    result = (await session.execute(query)).all()
-    rows = tuple(RegistrySourceScopeRow(*record) for record in result)
-
-    # Membership is independently queried because joining a many-to-many table
-    # into the obligation select would duplicate the obligation rows.
-    memberships: tuple[tuple[str, str], ...] = ()
-    if registry == "mintrud" and rows:
-        course_ids = tuple(sorted({row.course_id for row in rows}))
-        memberships = tuple((
-            await session.execute(
-                select(
-                    CourseMintrudLearnProgram.course_id,
-                    CourseMintrudLearnProgram.mintrud_learn_program_id,
-                )
-                .where(CourseMintrudLearnProgram.course_id.in_(course_ids))
-                .order_by(
-                    CourseMintrudLearnProgram.course_id,
-                    CourseMintrudLearnProgram.mintrud_learn_program_id,
-                )
+    with session.no_autoflush:
+        await _assert_read_committed(session)
+        query = (
+            select(
+                RegistryObligation.id,
+                RegistryObligation.enrollment_id,
+                RegistryObligation.registry,
+                Enrollment.course_id,
+                Enrollment.user_id,
+                Enrollment.organization_id,
+                RegistryObligation.document_id,
+                DocumentRecord.id,
+                func.coalesce(FrdoRegistryContext.id, MintrudRegistryContext.id),
             )
-        ).all())
+            .join(Enrollment, Enrollment.id == RegistryObligation.enrollment_id)
+            .outerjoin(DocumentRecord, DocumentRecord.enrollment_id == Enrollment.id)
+            .outerjoin(
+                FrdoRegistryContext,
+                and_(
+                    FrdoRegistryContext.obligation_id == RegistryObligation.id,
+                    RegistryObligation.registry == "frdo",
+                ),
+            )
+            .outerjoin(
+                MintrudRegistryContext,
+                and_(
+                    MintrudRegistryContext.obligation_id == RegistryObligation.id,
+                    RegistryObligation.registry == "mintrud",
+                ),
+            )
+            .where(RegistryObligation.id.in_(obligation_ids))
+            .order_by(RegistryObligation.id)
+        )
+        result = (await session.execute(query)).all()
+        rows = tuple(RegistrySourceScopeRow(*record) for record in result)
+
+        # Membership is independently queried because joining a many-to-many table
+        # into the obligation select would duplicate the obligation rows.
+        memberships: tuple[tuple[str, str], ...] = ()
+        if registry == "mintrud" and rows:
+            course_ids = tuple(sorted({row.course_id for row in rows}))
+            memberships = tuple((
+                await session.execute(
+                    select(
+                        CourseMintrudLearnProgram.course_id,
+                        CourseMintrudLearnProgram.mintrud_learn_program_id,
+                    )
+                    .where(CourseMintrudLearnProgram.course_id.in_(course_ids))
+                    .order_by(
+                        CourseMintrudLearnProgram.course_id,
+                        CourseMintrudLearnProgram.mintrud_learn_program_id,
+                    )
+                )
+            ).all())
 
     return build_registry_action_scope(
         actor_id=actor_id, registry=registry,
@@ -251,6 +269,7 @@ async def acquire_discovered_registry_action_scope(
     RBAC, canonical fingerprint, required decision, readiness and history still
     need an atomic guarded service boundary and source-writer participation.
     """
+    _require_clean_action_transaction(session)
     before = await discover_registry_action_scope(
         session=session, actor_id=actor_id,
         registry=registry, obligation_ids=obligation_ids,
