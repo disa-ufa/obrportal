@@ -1618,3 +1618,86 @@ def test_opt_in_source_writer_fence_waits_for_action_lockset(pg_applicability_db
             await engine.dispose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+def test_scope_preflight_detects_concurrent_first_context_insert(pg_applicability_db, registry):
+    """A cooperating writer inserts an absent child while preflight waits."""
+    from app.models.frdo_registry_context import FrdoRegistryContext
+    from app.models.mintrud_registry_context import MintrudRegistryContext
+    from app.services.registry_action_lockset import (
+        RegistrySourceFence, RegistryActionLockError,
+        acquire_registry_source_write_fences,
+    )
+    from app.services.registry_action_scope import (
+        acquire_discovered_registry_action_scope,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        enrollment_id, actor_id = await _create_enrollment(maker)
+        async with maker.begin() as session:
+            row = RegistryObligation(
+                enrollment_id=enrollment_id, registry=registry,
+                status="pending_data", readiness_errors=[],
+            )
+            session.add(row)
+            await session.flush()
+            obligation_id = row.id
+        fence = (RegistrySourceFence("enrollment", enrollment_id),)
+        writer_locked = asyncio.Event()
+        allow_insert = asyncio.Event()
+        writer_task = None
+        reader_task = None
+        try:
+            async def writer():
+                async with maker.begin() as session:
+                    await acquire_registry_source_write_fences(
+                        session=session, source_fences=fence,
+                    )
+                    writer_locked.set()
+                    await asyncio.wait_for(allow_insert.wait(), timeout=8)
+                    kind = FrdoRegistryContext if registry == "frdo" else MintrudRegistryContext
+                    session.add(kind(obligation_id=obligation_id))
+                    await session.flush()
+
+            async def reader():
+                async with maker.begin() as session:
+                    await acquire_discovered_registry_action_scope(
+                        session=session, actor_id=actor_id, registry=registry,
+                        obligation_ids=(obligation_id,),
+                    )
+
+            writer_task = asyncio.create_task(writer())
+            await asyncio.wait_for(writer_locked.wait(), timeout=8)
+            reader_task = asyncio.create_task(reader())
+            # Give the preflight a chance to discover a missing child before
+            # releasing its source fence. This is a contention test, not a
+            # deterministic guarantee of the interleaving.
+            await asyncio.sleep(0.2)
+            allow_insert.set()
+            await asyncio.wait_for(writer_task, timeout=8)
+            try:
+                await asyncio.wait_for(reader_task, timeout=8)
+            except RegistryActionLockError as exc:
+                assert str(exc) == "registry.scope_changed_during_lock"
+            else:
+                # If discovery started only after writer commit, both snapshots
+                # legitimately contain the inserted context.
+                pass
+        finally:
+            allow_insert.set()
+            for task in (writer_task, reader_task):
+                if task is not None and not task.done():
+                    task.cancel()
+            await asyncio.gather(
+                *(task for task in (writer_task, reader_task) if task is not None),
+                return_exceptions=True,
+            )
+            await engine.dispose()
+
+    asyncio.run(scenario())
