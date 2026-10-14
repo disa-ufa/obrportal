@@ -149,3 +149,38 @@ def test_reject_mapping_from_different_course_or_registry():
             obligation_ids=(obligation,), rows=(other,),
             mintrud_mapping_memberships=((row.course_id, _id()),),
         )
+
+
+@pytest.mark.parametrize("kind", ["absent", "nested", "new", "dirty", "deleted"])
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.asyncio
+async def test_action_scope_preflight_refuses_unsafe_session_before_sql(kind, registry):
+    """Reject unflushed writes and savepoints without executing any SQL."""
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.services.registry_action_scope import (
+        acquire_discovered_registry_action_scope,
+        discover_registry_action_scope,
+    )
+
+    session = SimpleNamespace(
+        in_transaction=MagicMock(return_value=kind != "absent"),
+        in_nested_transaction=MagicMock(return_value=kind == "nested"),
+        new={"new"} if kind == "new" else set(),
+        dirty={"dirty"} if kind == "dirty" else set(),
+        deleted={"deleted"} if kind == "deleted" else set(),
+        execute=AsyncMock(),
+    )
+    actor, obligation, _ = _fixture(registry)
+    for func in (discover_registry_action_scope, acquire_discovered_registry_action_scope):
+        with pytest.raises(RegistryActionLockError, match=(
+            "registry.scope_pending_changes"
+            if kind in {"new", "dirty", "deleted"} else
+            "registry.scope_fresh_transaction_required"
+        )):
+            await func(
+                session=session, actor_id=actor, registry=registry,
+                obligation_ids=(obligation,),
+            )
+    session.execute.assert_not_awaited()
