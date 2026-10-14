@@ -136,6 +136,9 @@ async def require_registry_applicability_for_submission(
             RegistryApplicabilityRecord.registry == obligation.registry,
         )
         .with_for_update()
+        # A lock serializes SQL, not SQLAlchemy's identity map. A cached
+        # required decision/fingerprint must not authorize a later revision.
+        .execution_options(populate_existing=True)
     )
     return validate_registry_applicability_gate(
         obligation=obligation,

@@ -842,6 +842,253 @@ async def _wait_for_pg_blocker(engine, waiter_pid, blocker_pid):
     await asyncio.wait_for(observe(), timeout=5)
 
 
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("evidence", ["approved", "exported", "submitted", "approval", "attempt", "batch"])
+@pytest.mark.parametrize("commit_evidence", [True, False])
+def test_cached_obligation_cannot_hide_concurrent_history(
+    pg_applicability_db, registry, evidence, commit_evidence,
+):
+    """A row lock must refresh a previously loaded ORM object before policy checks."""
+    from app.models.base import utcnow
+    from app.models.registry_obligation import RegistrySubmissionAttempt
+    from app.models.registry_submission_batch import RegistrySubmissionBatch, RegistrySubmissionBatchItem
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task = None
+        try:
+            enrollment_id, obligation_id = await _veto_fixture(maker, registry)
+            async with maker.begin() as stale:
+                cached = await stale.get(RegistryObligation, obligation_id)
+                assert cached.status == "pending_data" and cached.approved_at is None
+                stale_pid = await stale.scalar(text("SELECT pg_backend_pid()"))
+                async with maker() as legacy:
+                    async with legacy.begin():
+                        legacy_pid = await legacy.scalar(text("SELECT pg_backend_pid()"))
+                        row = await legacy.scalar(select(RegistryObligation).where(
+                            RegistryObligation.id == obligation_id,
+                        ).with_for_update())
+                        if evidence in {"approved", "exported", "submitted"}:
+                            row.status = evidence
+                        elif evidence == "approval":
+                            row.approved_at = utcnow()
+                            row.approval_snapshot_json = {"history": "keep"}
+                            row.approval_fingerprint = "a" * 64
+                        elif evidence == "attempt":
+                            legacy.add(RegistrySubmissionAttempt(
+                                obligation_id=obligation_id, attempt_no=1,
+                                snapshot_json={"history": "keep"}, errors_json=[],
+                            ))
+                        else:
+                            batch = RegistrySubmissionBatch(
+                                registry=registry,
+                                schema_version=("frdo-po-working-reference-v1" if registry == "frdo" else "1.0.9"),
+                                obligation_count=1, record_count=1,
+                                artifact_path="test-only.bin", artifact_sha256="a" * 64,
+                            )
+                            legacy.add(batch)
+                            await legacy.flush()
+                            legacy.add(RegistrySubmissionBatchItem(
+                                batch_id=batch.id, obligation_id=obligation_id,
+                                position=0, record_count=1,
+                                approval_snapshot_json={"history": "keep"},
+                                approval_fingerprint="a" * 64,
+                            ))
+                        await legacy.flush()
+                        task = asyncio.create_task(persist_registry_applicability(
+                            session=stale, enrollment_id=enrollment_id,
+                            evaluation=_veto_evaluation(registry, "needs_review"),
+                        ))
+                        await _wait_for_pg_blocker(engine, stale_pid, legacy_pid)
+                        assert not task.done()
+                        if not commit_evidence:
+                            await legacy.rollback()
+                if commit_evidence:
+                    with pytest.raises(ApplicabilityWriteConflict, match="historical"):
+                        await asyncio.wait_for(task, timeout=8)
+                    await stale.rollback()
+                else:
+                    _, changed = await asyncio.wait_for(task, timeout=8)
+                    assert changed and cached.status == "pending_data"
+
+            async with maker() as check:
+                row = await check.get(RegistryObligation, obligation_id)
+                assert row.status == (evidence if commit_evidence and evidence in {
+                    "approved", "exported", "submitted",
+                } else "pending_data")
+                assert row.approval_snapshot_json == (
+                    {"history": "keep"} if commit_evidence and evidence == "approval" else None
+                )
+                attempts = (await check.scalars(select(RegistrySubmissionAttempt).where(
+                    RegistrySubmissionAttempt.obligation_id == obligation_id,
+                ))).all()
+                items = (await check.scalars(select(RegistrySubmissionBatchItem).where(
+                    RegistrySubmissionBatchItem.obligation_id == obligation_id,
+                ))).all()
+                assert len(attempts) == int(commit_evidence and evidence == "attempt")
+                assert len(items) == int(commit_evidence and evidence == "batch")
+                if attempts:
+                    assert attempts[0].snapshot_json == {"history": "keep"}
+                if items:
+                    assert items[0].approval_snapshot_json == {"history": "keep"}
+                for model in (RegistryApplicabilityRecord, RegistryApplicabilityEvent):
+                    rows = (await check.scalars(select(model).where(
+                        model.enrollment_id == enrollment_id, model.registry == registry,
+                    ))).all()
+                    assert [row.decision for row in rows] == ([] if commit_evidence else ["needs_review"])
+        finally:
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("revision", ["manual", "auto", "idempotent"])
+def test_cached_decision_writer_preserves_provenance_and_versions(
+    pg_applicability_db, registry, revision,
+):
+    async def scenario():
+        engine = create_async_engine(pg_applicability_db)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            enrollment_id, actor_id = await _create_enrollment(maker)
+            async with maker.begin() as first:
+                await persist_registry_applicability(
+                    session=first, enrollment_id=enrollment_id,
+                    evaluation=_veto_evaluation(registry, "required"),
+                )
+            async with maker.begin() as stale:
+                cached = await stale.scalar(select(RegistryApplicabilityRecord).where(
+                    RegistryApplicabilityRecord.enrollment_id == enrollment_id,
+                    RegistryApplicabilityRecord.registry == registry,
+                ))
+                assert cached.source == "auto" and cached.decision_version == 1
+                async with maker.begin() as latest:
+                    await persist_registry_applicability(
+                        session=latest, enrollment_id=enrollment_id,
+                        evaluation=_veto_evaluation(registry, "needs_review"),
+                        **({"source": "manual", "actor_user_id": actor_id,
+                            "manual_reason": "Reviewed synthetic evidence"} if revision == "manual" else {}),
+                    )
+                if revision == "manual":
+                    with pytest.raises(ApplicabilityWriteConflict, match="Automatic"):
+                        await persist_registry_applicability(
+                            session=stale, enrollment_id=enrollment_id,
+                            evaluation=_veto_evaluation(registry, "not_required"),
+                        )
+                else:
+                    current, changed = await persist_registry_applicability(
+                        session=stale, enrollment_id=enrollment_id,
+                        evaluation=_veto_evaluation(registry, "needs_review" if revision == "idempotent" else "not_required"),
+                    )
+                    assert current is cached
+                    assert changed == (revision == "auto")
+                    assert current.decision_version == (3 if changed else 2)
+            async with maker() as check:
+                events = (await check.scalars(select(RegistryApplicabilityEvent).where(
+                    RegistryApplicabilityEvent.enrollment_id == enrollment_id,
+                ).order_by(RegistryApplicabilityEvent.decision_version))).all()
+                assert [row.decision_version for row in events] == ([1, 2, 3] if revision == "auto" else [1, 2])
+                assert events[1].source == ("manual" if revision == "manual" else "auto")
+                if revision == "manual":
+                    assert events[1].decided_by_user_id == actor_id
+                current = await check.get(RegistryApplicabilityRecord, events[0].applicability_id)
+                assert current.decision_version == events[-1].decision_version
+                assert current.source == events[-1].source
+                assert current.decision == events[-1].decision
+        finally:
+            await engine.dispose()
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("decision", ["needs_review", "not_required", "required"])
+@pytest.mark.parametrize("commit_revision", [True, False])
+def test_cached_gate_cannot_grant_using_old_decision_or_fingerprint(
+    pg_applicability_db, registry, decision, commit_revision,
+):
+    from app.services.registry_applicability_export_guard import (
+        RegistryApplicabilityGateError, require_registry_applicability_for_submission,
+    )
+
+    async def scenario():
+        engine = create_async_engine(
+            pg_applicability_db,
+            connect_args={"server_settings": {"statement_timeout": "12000"}},
+        )
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        task = None
+        try:
+            enrollment_id, obligation_id = await _veto_fixture(maker, registry)
+            async with maker.begin() as first:
+                await persist_registry_applicability(
+                    session=first, enrollment_id=enrollment_id,
+                    evaluation=_veto_evaluation(registry, "required"), input_fingerprint="a" * 64,
+                )
+            async with maker.begin() as stale:
+                cached = await stale.scalar(select(RegistryApplicabilityRecord).where(
+                    RegistryApplicabilityRecord.enrollment_id == enrollment_id,
+                    RegistryApplicabilityRecord.registry == registry,
+                ))
+                assert cached.decision == "required" and cached.input_fingerprint == "a" * 64
+                stale_pid = await stale.scalar(text("SELECT pg_backend_pid()"))
+
+                async def check_gate():
+                    # The existing dormant gate contract requires this shared
+                    # obligation lock BEFORE its applicability row lock.
+                    obligation = await stale.scalar(select(RegistryObligation).where(
+                        RegistryObligation.id == obligation_id,
+                    ).with_for_update())
+                    return await require_registry_applicability_for_submission(
+                        session=stale, obligation=obligation, expected_input_fingerprint="a" * 64,
+                    )
+
+                async with maker() as latest:
+                    async with latest.begin():
+                        latest_pid = await latest.scalar(text("SELECT pg_backend_pid()"))
+                        await persist_registry_applicability(
+                            session=latest, enrollment_id=enrollment_id,
+                            evaluation=_veto_evaluation(registry, decision), input_fingerprint="b" * 64,
+                        )
+                        task = asyncio.create_task(check_gate())
+                        await _wait_for_pg_blocker(engine, stale_pid, latest_pid)
+                        if not commit_revision:
+                            await latest.rollback()
+                if commit_revision:
+                    with pytest.raises(RegistryApplicabilityGateError) as exc:
+                        await asyncio.wait_for(task, timeout=8)
+                    assert exc.value.code == "registry.applicability_" + (
+                        "stale" if decision == "required" else decision
+                    )
+                    assert cached.decision_version == 2
+                else:
+                    grant = await asyncio.wait_for(task, timeout=8)
+                    assert grant.decision_version == 1 and grant.input_fingerprint == "a" * 64
+            async with maker() as check:
+                row = await check.get(RegistryObligation, obligation_id)
+                assert row.status == "pending_data" and row.approved_at is None
+                events = (await check.scalars(select(RegistryApplicabilityEvent).where(
+                    RegistryApplicabilityEvent.enrollment_id == enrollment_id,
+                ).order_by(RegistryApplicabilityEvent.decision_version))).all()
+                assert [event.input_fingerprint for event in events] == (
+                    ["a" * 64, "b" * 64] if commit_revision else ["a" * 64]
+                )
+        finally:
+            if task is not None:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+            await engine.dispose()
+    asyncio.run(scenario())
+
+
 async def _veto_fixture(maker, registry, initial_required=False):
     enrollment_id, _ = await _create_enrollment(maker)
     async with maker.begin() as session:

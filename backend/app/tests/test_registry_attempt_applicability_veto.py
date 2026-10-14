@@ -53,6 +53,100 @@ async def test_disabled_veto_does_not_query_new_schema(monkeypatch):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+@pytest.mark.parametrize("decision", ["not_required", "needs_review"])
+async def test_export_http_translates_staged_veto_without_writes(monkeypatch, registry, decision):
+    """Exercise routing/dependencies/error mapping; DB and approval are doubles.
+
+    Actual row contention and persistence are tested in writer_pg. Enabling the
+    existing partial veto here is test-local, never a production configuration.
+    """
+    from fastapi import FastAPI
+    from httpx import ASGITransport, AsyncClient
+    from app.api.v1 import admin, rbac
+    from app.api.v1.auth import get_current_user
+    from app.db.session import get_db
+
+    monkeypatch.setattr(settings, "registry_attempt_applicability_veto_enabled", True)
+    session, obligation = _session(registry, decision)
+    app = FastAPI()
+    app.include_router(admin.router)
+
+    async def db():
+        yield session
+
+    async def actor():
+        return SimpleNamespace(id="actor")
+
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = actor
+    monkeypatch.setattr(rbac, "get_user_permission_codes", AsyncMock(return_value={registry + ".export"}))
+    monkeypatch.setattr(admin, "get_admin_" + registry + "_obligation_or_404", AsyncMock(return_value=obligation))
+    monkeypatch.setattr(admin, "validate_registry_approval_current", AsyncMock())
+    monkeypatch.setattr(admin, "build_registry_export_package", Mock(return_value={"test": True}))
+    monkeypatch.setattr(admin, "serialize_registry_export_package", Mock(return_value=b"test"))
+    attach, audit = AsyncMock(), AsyncMock()
+    monkeypatch.setattr(admin, "attach_registry_submission_artifact", attach)
+    monkeypatch.setattr(admin, "create_admin_audit_event", audit)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.local") as client:
+        response = await client.post("/admin/" + registry + "/obligations/obligation/export")
+    assert response.status_code == 409
+    assert response.json() == {"detail": "registry.applicability_" + decision}
+    attach.assert_not_awaited()
+    audit.assert_not_awaited()
+    session.add.assert_not_called()
+    session.commit.assert_not_awaited()
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
+async def test_registry_mutation_http_requires_its_own_permission(monkeypatch, registry):
+    """Other-registry permission must not reach any mutation service."""
+    from fastapi import FastAPI
+    from httpx import ASGITransport, AsyncClient
+    from app.api.v1 import admin, rbac
+    from app.api.v1.auth import get_current_user
+    from app.db.session import get_db
+
+    app = FastAPI()
+    app.include_router(admin.router)
+    session = SimpleNamespace(execute=AsyncMock(), scalar=AsyncMock(), add=Mock(), commit=AsyncMock())
+
+    async def db():
+        yield session
+
+    async def actor():
+        return SimpleNamespace(id="actor")
+
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = actor
+    other = "mintrud" if registry == "frdo" else "frdo"
+    monkeypatch.setattr(rbac, "get_user_permission_codes", AsyncMock(return_value={other + ".approve", other + ".export"}))
+    paths = [
+        ("obligations/obligation/approve", "approve"),
+        ("obligations/obligation/export", "export"),
+        ("obligations/obligation/portal-artifact", "export"),
+        ("obligations/obligation/attempts/attempt/submitted", "export"),
+        ("obligations/obligation/attempts/attempt/result", "export"),
+        ("batches", "export"),
+        ("batches/batch/submitted", "export"),
+        ("batches/batch/" + ("results" if registry == "frdo" else "result"), "export"),
+    ]
+    if registry == "mintrud":
+        paths.append(("batches/batch/imported", "export"))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.local") as client:
+        for path, permission in paths:
+            response = await client.post("/admin/" + registry + "/" + path, json={})
+            assert response.status_code == 403, (path, response.text)
+            assert response.json() == {"detail": "Permission required: " + registry + "." + permission}
+    session.execute.assert_not_awaited()
+    session.scalar.assert_not_awaited()
+    session.add.assert_not_called()
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("registry", ["frdo", "mintrud"])
 @pytest.mark.parametrize("decision", ["not_required", "needs_review", "invalid"])
 async def test_enabled_veto_rejects_before_attempt_or_artifact(monkeypatch, registry, decision):
     monkeypatch.setattr(settings, "registry_attempt_applicability_veto_enabled", True)

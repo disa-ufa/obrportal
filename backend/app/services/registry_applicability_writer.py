@@ -112,9 +112,10 @@ async def persist_registry_applicability(
         text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
         {"key": "registry-applicability:" + enrollment_id + ":" + evaluation.registry},
     )
-    # Lock the parent enrollment first so existing classification checks
-    # serialize with other transactions using this writer. Producers of
-    # external artifacts must still enforce their own compatible guards.
+    # Lock the matching obligation (not the parent enrollment). Refresh any
+    # previously loaded identity after waiting: FOR UPDATE alone does not
+    # replace cached approval/history fields. Artifact producers still need
+    # compatible guards; this does not serialize unlocked source edits.
     obligation = await session.scalar(
         select(RegistryObligation)
         .where(
@@ -122,6 +123,7 @@ async def persist_registry_applicability(
             RegistryObligation.registry == evaluation.registry,
         )
         .with_for_update()
+        .execution_options(populate_existing=True)
     )
     if obligation is not None:
         has_protected_fields = any((
@@ -157,6 +159,7 @@ async def persist_registry_applicability(
             RegistryApplicabilityRecord.registry == evaluation.registry,
         )
         .with_for_update()
+        .execution_options(populate_existing=True)
     )
     current = result.scalar_one_or_none()
     if current is not None and current.source in {"manual", "legacy"} and source == "auto":
