@@ -1516,7 +1516,12 @@ async def apply_learner_import_batch(
                     ] += 1
                     continue
 
-                import_scope.require_user(user)
+                import_scope.require_user(
+                    user,
+                    email=email,
+                    phone=phone,
+                    snils=snils,
+                )
                 if user is None:
                     user = User(
                         email=email,
@@ -1677,7 +1682,17 @@ async def apply_learner_import_batch(
                         enrollment is not None
                     )
 
-                    import_scope.require_enrollment(enrollment)
+                    import_scope.require_enrollment(
+                        enrollment,
+                        user=user,
+                        course_id=course_id,
+                        created_user=bool(
+                            row_counts["created_users_count"]
+                        ),
+                        email=email,
+                        phone=phone,
+                        snils=snils,
+                    )
                     if enrollment is None:
                         enrollment = Enrollment(
                             user_id=user_id,
@@ -1823,6 +1838,18 @@ async def apply_learner_import_batch(
             learner_role_assigned=(
                 learner_role_assigned
             ),
+        )
+
+        import_scope.remember_success(
+            user=user,
+            enrollment=enrollment,
+            created_user=bool(row_counts["created_users_count"]),
+            created_enrollment=bool(
+                row_counts["created_enrollments_count"]
+            ),
+            email=email,
+            phone=phone,
+            snils=snils,
         )
 
         for key, value in row_counts.items():

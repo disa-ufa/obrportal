@@ -1,5 +1,5 @@
 """Import batch boundary: existing identities only; no locks inside savepoints."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from contextlib import asynccontextmanager
 import json
 from fastapi import Depends
@@ -15,6 +15,8 @@ from app.services.registry_document_transaction import (
 )
 from app.services.registry_action_lockset import RegistryActionLockError, RegistrySourceFence
 from app.services.registry_source_write_scope import acquire_discovered_registry_source_write_scope
+from app.services.registry_import_identity_keys import identity_lock_keys
+from app.services.registry_import_identity_locks import acquire_import_identity_locks
 
 KEY = 'registry.import.scope'
 _TOKEN = object()
@@ -48,6 +50,9 @@ class ImportScope:
     parents: tuple
     _token: object = None
     started: bool = False
+    planned_identity_keys: frozenset = field(default_factory=frozenset)
+    created_user_ids: set = field(default_factory=set)
+    created_enrollment_ids: set = field(default_factory=set)
 
     def __post_init__(self):
         if self._token is not _TOKEN:
@@ -64,18 +69,155 @@ class ImportScope:
 
     def verify_lookups(self, lookups):
         identity = lookups.identity
-        users = {str(u.id) for u in (*identity.users_by_email.values(), *identity.users_by_phone.values())}
-        enrollments = {str(e.id) for e in identity.enrollments_by_user_id.values()}
-        if not users.issubset(self.user_ids) or not enrollments.issubset(self.enrollment_ids):
-            raise RegistryActionLockError('registry.import_scope_expanded')
+        users = {
+            str(u.id)
+            for u in (
+                *identity.users_by_email.values(),
+                *identity.users_by_phone.values(),
+            )
+        }
+        enrollments = {
+            str(e.id)
+            for e in identity.enrollments_by_user_id.values()
+        }
+        allowed_users = self.user_ids.union(self.created_user_ids)
+        allowed_enrollments = self.enrollment_ids.union(
+            self.created_enrollment_ids
+        )
+        if (
+            not users.issubset(allowed_users)
+            or not enrollments.issubset(allowed_enrollments)
+        ):
+            raise RegistryActionLockError(
+                'registry.import_scope_expanded'
+            )
 
-    def require_user(self, user):
-        if user is None or str(user.id) not in self.user_ids:
-            raise RegistryActionLockError('registry.import_new_identity_not_supported')
+    def _require_planned_identity(self, *, email, phone, snils):
+        if not email:
+            raise RegistryActionLockError(
+                'registry.import_unplanned_identity'
+            )
+        identities = tuple(
+            (kind, value)
+            for kind, value in (
+                ('email', email),
+                ('phone', phone),
+                ('snils', snils),
+            )
+            if value
+        )
+        keys = frozenset(identity_lock_keys(identities))
+        if (
+            not keys
+            or not keys.issubset(self.planned_identity_keys)
+        ):
+            raise RegistryActionLockError(
+                'registry.import_unplanned_identity'
+            )
 
-    def require_enrollment(self, enrollment):
-        if enrollment is None or str(enrollment.id) not in self.enrollment_ids:
-            raise RegistryActionLockError('registry.import_new_enrollment_not_supported')
+    def require_user(self, user, *, email, phone, snils):
+        self._require_planned_identity(
+            email=email,
+            phone=phone,
+            snils=snils,
+        )
+        if user is not None:
+            uid = str(user.id)
+            if (
+                uid not in self.user_ids
+                and uid not in self.created_user_ids
+            ):
+                raise RegistryActionLockError(
+                    'registry.import_scope_expanded'
+                )
+
+    def require_enrollment(
+        self,
+        enrollment,
+        *,
+        user,
+        course_id,
+        created_user,
+        email,
+        phone,
+        snils,
+    ):
+        self._require_planned_identity(
+            email=email,
+            phone=phone,
+            snils=snils,
+        )
+        if (
+            user is None
+            or not course_id
+            or str(course_id) != str(self.parents[0])
+        ):
+            raise RegistryActionLockError(
+                'registry.import_unplanned_enrollment'
+            )
+
+        uid = str(user.id)
+        if (
+            uid not in self.user_ids
+            and uid not in self.created_user_ids
+            and not created_user
+        ):
+            raise RegistryActionLockError(
+                'registry.import_unplanned_enrollment'
+            )
+
+        if enrollment is not None:
+            eid = str(enrollment.id)
+            if (
+                eid not in self.enrollment_ids
+                and eid not in self.created_enrollment_ids
+            ):
+                raise RegistryActionLockError(
+                    'registry.import_scope_expanded'
+                )
+            if (
+                str(enrollment.user_id) != uid
+                or str(enrollment.course_id) != str(course_id)
+            ):
+                raise RegistryActionLockError(
+                    'registry.import_unplanned_enrollment'
+                )
+
+    def remember_success(
+        self,
+        *,
+        user,
+        enrollment,
+        created_user,
+        created_enrollment,
+        email,
+        phone,
+        snils,
+    ):
+        self._require_planned_identity(
+            email=email,
+            phone=phone,
+            snils=snils,
+        )
+        if created_user:
+            if str(user.id) in self.user_ids:
+                raise RegistryActionLockError(
+                    'registry.import_scope_expanded'
+                )
+            self.created_user_ids.add(str(user.id))
+
+        if created_enrollment:
+            if enrollment is None:
+                raise RegistryActionLockError(
+                    'registry.import_unplanned_enrollment'
+                )
+            if str(enrollment.id) in self.enrollment_ids:
+                raise RegistryActionLockError(
+                    'registry.import_scope_expanded'
+                )
+            self.created_enrollment_ids.add(
+                str(enrollment.id)
+            )
 
     async def before_savepoint(self, session, batch, lookups):
         self.require(session, batch)
@@ -98,6 +240,69 @@ def require_import_scope(session, batch):
     return scope
 
 
+async def _identity_plan(session, batch_id):
+    """Snapshot the complete parsed batch before any identity/source locks.
+
+    The caller MUST read it again after waiting on identity locks.
+    A changed batch requires rollback, never lockset expansion.
+    """
+    from app.services import learner_import_batches as service
+
+    batch = await session.scalar(
+        select(ImportBatch)
+        .where(
+            ImportBatch.id == batch_id,
+            ImportBatch.import_type == 'learner_roster',
+        )
+        .options(selectinload(ImportBatch.rows))
+        .execution_options(populate_existing=True)
+    )
+
+    if batch is None or batch.status != 'parsed':
+        raise RegistryActionLockError(
+            'registry.import_batch_not_parsed'
+        )
+
+    snapshot = (
+        batch.status,
+        batch.course_id,
+        batch.organization_id,
+        batch.learning_group_id,
+        tuple(sorted(
+            (
+                str(row.id),
+                row.row_number,
+                row.status,
+                json.dumps(
+                    row.normalized_data_json,
+                    sort_keys=True,
+                ),
+            )
+            for row in batch.rows
+        )),
+    )
+
+    identities = []
+
+    for row in batch.rows:
+        if row.status != 'valid':
+            continue
+
+        data = row.normalized_data_json or {}
+
+        for kind in ('email', 'phone', 'snils'):
+            value = service.normalize_import_text(
+                data.get(kind)
+            )
+
+            if kind == 'email':
+                value = value.lower()
+
+            if value:
+                identities.append((kind, value))
+
+    return snapshot, tuple(identities)
+
 async def _read(session, batch_id):
     from app.services import learner_import_batches as service
     batch = await session.scalar(select(ImportBatch).where(
@@ -115,20 +320,6 @@ async def _read(session, batch_id):
         await session.refresh(obj)
     lookups = await service.load_learner_import_preflight_lookups(session, rows=rows, course_id=batch.course_id)
     users = {str(u.id) for u in (*lookups.users_by_email.values(), *lookups.users_by_phone.values())}
-    for row in rows:
-        data = row.normalized_data_json or {}
-        email = service.normalize_import_text(data.get('email')).lower()
-        if not email:
-            continue  # retain existing row validation semantics
-        user, conflict = service.resolve_learner_import_user(email=email,
-            phone=service.normalize_import_text(data.get('phone')), lookups=lookups)
-        snils_profile = lookups.profiles_by_snils.get(service.normalize_import_text(data.get('snils')))
-        if conflict or (snils_profile is not None and (user is None or snils_profile.user_id != user.id)):
-            continue
-        if user is None:
-            raise RegistryActionLockError('registry.import_new_identity_not_supported')
-        if batch.course_id and str(user.id) not in lookups.enrollments_by_user_id:
-            raise RegistryActionLockError('registry.import_new_enrollment_not_supported')
     parents = []
     if batch.organization_id:
         oid = await session.scalar(select(Organization.id).where(Organization.id == batch.organization_id))
@@ -157,7 +348,46 @@ async def prepare_import_scope(*, session, batch_id, actor):
     if KEY in session.info:
         raise RegistryActionLockError('registry.import_scope_already_prepared')
     with session.no_autoflush:
-        batch, lookup, users, before = await _read(session, batch_id)
+        identity_before, identities_before = await _identity_plan(
+            session, batch_id
+        )
+
+        # Capture source state before waiting for identity locks.
+        # Do not silently accept concurrent affiliation changes.
+        _, _, _, sources_before_identity_wait = await _read(
+            session, batch_id
+        )
+
+        # C is already held. Acquire I before S/D/O.
+        if identities_before:
+            await acquire_import_identity_locks(
+                session, identities_before
+            )
+
+        identity_after, identities_after = await _identity_plan(
+            session, batch_id
+        )
+
+        if (
+            identity_before != identity_after
+            or identity_lock_keys(identities_before)
+            != identity_lock_keys(identities_after)
+        ):
+            raise RegistryActionLockError(
+                'registry.import_identity_scope_changed'
+            )
+
+        # Check changes observed while waiting for identity locks.
+        # No S/D/O locks have been acquired at this point.
+        batch, lookup, users, before = await _read(
+            session, batch_id
+        )
+        if before != sources_before_identity_wait:
+            raise RegistryActionLockError(
+                'registry.import_scope_changed'
+            )
+
+        # Existing source/decision/obligation lock protocol follows.
         roots = {RegistrySourceFence('learner', uid) for uid in users}
         roots.add(RegistrySourceFence('learner', str(actor.id)))
         if batch.course_id: roots.add(RegistrySourceFence('course', str(batch.course_id)))
@@ -174,5 +404,8 @@ async def prepare_import_scope(*, session, batch_id, actor):
         await recheck_document_permission(session, actor)
         session.info[KEY] = ImportScope(session,fence,str(batch_id),frozenset(users),
             frozenset(str(e.id) for e in lookup.enrollments_by_user_id.values()),
-            (batch.course_id,batch.organization_id,batch.learning_group_id),_token=_TOKEN)
+            (batch.course_id,batch.organization_id,batch.learning_group_id),
+            planned_identity_keys=frozenset(
+                identity_lock_keys(identities_before)
+            ),_token=_TOKEN)
         return batch

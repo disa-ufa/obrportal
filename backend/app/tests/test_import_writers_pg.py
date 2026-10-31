@@ -241,17 +241,50 @@ async def test_cancel_while_waiting_before_savepoint(env):
         b=await asyncio.wait_for(prepare(s,bid,actor),1);assert b.status=='parsed'
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('new_kind',['identity','enrollment'])
-async def test_unplanned_creation_fails_before_write(env,new_kind):
-    e,maker,data=env;bid,actor,oid=await batch_setup(maker,data)
-    async with maker.begin() as s:
-        if new_kind=='identity':
-            row=await s.scalar(select(ImportRow).where(ImportRow.batch_id==bid));row.normalized_data_json={'email':uuid4().hex+'@test.invalid'}
-        else:(await s.get(ImportBatch,bid)).course_id=data[1][1]
-    async with tx() as s:
-        with pytest.raises(Exception,match='not_supported'):await prepare(s,bid,actor)
-        assert not s.new and not s.dirty
-    async with maker() as s:assert (await s.get(ImportBatch,bid)).status=='parsed'
+@pytest.mark.parametrize('new_kind', ['identity', 'enrollment'])
+async def test_unplanned_creation_fails_before_write(env, new_kind):
+    """Identity or course outside the prepared plan remains forbidden."""
+    _, maker, data = env
+    batch_id, actor_id, _ = await batch_setup(maker, data)
+
+    async with tx() as session:
+        await prepare(session, batch_id, actor_id)
+        scope = session.info[KEY]
+
+        if new_kind == 'identity':
+            with pytest.raises(
+                RegistryActionLockError,
+                match='registry.import_unplanned_identity',
+            ):
+                scope.require_user(
+                    None,
+                    email=uuid4().hex + '@test.invalid',
+                    phone='',
+                    snils='',
+                )
+        else:
+            existing = await session.get(User, data[0][0])
+            with pytest.raises(
+                RegistryActionLockError,
+                match='registry.import_unplanned_enrollment',
+            ):
+                scope.require_enrollment(
+                    None,
+                    user=existing,
+                    course_id=data[1][1],
+                    created_user=False,
+                    email=existing.email,
+                    phone='',
+                    snils='',
+                )
+
+        assert not session.new
+        assert not session.dirty
+        await session.rollback()
+
+    async with maker() as session:
+        batch = await session.get(ImportBatch, batch_id)
+        assert batch.status == 'parsed'
 
 @pytest.mark.asyncio
 async def test_permission_checked_again_after_wait(env):
@@ -336,3 +369,614 @@ async def test_existing_profile_update_and_readiness_under_outer_scope(env):
         obligations=(await s.scalars(select(RegistryObligation).where(RegistryObligation.enrollment_id==data[0][2]))).all()
         assert len(obligations)==2
         assert all(o.readiness_errors is not None for o in obligations)
+
+@pytest.mark.asyncio
+async def test_r24m9_create_new_learner_with_course(env):
+    """A new identity and its enrollment must be atomic."""
+    engine, maker, data = env
+    email = "r24m9_" + uuid4().hex + "@test.invalid"
+    batch_id, actor_id, _ = await batch_setup(maker, data)
+
+    async with maker.begin() as session:
+        row = await session.scalar(
+            select(ImportRow).where(ImportRow.batch_id == batch_id)
+        )
+        assert row is not None
+        row.normalized_data_json = {
+            "email": email,
+            "first_name": "Synthetic",
+            "last_name": "Learner",
+        }
+
+    async with tx() as session:
+        batch = await prepare(session, batch_id, actor_id)
+        result = await apply_learner_import_batch(
+            session, batch=batch
+        )
+
+        assert result.created_users_count == 1
+        assert result.created_profiles_count == 1
+        assert result.created_enrollments_count == 1
+        assert result.error_rows_count == 0
+
+        await session.commit()
+
+    async with maker() as session:
+        users = (
+            await session.scalars(
+                select(User).where(User.email == email)
+            )
+        ).all()
+        assert len(users) == 1
+
+        user = users[0]
+        assert user.is_active is False
+
+        profile = await session.scalar(
+            select(LearnerProfile).where(
+                LearnerProfile.user_id == user.id
+            )
+        )
+        assert profile is not None
+
+        enrollments = (
+            await session.scalars(
+                select(Enrollment).where(
+                    Enrollment.user_id == user.id,
+                    Enrollment.course_id == data[0][1],
+                )
+            )
+        ).all()
+
+        assert len(enrollments) == 1
+        assert enrollments[0].status == "assigned"
+
+
+@pytest.mark.asyncio
+async def test_r24m9_create_enrollment_for_existing_user(env):
+    """Existing learner can receive a new course enrollment."""
+    engine, maker, data = env
+    batch_id, actor_id, _ = await batch_setup(maker, data)
+
+    new_course_id = data[1][1]
+    existing_user_id = data[0][0]
+
+    async with maker.begin() as session:
+        batch = await session.get(ImportBatch, batch_id)
+        assert batch is not None
+        batch.course_id = new_course_id
+
+    async with tx() as session:
+        batch = await prepare(session, batch_id, actor_id)
+        result = await apply_learner_import_batch(
+            session, batch=batch
+        )
+
+        assert result.created_users_count == 0
+        assert result.created_enrollments_count == 1
+        assert result.error_rows_count == 0
+
+        await session.commit()
+
+    async with maker() as session:
+        enrollments = (
+            await session.scalars(
+                select(Enrollment).where(
+                    Enrollment.user_id == existing_user_id,
+                    Enrollment.course_id == new_course_id,
+                )
+            )
+        ).all()
+
+        assert len(enrollments) == 1
+        assert enrollments[0].status == "assigned"
+
+@pytest.mark.asyncio
+async def test_r24m9_identity_same_key_serializes(env):
+    """Two sessions with the same email must serialize."""
+    engine, maker, data = env
+    from app.services.registry_import_identity_locks import (
+        acquire_import_identity_locks,
+    )
+
+    email = "same_" + uuid4().hex + "@test.invalid"
+
+    async with tx() as first:
+        first_keys = await acquire_import_identity_locks(
+            first, [("email", email)]
+        )
+        assert len(first_keys) == 1
+
+        async def contender():
+            async with tx() as second:
+                return await acquire_import_identity_locks(
+                    second, [("email", email.upper())]
+                )
+
+        task = asyncio.create_task(contender())
+
+        try:
+            await waiting(engine)
+            assert not task.done()
+
+            await first.rollback()
+
+            second_keys = await asyncio.wait_for(task, 2)
+            assert first_keys == second_keys
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_r24m9_identity_distinct_keys_do_not_block(env):
+    """Independent identities must not block each other."""
+    engine, maker, data = env
+    from app.services.registry_import_identity_locks import (
+        acquire_import_identity_locks,
+    )
+
+    first_email = "first_" + uuid4().hex + "@test.invalid"
+    second_email = "second_" + uuid4().hex + "@test.invalid"
+
+    async with tx() as first:
+        first_keys = await acquire_import_identity_locks(
+            first, [("email", first_email)]
+        )
+
+        async with tx() as second:
+            second_keys = await asyncio.wait_for(
+                acquire_import_identity_locks(
+                    second, [("email", second_email)]
+                ),
+                2,
+            )
+
+            assert first_keys != second_keys
+
+
+@pytest.mark.asyncio
+async def test_r24m9_identity_rejects_late_acquisition(env):
+    """Identity locks cannot be acquired after source scope."""
+    engine, maker, data = env
+    from app.services.registry_import_identity_locks import (
+        acquire_import_identity_locks,
+    )
+
+    email = "late_" + uuid4().hex + "@test.invalid"
+
+    async with tx() as session:
+        session.info["registry.document.scope_taken"] = True
+
+        with pytest.raises(
+            RegistryActionLockError,
+            match="registry.document_scope_already_taken",
+        ):
+            await acquire_import_identity_locks(
+                session, [("email", email)]
+            )
+
+@pytest.mark.asyncio
+async def test_r24m9_two_distinct_new_users_one_batch(env):
+    """Two new identities in one batch must not expand scope unsafely."""
+    _, maker, data = env
+    first_email = "r24m9_a_" + uuid4().hex + "@test.invalid"
+    second_email = "r24m9_b_" + uuid4().hex + "@test.invalid"
+
+    batch_id, actor_id, _ = await batch_setup(
+        maker,
+        data,
+        extra={
+            "email": second_email,
+            "first_name": "Second",
+        },
+    )
+
+    async with maker.begin() as session:
+        row = await session.scalar(
+            select(ImportRow).where(
+                ImportRow.batch_id == batch_id,
+                ImportRow.row_number == 1,
+            )
+        )
+        assert row is not None
+        row.normalized_data_json = {
+            "email": first_email,
+            "first_name": "First",
+        }
+
+    async with tx() as session:
+        batch = await prepare(session, batch_id, actor_id)
+        result = await apply_learner_import_batch(
+            session,
+            batch=batch,
+        )
+        assert result.created_users_count == 2
+        assert result.created_profiles_count == 2
+        assert result.created_enrollments_count == 2
+        assert result.error_rows_count == 0
+        await session.commit()
+
+    async with maker() as session:
+        for email in (first_email, second_email):
+            users = (
+                await session.scalars(
+                    select(User).where(User.email == email)
+                )
+            ).all()
+            assert len(users) == 1
+
+            user = users[0]
+            profile = await session.scalar(
+                select(LearnerProfile).where(
+                    LearnerProfile.user_id == user.id
+                )
+            )
+            assert profile is not None
+
+            enrollments = (
+                await session.scalars(
+                    select(Enrollment).where(
+                        Enrollment.user_id == user.id,
+                        Enrollment.course_id == data[0][1],
+                    )
+                )
+            ).all()
+            assert len(enrollments) == 1
+
+        batch = await session.get(ImportBatch, batch_id)
+        assert batch.status == "applied"
+
+
+@pytest.mark.asyncio
+async def test_r24m9_concurrent_same_new_identity_fail_closed(env):
+    """A second importer must not silently reuse a newly created user."""
+    engine, maker, data = env
+    email = "r24m9_race_" + uuid4().hex + "@test.invalid"
+
+    first_id, actor_id, _ = await batch_setup(maker, data)
+    second_id, _, _ = await batch_setup(maker, data)
+
+    async with maker.begin() as session:
+        for batch_id in (first_id, second_id):
+            row = await session.scalar(
+                select(ImportRow).where(
+                    ImportRow.batch_id == batch_id,
+                    ImportRow.row_number == 1,
+                )
+            )
+            assert row is not None
+            row.normalized_data_json = {
+                "email": email,
+                "first_name": "Concurrent",
+            }
+
+    async with tx() as first:
+        batch = await prepare(first, first_id, actor_id)
+        result = await apply_learner_import_batch(
+            first,
+            batch=batch,
+        )
+        assert result.created_users_count == 1
+
+        async def contender():
+            async with tx() as second:
+                candidate = await prepare(
+                    second,
+                    second_id,
+                    actor_id,
+                )
+                await apply_learner_import_batch(
+                    second,
+                    batch=candidate,
+                )
+                await second.commit()
+
+        task = asyncio.create_task(contender())
+
+        try:
+            await waiting(engine)
+            await first.commit()
+            with pytest.raises(
+                Exception,
+                match="scope_changed",
+            ):
+                await asyncio.wait_for(task, 2)
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(
+                task,
+                return_exceptions=True,
+            )
+
+    async with maker() as session:
+        users = (
+            await session.scalars(
+                select(User).where(User.email == email)
+            )
+        ).all()
+        assert len(users) == 1
+
+        enrollments = (
+            await session.scalars(
+                select(Enrollment).where(
+                    Enrollment.user_id == users[0].id,
+                    Enrollment.course_id == data[0][1],
+                )
+            )
+        ).all()
+        assert len(enrollments) == 1
+
+        assert (
+            await session.get(ImportBatch, first_id)
+        ).status == "applied"
+
+        assert (
+            await session.get(ImportBatch, second_id)
+        ).status == "parsed"
+
+async def _r24m9_wait_for_database_lock(engine, pid):
+    """Observe a real PG wait by the specified backend PID."""
+    async def poll():
+        async with engine.connect() as monitor:
+            while True:
+                event_type = await monitor.scalar(
+                    text(
+                        "SELECT wait_event_type "
+                        "FROM pg_stat_activity "
+                        "WHERE pid = :pid"
+                    ),
+                    {"pid": pid},
+                )
+                if event_type == "Lock":
+                    return
+                await asyncio.sleep(0.02)
+
+    await asyncio.wait_for(poll(), timeout=2.0)
+
+
+@pytest.mark.asyncio
+async def test_r24m9_public_registration_first_import_conflict(env):
+    """Committed public identity wins without a duplicate CSV user."""
+    from app.services.public_registration import (
+        normalize_public_registration_data,
+        prepare_public_registration,
+    )
+
+    engine, maker, data = env
+    email = "r24m9_pub_" + uuid4().hex + "@test.invalid"
+    batch_id, actor_id, _ = await batch_setup(maker, data)
+
+    async with maker.begin() as session:
+        row = await session.scalar(
+            select(ImportRow).where(ImportRow.batch_id == batch_id)
+        )
+        assert row is not None
+        row.normalized_data_json = {
+            "email": email,
+            "first_name": "Public",
+            "last_name": "Learner",
+        }
+
+    registration = normalize_public_registration_data(
+        last_name="Learner",
+        first_name="Public",
+        middle_name=None,
+        email=email,
+        phone=None,
+    )
+
+    pid_ready = asyncio.get_running_loop().create_future()
+
+    async def importer():
+        async with tx() as session:
+            pid = await session.scalar(
+                text("SELECT pg_backend_pid()")
+            )
+            pid_ready.set_result(pid)
+            batch = await prepare(session, batch_id, actor_id)
+            result = await apply_learner_import_batch(
+                session, batch=batch
+            )
+            await session.commit()
+            return result
+
+    async with maker() as public_session:
+        prepared = await prepare_public_registration(
+            public_session,
+            data=registration,
+        )
+        assert prepared.outcome == "user_created"
+
+        task = asyncio.create_task(importer())
+        try:
+            pid = await asyncio.wait_for(pid_ready, 2)
+            await _r24m9_wait_for_database_lock(engine, pid)
+            await public_session.commit()
+
+            result = await asyncio.wait_for(task, 3)
+            assert result.created_users_count == 0
+            assert result.error_rows_count == 1
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    async with maker() as session:
+        users = (
+            await session.scalars(
+                select(User).where(User.email == email)
+            )
+        ).all()
+        assert len(users) == 1
+        profile = await session.scalar(
+            select(LearnerProfile).where(
+                LearnerProfile.user_id == users[0].id
+            )
+        )
+        assert profile is not None
+        assert profile.source == "public_registration"
+        row = await session.scalar(
+            select(ImportRow).where(ImportRow.batch_id == batch_id)
+        )
+        assert row.status == "error"
+        assert (await session.get(ImportBatch, batch_id)).status == "applied"
+
+
+@pytest.mark.asyncio
+async def test_r24m9_import_first_public_registration_conflict(env):
+    """Public registration cannot duplicate an uncommitted CSV user."""
+    from sqlalchemy.exc import IntegrityError
+    from app.services.public_registration import (
+        normalize_public_registration_data,
+        prepare_public_registration,
+    )
+
+    engine, maker, data = env
+    email = "r24m9_imp_" + uuid4().hex + "@test.invalid"
+    batch_id, actor_id, _ = await batch_setup(maker, data)
+
+    async with maker.begin() as session:
+        row = await session.scalar(
+            select(ImportRow).where(ImportRow.batch_id == batch_id)
+        )
+        assert row is not None
+        row.normalized_data_json = {
+            "email": email,
+            "first_name": "Imported",
+            "last_name": "Learner",
+        }
+
+    registration = normalize_public_registration_data(
+        last_name="Learner",
+        first_name="Imported",
+        middle_name=None,
+        email=email,
+        phone=None,
+    )
+
+    pid_ready = asyncio.get_running_loop().create_future()
+
+    async def public_contender():
+        async with maker() as session:
+            pid = await session.scalar(
+                text("SELECT pg_backend_pid()")
+            )
+            pid_ready.set_result(pid)
+            try:
+                await prepare_public_registration(
+                    session,
+                    data=registration,
+                )
+                await session.commit()
+                return "created"
+            except IntegrityError:
+                await session.rollback()
+                return "integrity_conflict"
+
+    async with tx() as importer:
+        batch = await prepare(importer, batch_id, actor_id)
+        result = await apply_learner_import_batch(
+            importer, batch=batch
+        )
+        assert result.created_users_count == 1
+        assert result.created_enrollments_count == 1
+
+        task = asyncio.create_task(public_contender())
+        try:
+            pid = await asyncio.wait_for(pid_ready, 2)
+            await _r24m9_wait_for_database_lock(engine, pid)
+            await importer.commit()
+            assert (
+                await asyncio.wait_for(task, 3)
+            ) == "integrity_conflict"
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    async with maker() as session:
+        users = (
+            await session.scalars(
+                select(User).where(User.email == email)
+            )
+        ).all()
+        assert len(users) == 1
+
+        enrollments = (
+            await session.scalars(
+                select(Enrollment).where(
+                    Enrollment.user_id == users[0].id,
+                    Enrollment.course_id == data[0][1],
+                )
+            )
+        ).all()
+        assert len(enrollments) == 1
+        assert enrollments[0].status == "assigned"
+
+
+@pytest.mark.asyncio
+async def test_r24m9_sequential_reimport_no_duplicates(env):
+    """A second completed import reuses user and enrollment."""
+    _, maker, data = env
+    email = "r24m9_replay_" + uuid4().hex + "@test.invalid"
+
+    first_id, actor_id, _ = await batch_setup(maker, data)
+    second_id, _, _ = await batch_setup(maker, data)
+
+    async with maker.begin() as session:
+        for batch_id in (first_id, second_id):
+            row = await session.scalar(
+                select(ImportRow).where(
+                    ImportRow.batch_id == batch_id
+                )
+            )
+            assert row is not None
+            row.normalized_data_json = {
+                "email": email,
+                "first_name": "Replay",
+                "last_name": "Learner",
+            }
+
+    async with tx() as session:
+        batch = await prepare(session, first_id, actor_id)
+        first = await apply_learner_import_batch(
+            session, batch=batch
+        )
+        assert first.created_users_count == 1
+        assert first.created_enrollments_count == 1
+        await session.commit()
+
+    async with tx() as session:
+        batch = await prepare(session, second_id, actor_id)
+        second = await apply_learner_import_batch(
+            session, batch=batch
+        )
+        assert second.created_users_count == 0
+        assert second.created_enrollments_count == 0
+        assert second.error_rows_count == 0
+        await session.commit()
+
+    async with maker() as session:
+        users = (
+            await session.scalars(
+                select(User).where(User.email == email)
+            )
+        ).all()
+        assert len(users) == 1
+
+        enrollments = (
+            await session.scalars(
+                select(Enrollment).where(
+                    Enrollment.user_id == users[0].id,
+                    Enrollment.course_id == data[0][1],
+                )
+            )
+        ).all()
+        assert len(enrollments) == 1
+
+        for batch_id in (first_id, second_id):
+            batch = await session.get(ImportBatch, batch_id)
+            assert batch.status == "applied"
