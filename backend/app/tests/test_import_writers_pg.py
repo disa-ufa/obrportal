@@ -336,4 +336,3 @@ async def test_existing_profile_update_and_readiness_under_outer_scope(env):
         obligations=(await s.scalars(select(RegistryObligation).where(RegistryObligation.enrollment_id==data[0][2]))).all()
         assert len(obligations)==2
         assert all(o.readiness_errors is not None for o in obligations)
-
