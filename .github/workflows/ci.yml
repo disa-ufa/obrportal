@@ -50,6 +50,7 @@ jobs:
 
       - name: Run frontend static serving guard
         run: |
+          python scripts/test_frontend_static_serving.py
           python scripts/check_frontend_static_serving.py
 
       - name: Run production frontend static runbook guard
