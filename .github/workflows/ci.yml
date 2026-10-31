@@ -258,7 +258,23 @@ jobs:
       - name: Run backend pytest
         run: |
           docker compose exec -T -e MINTRUD_CATALOG_TEST_DATABASE_URL=postgresql+asyncpg://obrportal:obrportal_password@postgres:5432/obrportal backend pytest app/tests/test_mintrud_catalog_cli.py -q
-          docker compose exec -T backend pytest app/tests -q
+          docker compose exec -T backend pytest app/tests -q \
+            --ignore=app/tests/test_registry_catalog_policy_fence_pg.py \
+            --ignore=app/tests/test_catalog_writers_pg.py \
+            --ignore=app/tests/test_document_writers_pg.py \
+            --ignore=app/tests/test_import_writers_pg.py \
+            --ignore=app/tests/test_learner_import_apply_service.py \
+            --ignore=app/tests/test_admin_learner_import_course_notifications_api.py \
+            --ignore=app/tests/test_mintrud_recovery_flow_api.py \
+            --deselect=app/tests/test_m231d2c3_storage_failure.py::test_m231d2c3_real_pg_commit_ack_loss \
+            --deselect=app/tests/test_auth_rbac_admin_api.py::test_admin_can_delete_unused_organization \
+            --deselect=app/tests/test_auth_rbac_admin_api.py::test_admin_delete_organization_not_found_returns_404 \
+            --deselect=app/tests/test_auth_rbac_admin_api.py::test_admin_apply_learner_import_returns_password_setup_invitation_for_new_user
+
+      - name: Run isolated registry PostgreSQL and HTTP regressions
+        run: |
+          python scripts/ci_registry_synthetic.py --check-contract
+          python scripts/ci_registry_synthetic.py
 
       - name: Run auth RBAC and organization cabinet smoke checks
         run: |

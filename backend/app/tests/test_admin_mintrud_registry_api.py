@@ -3135,6 +3135,7 @@ def test_mintrud_batch_api_routes_and_schema_contract():
 def test_mintrud_batch_create_route_commits_and_audits(
     monkeypatch,
 ):
+    monkeypatch.setattr(settings, "production_exports_enabled", True)
     from datetime import (
         datetime,
         timezone,
@@ -3319,6 +3320,7 @@ def test_mintrud_batch_create_route_commits_and_audits(
 def test_mintrud_batch_create_route_rolls_back_and_cleans(
     monkeypatch,
 ):
+    monkeypatch.setattr(settings, "production_exports_enabled", True)
     import pytest
 
     from datetime import (
@@ -3471,6 +3473,7 @@ def test_mintrud_batch_create_route_rolls_back_and_cleans(
 def test_mintrud_batch_create_route_maps_domain_error_to_409(
     monkeypatch,
 ):
+    monkeypatch.setattr(settings, "production_exports_enabled", True)
     import pytest
 
     from types import SimpleNamespace
@@ -3545,6 +3548,7 @@ def test_mintrud_batch_create_route_maps_domain_error_to_409(
 def test_mintrud_batch_download_route_contract(
     monkeypatch,
 ):
+    monkeypatch.setattr(settings, "production_exports_enabled", True)
     import pytest
 
     from types import SimpleNamespace

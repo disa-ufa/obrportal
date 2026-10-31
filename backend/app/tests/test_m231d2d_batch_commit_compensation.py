@@ -64,6 +64,8 @@ class FakeSession:
 )
 def test_batch_export_compensation_contract(monkeypatch, registry, phase):
     """Exercise real API exception branches with isolated IO/session doubles."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "production_exports_enabled", True)
 
     artifact_path = f"generated/registry/{registry}/batches/test-batch.bin"
 

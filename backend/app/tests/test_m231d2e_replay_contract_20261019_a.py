@@ -65,6 +65,7 @@ def isolate_dependencies(monkeypatch, root, snapshots):
         return None
     monkeypatch.setattr(registry_batch_transaction, 'require_batch_transaction', qualified_test_boundary)
     monkeypatch.setattr(settings, "document_storage_dir", str(root))
+    monkeypatch.setattr(settings, "production_exports_enabled", True)
 
     async def current_snapshot(session, *, obligation):
         return deepcopy(snapshots[str(obligation.id)])
