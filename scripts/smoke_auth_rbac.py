@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import json
 import os
 from uuid import uuid4
@@ -2161,7 +2162,7 @@ def main() -> int:
     status, missing_user_password_reset = request_json(
         "POST",
         "/api/v1/admin/users/00000000-0000-0000-0000-000000000000/password",
-        {"password": "MissingSmoke123!"},
+        {"password": secrets.token_urlsafe(24)},
         token=admin_token,
     )
     assert_status(status, 404, "admin user password reset 404")
@@ -4013,7 +4014,7 @@ def main() -> int:
         "/api/v1/admin/users",
         {
             "email": f"forbidden-smoke-{uuid4().hex[:10]}@obrportal.local",
-            "password": "ForbiddenSmoke123!",
+            "password": secrets.token_urlsafe(24),
         },
         token=learner_token,
     )
@@ -4023,7 +4024,7 @@ def main() -> int:
     status, _ = request_json(
         "POST",
         f"/api/v1/admin/users/{learner_user_id}/password",
-        {"password": "ForbiddenResetSmoke123!"},
+        {"password": secrets.token_urlsafe(24)},
         token=learner_token,
     )
     assert_status(status, 403, "learner admin user password reset")

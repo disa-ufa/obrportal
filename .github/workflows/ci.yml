@@ -29,6 +29,7 @@ jobs:
 
       - name: Run secret scan
         run: |
+          python scripts/test_secret_scan.py
           python scripts/secret_scan.py
 
       - name: Run text encoding guard

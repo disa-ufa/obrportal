@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from datetime import timedelta
 
 from jose import jwt
@@ -15,7 +16,7 @@ from app.core.security import (
 
 
 def test_password_hash_roundtrip() -> None:
-    password = "Security123Local!"
+    password = secrets.token_urlsafe(24)
 
     hashed_password = get_password_hash(password)
 

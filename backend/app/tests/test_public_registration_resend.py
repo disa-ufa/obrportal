@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import asyncio
 from collections.abc import Awaitable, Callable
 from uuid import uuid4
@@ -115,7 +116,7 @@ def test_resend_request_schema_is_email_only() -> None:
     with pytest.raises(ValidationError):
         schema(
             email="learner@example.com",
-            password="dummy-password-fixture",
+            password=secrets.token_urlsafe(24),
         )
 
 

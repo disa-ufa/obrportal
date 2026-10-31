@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # Partial attempt-only veto. Activation requires historical reconciliation
     # and separate approval; this is NOT the full applicability/export gate.
     registry_attempt_applicability_veto_enabled: bool = False
-    secret_key: str = Field(default="change-me-local-only")
+    secret_key: str = Field(default="change-me")
     access_token_expire_minutes: int = 60
 
     database_url: str = "postgresql+asyncpg://obrportal:obrportal_password@postgres:5432/obrportal"

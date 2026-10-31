@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import asyncio
 import json
 import os
@@ -18,6 +19,10 @@ from app.models.user import User
 from app.services.user_password_tokens import create_user_password_token
 from app.services.learner_import_batches import create_import_batch_from_parse_result
 from app.services.learner_import_parser import ParsedLearnerImportResult, ParsedLearnerImportRow
+
+
+# Generated once so setup and login assertions use the same test credentials.
+EXPIRED_SETUP_PASSWORD = secrets.token_urlsafe(24)
 
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
@@ -315,7 +320,7 @@ def test_public_set_password_with_initial_token_activates_user_and_allows_login(
         "/api/v1/auth/set-password",
         {
             "token": fixture["raw_token"],
-            "password": "AnotherSetupPassword123!",
+            "password": secrets.token_urlsafe(24),
         },
     )
     assert status == 400
@@ -344,8 +349,8 @@ def test_public_set_password_rejects_invalid_token() -> None:
         "POST",
         "/api/v1/auth/set-password",
         {
-            "token": "invalid-token-value-with-enough-length",
-            "password": "InvalidTokenPassword123!",
+            "token": secrets.token_urlsafe(24),
+            "password": secrets.token_urlsafe(24),
         },
     )
 
@@ -363,7 +368,7 @@ def test_public_set_password_rejects_expired_token() -> None:
         "/api/v1/auth/set-password",
         {
             "token": fixture["raw_token"],
-            "password": "ExpiredSetupPassword123!",
+            "password": EXPIRED_SETUP_PASSWORD,
         },
     )
 
@@ -374,7 +379,7 @@ def test_public_set_password_rejects_expired_token() -> None:
     status, login_payload = request_json(
         "POST",
         "/api/v1/auth/login",
-        {"email": email, "password": "ExpiredSetupPassword123!"},
+        {"email": email, "password": EXPIRED_SETUP_PASSWORD},
     )
     assert status == 401
     assert isinstance(login_payload, dict)
@@ -395,7 +400,7 @@ def test_bad_password_returns_401() -> None:
     status, payload = request_json(
         "POST",
         "/api/v1/auth/login",
-        {"email": ADMIN_EMAIL, "password": "wrong-password"},
+        {"email": ADMIN_EMAIL, "password": secrets.token_urlsafe(24)},
     )
 
     assert status == 401
@@ -504,7 +509,7 @@ def test_admin_can_filter_users_with_pagination_search_active_and_role() -> None
         "/api/v1/admin/users",
         {
             "email": user_email,
-            "password": "Stage32UserFilter123!",
+            "password": secrets.token_urlsafe(24),
             "phone": user_phone,
             "full_name": user_full_name,
             "is_active": False,
@@ -1605,7 +1610,7 @@ def test_admin_can_create_user_and_created_user_can_login() -> None:
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     suffix = uuid4().hex[:10]
     email = f"created-{suffix}@obrportal.local"
-    password = "CreatedUser123!"
+    password = secrets.token_urlsafe(24)
     phone = unique_phone()
 
     status, created = request_json(
@@ -1840,7 +1845,7 @@ def test_admin_invite_reissue_invalidates_previous_token() -> None:
         "/api/v1/admin/users",
         {
             "email": email,
-            "password": "TemporaryInviteReissue123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Invite reissue user",
             "is_active": False,
             "is_email_verified": False,
@@ -1876,7 +1881,7 @@ def test_admin_invite_reissue_invalidates_previous_token() -> None:
         "/api/v1/auth/set-password",
         {
             "token": first_token,
-            "password": "OldInviteTokenPassword123!",
+            "password": secrets.token_urlsafe(24),
         },
     )
     assert status == 400
@@ -1887,7 +1892,7 @@ def test_admin_invite_reissue_invalidates_previous_token() -> None:
         "/api/v1/auth/set-password",
         {
             "token": second_token,
-            "password": "SecondInvitePassword123!",
+            "password": secrets.token_urlsafe(24),
         },
     )
     assert status == 200
@@ -1991,7 +1996,7 @@ def test_learner_cannot_create_user() -> None:
         "/api/v1/admin/users",
         {
             "email": f"forbidden-{uuid4().hex[:10]}@obrportal.local",
-            "password": "Forbidden123!",
+            "password": secrets.token_urlsafe(24),
         },
         token=learner_token,
     )
@@ -2090,7 +2095,7 @@ def test_admin_user_write_missing_returns_404() -> None:
     status, payload = request_json(
         "POST",
         f"/api/v1/admin/users/{missing_user_id}/password",
-        {"password": "MissingUser123!"},
+        {"password": secrets.token_urlsafe(24)},
         token=token,
     )
     assert status == 404
@@ -2153,7 +2158,7 @@ def test_learner_cannot_update_activate_or_deactivate_user() -> None:
     status, payload = request_json(
         "POST",
         f"/api/v1/admin/users/{learner_user_id}/password",
-        {"password": "ForbiddenReset123!"},
+        {"password": secrets.token_urlsafe(24)},
         token=learner_token,
     )
     assert status == 403
@@ -9032,7 +9037,7 @@ def test_org_user_search_is_limited_to_assigned_organization() -> None:
         "/api/v1/admin/users",
         {
             "email": first_user_email,
-            "password": "OrgSearchFirst123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Search First User",
             "is_active": True,
             "is_email_verified": True,
@@ -9047,7 +9052,7 @@ def test_org_user_search_is_limited_to_assigned_organization() -> None:
         "/api/v1/admin/users",
         {
             "email": second_user_email,
-            "password": "OrgSearchSecond123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Search Second User",
             "is_active": True,
             "is_email_verified": True,
@@ -9180,7 +9185,7 @@ def test_org_group_member_add_rejects_user_from_foreign_organization() -> None:
         "/api/v1/admin/users",
         {
             "email": first_user_email,
-            "password": "OrgMemberFirst123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Member First User",
             "is_active": True,
             "is_email_verified": True,
@@ -9195,7 +9200,7 @@ def test_org_group_member_add_rejects_user_from_foreign_organization() -> None:
         "/api/v1/admin/users",
         {
             "email": second_user_email,
-            "password": "OrgMemberSecond123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Member Second User",
             "is_active": True,
             "is_email_verified": True,
@@ -9322,7 +9327,7 @@ def test_org_user_search_excludes_existing_group_members() -> None:
         "/api/v1/admin/users",
         {
             "email": user_email,
-            "password": "OrgSearchExclude123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Search Exclude User",
             "is_active": True,
             "is_email_verified": True,
@@ -9458,7 +9463,7 @@ def test_org_rep_can_create_group_enrollments_for_assigned_organization() -> Non
         "/api/v1/admin/users",
         {
             "email": learner_email,
-            "password": "OrgGroupEnrollmentLearner123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Group Enrollment Learner",
             "is_active": True,
             "is_email_verified": True,
@@ -9639,7 +9644,7 @@ def test_org_rep_can_list_group_enrollments_in_assigned_organization() -> None:
         "/api/v1/admin/users",
         {
             "email": learner_email,
-            "password": "OrgGroupEnrollmentList123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Group Enrollment List Learner",
             "is_active": True,
             "is_email_verified": True,
@@ -9767,7 +9772,7 @@ def test_org_rep_can_delete_assigned_group_enrollment() -> None:
         "/api/v1/admin/users",
         {
             "email": learner_email,
-            "password": "OrgDeleteEnrollmentLearner123!",
+            "password": secrets.token_urlsafe(24),
             "full_name": "Org Delete Enrollment Learner",
             "is_active": True,
             "is_email_verified": True,
