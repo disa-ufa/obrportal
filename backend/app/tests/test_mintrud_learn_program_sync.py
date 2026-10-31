@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from app.tests.test_registry_catalog_policy_fence_unit import FakeSession as FenceSession
+from app.services.registry_catalog_policy_fence import begin_registry_catalog_policy_fence
 
 from app.mintrud_learn_program_catalog import (
     MINTRUD_LEARN_PROGRAM_BY_ID_V109,
@@ -37,15 +39,18 @@ class FakeExecuteResult:
         )
 
 
-class FakeSession:
+class FakeSession(FenceSession):
     def __init__(self, existing=()):
+        super().__init__()
         self.existing = list(
             existing
         )
         self.added = []
         self.flush_count = 0
 
-    async def execute(self, _query):
+    async def execute(self, _query, params=None):
+        if str(_query).startswith(('SHOW', 'SELECT pg_advisory')):
+            return await super().execute(_query, params)
         return FakeExecuteResult(
             self.existing
             + self.added
@@ -96,7 +101,7 @@ def test_sync_creates_exact_canonical_catalog_and_is_idempotent():
         session = FakeSession()
 
         first = (
-            await sync_mintrud_learn_program_catalog_v109(
+            await guarded_sync(
                 session
             )
         )
@@ -117,7 +122,7 @@ def test_sync_creates_exact_canonical_catalog_and_is_idempotent():
         }
 
         second = (
-            await sync_mintrud_learn_program_catalog_v109(
+            await guarded_sync(
                 session
             )
         )
@@ -147,7 +152,7 @@ def test_sync_repairs_canonical_title_and_active_flag():
         )
 
         result = (
-            await sync_mintrud_learn_program_catalog_v109(
+            await guarded_sync(
                 session
             )
         )
@@ -193,7 +198,7 @@ def test_sync_fails_closed_on_unknown_v109_id_without_mutation():
                 ".*999999"
             ),
         ):
-            await sync_mintrud_learn_program_catalog_v109(
+            await guarded_sync(
                 session
             )
 
@@ -231,7 +236,7 @@ def test_sync_fails_closed_on_canonical_code_mapped_to_wrong_id():
             MintrudLearnProgramCatalogSyncError,
             match="Canonical Mintrud code conflict",
         ):
-            await sync_mintrud_learn_program_catalog_v109(
+            await guarded_sync(
                 session
             )
 
@@ -241,3 +246,8 @@ def test_sync_fails_closed_on_canonical_code_mapped_to_wrong_id():
     asyncio.run(
         scenario()
     )
+
+async def guarded_sync(session):
+    if not session.in_transaction():
+        session.catalog_fence = await begin_registry_catalog_policy_fence(session=session, mode='exclusive')
+    return await sync_mintrud_learn_program_catalog_v109(session, catalog_fence=session.catalog_fence)

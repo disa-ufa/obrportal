@@ -16,6 +16,10 @@ from app.models.mintrud_learn_program import (
     MintrudLearnProgram,
 )
 
+from app.services.registry_catalog_policy_fence import (
+    RegistryCatalogPolicyFence, RegistryCatalogFenceError,
+)
+
 
 async def load_course_mintrud_learn_programs(
     session: AsyncSession,
@@ -341,6 +345,23 @@ class MintrudLearnProgramCatalogSyncResult:
 
 
 async def sync_mintrud_learn_program_catalog_v109(
+    session: AsyncSession, *, dry_run: bool = False,
+    catalog_fence: RegistryCatalogPolicyFence | None = None,
+) -> MintrudLearnProgramCatalogSyncResult:
+    """Caller owns TX. Mutations require its already-held exclusive C.
+
+    Never acquire a fence here: seed/CLI may already have performed DML.
+    Dry-run does not flush pending ORM changes or issue mutations.
+    """
+    if not dry_run:
+        if not isinstance(catalog_fence, RegistryCatalogPolicyFence):
+            raise RegistryCatalogFenceError('registry.catalog_exclusive_fence_required')
+        catalog_fence.require_session(session, 'exclusive')
+    with session.no_autoflush:
+        return await _sync_mintrud_learn_program_catalog_v109(session, dry_run=dry_run)
+
+
+async def _sync_mintrud_learn_program_catalog_v109(
     session: AsyncSession,
     *,
     dry_run: bool = False,

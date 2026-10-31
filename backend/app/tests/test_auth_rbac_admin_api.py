@@ -1461,36 +1461,22 @@ def test_admin_update_organization_not_found_returns_404() -> None:
 
 
 def test_admin_can_delete_unused_organization() -> None:
+    # Historical name retained for baseline traceability; DELETE is fail-closed.
+    from app.tests.import_boundary_scenarios import live_snapshot
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     organization_id = create_test_organization(token)
-
-    status, deleted = request_json(
-        "DELETE",
-        f"/api/v1/admin/organizations/{organization_id}",
-        token=token,
-    )
-
+    path = f"/api/v1/admin/organizations/{organization_id}"
+    status, original = request_json("GET", path, token=token)
     assert status == 200
-    assert isinstance(deleted, dict)
-    assert deleted["status"] == "deleted"
-    assert deleted["id"] == organization_id
-
-    status, missing = request_json(
-        "GET",
-        f"/api/v1/admin/organizations/{organization_id}",
-        token=token,
-    )
-    assert status == 404
-    assert isinstance(missing, dict)
-
-    status, audit_events = request_json("GET", "/api/v1/admin/audit-events", token=token)
+    before = live_snapshot()
+    status, rejected = request_json("DELETE", path, token=token)
+    assert status == 409
+    assert rejected["detail"] == "registry.organization_delete_requires_coordinated_writers"
+    assert live_snapshot() == before  # organization, relations and audit unchanged
+    assert request_json("GET", path, token=token) == (200, original)
+    status, events = request_json("GET", "/api/v1/admin/audit-events", token=token)
     assert status == 200
-    assert isinstance(audit_events, list)
-    assert any(
-        event["action"] == "admin.organization_deleted"
-        and event["entity_id"] == organization_id
-        for event in audit_events
-    )
+    assert not any(e["action"] == "admin.organization_deleted" and e["entity_id"] == organization_id for e in events)
 
 
 def test_admin_cannot_delete_organization_assigned_to_user() -> None:
@@ -1518,42 +1504,49 @@ def test_admin_cannot_delete_organization_assigned_to_user() -> None:
         organization_id=organization_id,
     )
 
-    status, payload = request_json(
-        "DELETE",
-        f"/api/v1/admin/organizations/{organization_id}",
-        token=token,
-    )
-    assert status == 400
-    assert isinstance(payload, dict)
+    try:
+        status, payload = request_json(
+            "DELETE",
+            f"/api/v1/admin/organizations/{organization_id}",
+            token=token,
+        )
+        assert status == 409
+        assert isinstance(payload, dict)
+        assert payload["detail"] == "registry.organization_delete_requires_coordinated_writers"
 
-    cleanup_status, cleanup_payload = request_json(
-        "DELETE",
-        f"/api/v1/admin/users/{learner_user_id}/roles/{user_role_id}",
-        token=token,
-    )
-    assert cleanup_status == 200
-    assert isinstance(cleanup_payload, dict)
+    finally:
+        cleanup_status, cleanup_payload = request_json(
+            "DELETE",
+            f"/api/v1/admin/users/{learner_user_id}/roles/{user_role_id}",
+            token=token,
+        )
+        assert cleanup_status == 200
+        assert isinstance(cleanup_payload, dict)
 
     status, deleted = request_json(
         "DELETE",
         f"/api/v1/admin/organizations/{organization_id}",
         token=token,
     )
-    assert status == 200
-    assert isinstance(deleted, dict)
+    assert status == 409
+    assert deleted["detail"] == "registry.organization_delete_requires_coordinated_writers"
+    # Free organizations remain fail-closed too; the dedicated contract test
+    # verifies persistence and absence of a false successful delete audit.
+    assert request_json("GET", f"/api/v1/admin/organizations/{organization_id}", token=token)[0] == 200
 
 
 def test_admin_delete_organization_not_found_returns_404() -> None:
+    # GET still distinguishes missing IDs; DELETE refuses before lookup.
+    from app.tests.import_boundary_scenarios import live_snapshot
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
-
-    status, payload = request_json(
-        "DELETE",
-        "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000",
-        token=token,
-    )
-
-    assert status == 404
-    assert isinstance(payload, dict)
+    path = "/api/v1/admin/organizations/00000000-0000-0000-0000-000000000000"
+    assert request_json("GET", path, token=token)[0] == 404
+    before = live_snapshot()
+    status, payload = request_json("DELETE", path, token=token)
+    assert status == 409
+    assert payload["detail"] == "registry.organization_delete_requires_coordinated_writers"
+    assert live_snapshot() == before
+    assert request_json("GET", path, token=token)[0] == 404
 
 
 def test_learner_cannot_create_or_update_organization() -> None:
@@ -1731,77 +1724,20 @@ def create_learner_import_batch_fixture(
 
 
 def test_admin_apply_learner_import_returns_password_setup_invitation_for_new_user() -> None:
-    admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
-    email = f"import_invite_{uuid4().hex[:12]}@example.com"
-    new_password = "ImportInvitePassword123!"
-
+    # Historical positive scenario is forbidden: prove no partial commit.
+    from app.tests.import_boundary_scenarios import live_snapshot
+    token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    email = f"import_denied_{uuid4().hex}@test.invalid"
     batch_id = create_learner_import_batch_fixture(email=email)
-
-    status, applied = request_json(
-        "POST",
-        f"/api/v1/admin/learner-imports/{batch_id}/apply",
-        token=admin_token,
-    )
-
-    assert status == 200
-    assert isinstance(applied, dict)
-    assert applied["status"] == "applied"
-    assert applied["created_users_count"] == 1
-    assert applied["updated_users_count"] == 0
-
-    invitations = applied.get("invitations")
-    assert isinstance(invitations, list)
-    assert len(invitations) == 1
-
-    invitation = invitations[0]
-    assert invitation["email"] == email
-    assert invitation["row_number"] == 2
-    assert invitation["user_id"]
-    assert invitation["setup_url"].startswith(settings.public_base_url.rstrip("/") + "/set-password?token=")
-    assert invitation["expires_at"]
-
-    status, users = request_json(
-        "GET",
-        f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}",
-        token=admin_token,
-    )
-    assert status == 200
-    assert isinstance(users, list)
-    imported_user = next(user for user in users if user["email"] == email)
-    assert imported_user["id"] == invitation["user_id"]
-    assert imported_user["is_active"] is False
-    assert imported_user["is_email_verified"] is False
-
-    raw_token = extract_token_from_setup_url(str(invitation["setup_url"]))
-
-    status, setup = request_json(
-        "POST",
-        "/api/v1/auth/set-password",
-        {
-            "token": raw_token,
-            "password": new_password,
-        },
-    )
-    assert status == 200
-    assert isinstance(setup, dict)
-    assert setup["user_id"] == invitation["user_id"]
-    assert setup["email"] == email
-
-    learner_token = login(email, new_password)
-    status, me_payload = request_json("GET", "/api/v1/auth/me", token=learner_token)
-    assert status == 200
-    assert isinstance(me_payload, dict)
-    assert me_payload["email"] == email
-    assert me_payload["is_active"] is True
-    assert me_payload["is_email_verified"] is True
-
-    status, detail = request_json(
-        "GET",
-        f"/api/v1/admin/learner-imports/{batch_id}",
-        token=admin_token,
-    )
-    assert status == 200
-    assert isinstance(detail, dict)
+    before = live_snapshot()
+    status, rejected = request_json("POST", f"/api/v1/admin/learner-imports/{batch_id}/apply", token=token)
+    assert status == 409
+    assert rejected["detail"] == "registry.import_new_identity_not_supported"
+    assert live_snapshot() == before  # includes users, enrollments, tokens, rows, audit
+    status, users = request_json("GET", f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}", token=token)
+    assert status == 200 and not any(u["email"] == email for u in users)
+    status, detail = request_json("GET", f"/api/v1/admin/learner-imports/{batch_id}", token=token)
+    assert status == 200 and detail["status"] == "parsed"
     assert detail["invitations"] == []
 
 
@@ -7020,9 +6956,9 @@ def test_admin_rejects_document_enrollment_for_another_user() -> None:
         },
     )
 
-    assert create_response.status_code == 400
+    assert create_response.status_code == 409
     create_payload = create_response.json()
-    assert create_payload["detail"] == "Enrollment belongs to another user"
+    assert create_payload["detail"] == "registry.document_enrollment_owner_mismatch"
 
     document = create_test_document_record_in_db(
         user_id=admin_user_id,
@@ -7039,9 +6975,9 @@ def test_admin_rejects_document_enrollment_for_another_user() -> None:
         },
     )
 
-    assert update_response.status_code == 400
+    assert update_response.status_code == 409
     update_payload = update_response.json()
-    assert update_payload["detail"] == "Enrollment belongs to another user"
+    assert update_payload["detail"] == "registry.document_enrollment_owner_mismatch"
 
 
 

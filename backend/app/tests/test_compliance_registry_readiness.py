@@ -1312,3 +1312,79 @@ def test_frdo_duplicate_requires_original_document_snapshot() -> None:
         "frdo.original_document"
         in result.error_codes
     )
+
+
+def test_frdo_po_generic_budget_rejected_before_approval() -> None:
+    enrollment = completed_enrollment()
+    enrollment.started_at = datetime(
+        2026,
+        1,
+        10,
+        tzinfo=timezone.utc,
+    )
+
+    po_course = SimpleNamespace(
+        title="PO test",
+        regulatory_program_type=(
+            "vocational_training"
+        ),
+        hours=40,
+    )
+
+    po_document = SimpleNamespace(
+        enrollment_id="enrollment-1",
+        document_series="NO-SERIES",
+        document_number="PO-001",
+        document_type="Certificate",
+        issued_at=date(
+            2026,
+            9,
+            1,
+        ),
+        registration_number="REG-PO-001",
+        revoked_at=None,
+    )
+
+    po_profile = profile(
+        middle_name="\u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447",
+        snils="112-233-445 95",
+        citizenship_country_code="643",
+    )
+
+    context = SimpleNamespace(
+        document_status="Original",
+        loss_confirmation="No",
+        exchange_confirmation="No",
+        destruction_confirmation="No",
+        study_form="Full-time",
+        funding_source="budget",
+        education_delivery_form="In organization",
+        po_document_type=(
+            "\u0421\u0432\u0438\u0434\u0435\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e "
+            "\u043e \u043f\u0440\u043e\u0444\u0435\u0441\u0441\u0438\u0438 "
+            "\u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e, "
+            "\u0434\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u0438 "
+            "\u0441\u043b\u0443\u0436\u0430\u0449\u0435\u0433\u043e"
+        ),
+        po_program_type="Initial training",
+        po_profession="\u0412\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
+        po_qualification=None,
+        dpo_professional_activity_area=None,
+        dpo_enlarged_specialty_group=None,
+        dpo_qualification=None,
+        prior_education_snapshot_json=None,
+        original_document_snapshot_json=None,
+    )
+
+    result = evaluate_registry_readiness(
+        registry=REGISTRY_FRDO,
+        enrollment=enrollment,
+        course=po_course,
+        learner=learner(),
+        learner_profile=po_profile,
+        document=po_document,
+        frdo_context=context,
+    )
+
+    assert result.is_ready is False
+    assert "frdo.funding_source_unsupported" in result.error_codes

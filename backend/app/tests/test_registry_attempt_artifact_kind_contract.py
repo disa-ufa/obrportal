@@ -390,13 +390,55 @@ def test_frdo_portal_endpoint_persists_portal_upload_attempt():
         in source
     )
     assert (
-        "await session.rollback()"
+        source.index("commit_attempted = True")
+        < source.index("await session.commit()")
+    )
+    assert (
+        "await _compensate_failed_registry_export("
+        in source
+    )
+    assert (
+        "commit_attempted=commit_attempted"
         in source
     )
     assert (
         "delete_registry_artifact_safely"
-        in source
+        not in source
     )
+
+    compensation_source = function_source(
+        "app/api/v1/admin.py",
+        "_compensate_failed_registry_export",
+    )
+    assert (
+        "await session.rollback()"
+        in compensation_source
+    )
+
+    compensation_tree = ast.parse(compensation_source)
+    cleanup_guard = next(
+        node
+        for node in ast.walk(compensation_tree)
+        if isinstance(node, ast.If)
+        and ast.get_source_segment(compensation_source, node.test)
+        == "artifact_path_to_cleanup and not commit_attempted"
+    )
+    cleanup_calls = [
+        node
+        for node in ast.walk(compensation_tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "delete_registry_artifact_safely"
+    ]
+    assert cleanup_calls
+
+    # A lost COMMIT acknowledgement must not allow file deletion.
+    guarded_nodes = {
+        node
+        for statement in cleanup_guard.body
+        for node in ast.walk(statement)
+    }
+    assert all(call in guarded_nodes for call in cleanup_calls)
 
     assert (
         "HTTP_501_NOT_IMPLEMENTED"

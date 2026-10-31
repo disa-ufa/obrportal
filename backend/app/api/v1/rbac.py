@@ -20,7 +20,16 @@ async def get_user_permission_codes(
         select(Permission.code)
         .join(RolePermission, RolePermission.permission_id == Permission.id)
         .join(UserRole, UserRole.role_id == RolePermission.role_id)
-        .where(UserRole.user_id == user.id)
+        .where(
+            UserRole.user_id == user.id,
+            (
+                (
+                    ~Permission.code.like("mintrud.%")
+                    & ~Permission.code.like("frdo.%")
+                )
+                | UserRole.organization_id.is_(None)
+            ),
+        )
         .order_by(Permission.code)
     )
 

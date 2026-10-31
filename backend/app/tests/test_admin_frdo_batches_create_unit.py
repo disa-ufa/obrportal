@@ -47,6 +47,15 @@ class FakeSession:
         self.commit_failure = commit_failure
         self.commits = 0
         self.rollbacks = 0
+        self.fence_calls = 0
+
+    async def execute(self, statement, params=None):
+        if "pg_advisory_xact_lock" not in str(statement):
+            raise AssertionError("Unexpected SQL in FakeSession")
+        if not isinstance(params, dict) or "fence_key" not in params:
+            raise AssertionError("Missing advisory fence_key")
+        self.fence_calls += 1
+        return None
 
     async def commit(self):
         self.commits += 1
@@ -149,6 +158,7 @@ def test_frdo_batch_create_success_and_audit(monkeypatch):
     assert response.has_artifact is True
 
     assert session.commits == 1
+    assert session.fence_calls == 1
     assert session.rollbacks == 0
 
     assert events[0] == (
@@ -164,7 +174,7 @@ def test_frdo_batch_create_success_and_audit(monkeypatch):
     assert events[1][1]["payload"]["external_registry_io"] is False
 
 
-def test_frdo_batch_commit_failure_cleans_file(monkeypatch):
+def test_frdo_batch_commit_ack_loss_preserves_file(monkeypatch):
     batch = make_batch()
     setup_service(monkeypatch, batch)
 
@@ -191,8 +201,9 @@ def test_frdo_batch_commit_failure_cleans_file(monkeypatch):
         call_endpoint(session)
 
     assert session.commits == 1
+    assert session.fence_calls == 1
     assert session.rollbacks == 1
-    assert removed_paths == [batch.artifact_path]
+    assert removed_paths == []
 
 
 def test_frdo_batch_audit_failure_cleans_file(monkeypatch):
@@ -225,6 +236,7 @@ def test_frdo_batch_audit_failure_cleans_file(monkeypatch):
         call_endpoint(session)
 
     assert session.commits == 0
+    assert session.fence_calls == 1
     assert session.rollbacks == 1
     assert removed_paths == [batch.artifact_path]
 
@@ -254,7 +266,7 @@ def test_frdo_batch_service_rejection_returns_409(monkeypatch):
 
 def test_frdo_batch_cleanup_failure_is_not_silent(monkeypatch):
     batch = make_batch()
-    setup_service(monkeypatch, batch)
+    setup_service(monkeypatch, batch, audit_failure=ValueError("simulated audit failure"))
 
     monkeypatch.setattr(
         admin,
@@ -262,9 +274,7 @@ def test_frdo_batch_cleanup_failure_is_not_silent(monkeypatch):
         lambda path: False,
     )
 
-    session = FakeSession(
-        commit_failure=RuntimeError("simulated commit failure")
-    )
+    session = FakeSession()
 
     with pytest.raises(
         RuntimeError,
@@ -272,4 +282,5 @@ def test_frdo_batch_cleanup_failure_is_not_silent(monkeypatch):
     ):
         call_endpoint(session)
 
+    assert session.commits == 0
     assert session.rollbacks == 1

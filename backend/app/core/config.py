@@ -18,6 +18,11 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION"),
     )
     environment: str = "local"
+    # Closed in every environment unless separately authorized for exports.
+    production_exports_enabled: bool = False
+    # Partial attempt-only veto. Activation requires historical reconciliation
+    # and separate approval; this is NOT the full applicability/export gate.
+    registry_attempt_applicability_veto_enabled: bool = False
     secret_key: str = Field(default="change-me-local-only")
     access_token_expire_minutes: int = 60
 

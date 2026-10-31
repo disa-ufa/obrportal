@@ -2645,412 +2645,10 @@ def get_mintrud_obligation_approval_fingerprint(
 
 
 def test_mintrud_admin_export_preparation_api() -> None:
-    fixture = create_mintrud_fixture(
-        with_context=True,
-        obligation_status="needs_approval",
-    )
-
-    artifact_path = None
-    second_artifact_path = None
-
-    try:
-        admin_token = login(
-            ADMIN_EMAIL,
-            ADMIN_PASSWORD,
-        )
-
-        learner_token = login(
-            LEARNER_EMAIL,
-            LEARNER_PASSWORD,
-        )
-
-        obligation_id = fixture[
-            "obligation_id"
-        ]
-
-        approve_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/approve"
-        )
-
-        status_code, approved = (
-            request_json(
-                "POST",
-                approve_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert (
-            approved["status"]
-            == "approved"
-        )
-
-        approval_fingerprint = (
-            get_mintrud_obligation_approval_fingerprint(
-                obligation_id
-            )
-        )
-
-        assert approval_fingerprint is not None
-        assert len(approval_fingerprint) == 64
-
-        export_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/export"
-        )
-
-        status_code, forbidden = (
-            request_json(
-                "POST",
-                export_path,
-                token=learner_token,
-            )
-        )
-
-        assert status_code == 403
-        assert isinstance(
-            forbidden,
-            dict,
-        )
-
-        status_code, attempt = (
-            request_json(
-                "POST",
-                export_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 201
-        assert isinstance(
-            attempt,
-            dict,
-        )
-
-        assert (
-            attempt[
-                "obligation_id"
-            ]
-            == obligation_id
-        )
-
-        assert (
-            attempt[
-                "attempt_no"
-            ]
-            == 1
-        )
-
-        assert (
-            attempt["transport"]
-            == "file"
-        )
-
-        assert (
-            attempt[
-                "artifact_kind"
-            ]
-            == "internal-export-package"
-        )
-
-        assert (
-            attempt[
-                "schema_version"
-            ]
-            == (
-                "obrportal-"
-                "registry-export-v1"
-            )
-        )
-
-        assert (
-            attempt[
-                "has_artifact"
-            ]
-            is True
-        )
-
-        assert isinstance(
-            attempt[
-                "artifact_sha256"
-            ],
-            str,
-        )
-
-        assert (
-            len(
-                attempt[
-                    "artifact_sha256"
-                ]
-            )
-            == 64
-        )
-
-        assert (
-            attempt[
-                "submitted_at"
-            ]
-            is None
-        )
-
-        assert (
-            attempt[
-                "result_status"
-            ]
-            is None
-        )
-
-        package = attempt[
-            "snapshot_json"
-        ]
-
-        assert (
-            package[
-                "schema_version"
-            ]
-            == (
-                "obrportal-"
-                "registry-export-v1"
-            )
-        )
-
-        assert (
-            package["purpose"]
-            == (
-                "internal-export-package"
-            )
-        )
-
-        assert (
-            package["registry"]
-            == "mintrud"
-        )
-
-        assert (
-            package[
-                "obligation"
-            ][
-                "id"
-            ]
-            == obligation_id
-        )
-
-        assert (
-            package[
-                "obligation"
-            ][
-                "enrollment_id"
-            ]
-            == fixture[
-                "enrollment_id"
-            ]
-        )
-
-        assert (
-            package[
-                "approval"
-            ][
-                "fingerprint"
-            ]
-            == approval_fingerprint
-        )
-
-        assert (
-            package[
-                "approval"
-            ][
-                "snapshot"
-            ][
-                "schema_version"
-            ]
-            == "registry-approval-v1"
-        )
-
-        assert (
-            package[
-                "approval"
-            ][
-                "snapshot"
-            ][
-                "registry"
-            ]
-            == "mintrud"
-        )
-
-        attempt_id = attempt["id"]
-
-        artifact_path = (
-            get_mintrud_attempt_artifact_path(
-                attempt_id
-            )
-        )
-
-        assert artifact_path is not None
-        assert artifact_path.endswith(
-            ".json"
-        )
-
-        attempts_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/attempts"
-        )
-
-        status_code, attempts = (
-            request_json(
-                "GET",
-                attempts_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert len(attempts) == 1
-
-        assert (
-            attempts[0]["id"]
-            == attempt_id
-        )
-
-        download_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/attempts/"
-            + attempt_id
-            + "/download"
-        )
-
-        (
-            status_code,
-            body,
-            _headers,
-        ) = request_bytes(
-            "GET",
-            download_path,
-            token=admin_token,
-        )
-
-        assert status_code == 200
-
-        downloaded_package = (
-            json.loads(
-                body.decode(
-                    "utf-8"
-                )
-            )
-        )
-
-        assert (
-            downloaded_package
-            == package
-        )
-
-        status_code, second_attempt = (
-            request_json(
-                "POST",
-                export_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 201
-        assert isinstance(
-            second_attempt,
-            dict,
-        )
-
-        assert (
-            second_attempt[
-                "attempt_no"
-            ]
-            == 2
-        )
-
-        assert (
-            second_attempt[
-                "artifact_kind"
-            ]
-            == "internal-export-package"
-        )
-
-        second_artifact_path = (
-            get_mintrud_attempt_artifact_path(
-                second_attempt["id"]
-            )
-        )
-
-        assert (
-            second_artifact_path
-            is not None
-        )
-
-        status_code, attempts = (
-            request_json(
-                "GET",
-                attempts_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert len(attempts) == 2
-
-        assert (
-            attempts[0][
-                "attempt_no"
-            ]
-            == 2
-        )
-
-        assert (
-            attempts[1][
-                "attempt_no"
-            ]
-            == 1
-        )
-
-        assert all(
-            item[
-                "artifact_kind"
-            ]
-            == "internal-export-package"
-            for item in attempts
-        )
-
-        actions = (
-            get_mintrud_audit_actions(
-                obligation_id
-            )
-        )
-
-        assert (
-            "admin.mintrud_registry_"
-            "export_prepared"
-            in actions
-        )
-
-    finally:
-        delete_mintrud_test_artifact(
-            artifact_path
-        )
-
-        delete_mintrud_test_artifact(
-            second_artifact_path
-        )
-
-        cleanup_mintrud_fixtures(
-            [
-                fixture,
-            ]
-        )
+    """Real approval and format checks remain; HTTP single creation is now forbidden."""
+    import sys
+    from app.tests.release_single_export_contract import check_single_export_disabled
+    check_single_export_disabled(sys.modules[__name__], "mintrud", "export")
 
 
 
@@ -3210,444 +2808,10 @@ def count_mintrud_registry_submission_attempts(
 
 
 def test_mintrud_portal_artifact_official_xml_contract() -> None:
-    from xml.etree import ElementTree as ET
-
-    from app.services.mintrud_eisot_xsd import (
-        validate_mintrud_eisot_xml_v109,
-    )
-
-    fixture = create_mintrud_fixture(
-        with_context=True,
-        obligation_status="needs_approval",
-    )
-
-    artifact_path = None
-
-    try:
-        admin_token = login(
-            ADMIN_EMAIL,
-            ADMIN_PASSWORD,
-        )
-
-        learner_token = login(
-            LEARNER_EMAIL,
-            LEARNER_PASSWORD,
-        )
-
-        obligation_id = fixture[
-            "obligation_id"
-        ]
-
-        before_count = (
-            count_mintrud_registry_submission_attempts(
-                obligation_id
-            )
-        )
-
-        assert before_count == 0
-
-        approve_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/approve"
-        )
-
-        status_code, approved = (
-            request_json(
-                "POST",
-                approve_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert isinstance(
-            approved,
-            dict,
-        )
-        assert (
-            approved["status"]
-            == "approved"
-        )
-
-        approval_fingerprint = (
-            get_mintrud_obligation_approval_fingerprint(
-                obligation_id
-            )
-        )
-
-        assert approval_fingerprint is not None
-        assert len(
-            approval_fingerprint
-        ) == 64
-
-        portal_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/portal-artifact"
-        )
-
-        status_code, forbidden = (
-            request_json(
-                "POST",
-                portal_path,
-                token=learner_token,
-            )
-        )
-
-        assert status_code == 403
-        assert isinstance(
-            forbidden,
-            dict,
-        )
-
-        assert (
-            count_mintrud_registry_submission_attempts(
-                obligation_id
-            )
-            == 0
-        )
-
-        status_code, attempt = (
-            request_json(
-                "POST",
-                portal_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 201
-        assert isinstance(
-            attempt,
-            dict,
-        )
-
-        assert (
-            attempt[
-                "obligation_id"
-            ]
-            == obligation_id
-        )
-
-        assert (
-            attempt[
-                "attempt_no"
-            ]
-            == 1
-        )
-
-        assert (
-            attempt[
-                "artifact_kind"
-            ]
-            == "portal-upload-artifact"
-        )
-
-        assert (
-            attempt[
-                "transport"
-            ]
-            == "file"
-        )
-
-        assert (
-            attempt[
-                "schema_version"
-            ]
-            == "1.0.9"
-        )
-
-        assert (
-            attempt[
-                "has_artifact"
-            ]
-            is True
-        )
-
-        artifact_sha256 = attempt[
-            "artifact_sha256"
-        ]
-
-        assert isinstance(
-            artifact_sha256,
-            str,
-        )
-
-        assert len(
-            artifact_sha256
-        ) == 64
-
-        assert (
-            attempt[
-                "submitted_at"
-            ]
-            is None
-        )
-
-        assert (
-            attempt[
-                "result_status"
-            ]
-            is None
-        )
-
-        snapshot = attempt[
-            "snapshot_json"
-        ]
-
-        assert isinstance(
-            snapshot,
-            dict,
-        )
-
-        assert (
-            snapshot[
-                "schema_version"
-            ]
-            == "registry-approval-v1"
-        )
-
-        assert (
-            snapshot[
-                "registry"
-            ]
-            == "mintrud"
-        )
-
-        artifact_path = (
-            get_mintrud_attempt_artifact_path(
-                attempt["id"]
-            )
-        )
-
-        assert artifact_path is not None
-        assert artifact_path.endswith(
-            ".xml"
-        )
-
-        download_path = (
-            "/api/v1/admin/"
-            "mintrud/obligations/"
-            + obligation_id
-            + "/attempts/"
-            + attempt["id"]
-            + "/download"
-        )
-
-        (
-            download_status,
-            xml_content,
-            headers,
-        ) = request_bytes(
-            "GET",
-            download_path,
-            token=admin_token,
-        )
-
-        assert download_status == 200
-        assert isinstance(
-            xml_content,
-            bytes,
-        )
-        assert xml_content
-
-        disposition = next(
-            (
-                value
-                for key, value
-                in headers.items()
-                if key.lower()
-                == "content-disposition"
-            ),
-            "",
-        )
-
-        assert (
-            "attachment"
-            in disposition.lower()
-        )
-
-        assert (
-            ".xml"
-            in disposition.lower()
-        )
-
-        validate_mintrud_eisot_xml_v109(
-            xml_content
-        )
-
-        root = ET.fromstring(
-            xml_content
-        )
-
-        assert root.tag == "RegistrySet"
-
-        records = root.findall(
-            "RegistryRecord"
-        )
-
-        assert len(records) == 1
-
-        worker = records[
-            0
-        ].find(
-            "Worker"
-        )
-
-        assert worker is not None
-
-        assert (
-            worker.findtext(
-                "LastName"
-            )
-            == "Ivanov"
-        )
-
-        assert (
-            worker.findtext(
-                "FirstName"
-            )
-            == "Ivan"
-        )
-
-        assert (
-            worker.findtext(
-                "MiddleName"
-            )
-            == "Ivanovich"
-        )
-
-        assert (
-            worker.findtext(
-                "Position"
-            )
-            == "engineer"
-        )
-
-        assert (
-            worker.findtext(
-                "EmployerInn"
-            )
-            == "0274000000"
-        )
-
-        test_node = records[
-            0
-        ].find(
-            "Test"
-        )
-
-        assert test_node is not None
-
-        assert (
-            test_node.attrib[
-                "isPassed"
-            ]
-            == "1"
-        )
-
-        assert (
-            test_node.attrib[
-                "learnProgramId"
-            ]
-            == "1"
-        )
-
-        assert (
-            test_node.findtext(
-                "Date"
-            )
-            == "2026-09-05"
-        )
-
-        protocol_number = (
-            test_node.findtext(
-                "ProtocolNumber"
-            )
-        )
-
-        assert isinstance(
-            protocol_number,
-            str,
-        )
-
-        assert protocol_number.startswith(
-            "OT-"
-        )
-
-        assert (
-            count_mintrud_registry_submission_attempts(
-                obligation_id
-            )
-            == 1
-        )
-
-        async def _read_status():
-            engine = create_async_engine(
-                str(
-                    settings.database_url
-                )
-            )
-
-            session_factory = (
-                async_sessionmaker(
-                    engine,
-                    expire_on_commit=False,
-                )
-            )
-
-            try:
-                async with session_factory() as session:
-                    obligation = (
-                        await session.scalar(
-                            select(
-                                RegistryObligation
-                            ).where(
-                                RegistryObligation.id
-                                == obligation_id
-                            )
-                        )
-                    )
-
-                    assert obligation is not None
-
-                    return (
-                        obligation.status
-                    )
-
-            finally:
-                await engine.dispose()
-
-        assert (
-            asyncio.run(
-                _read_status()
-            )
-            == "exported"
-        )
-
-        actions = (
-            get_mintrud_audit_actions(
-                obligation_id
-            )
-        )
-
-        assert (
-            "admin.mintrud_portal_artifact_prepared"
-            in actions
-        )
-
-    finally:
-        delete_mintrud_test_artifact(
-            artifact_path
-        )
-
-        cleanup_mintrud_fixtures(
-            [
-                fixture,
-            ]
-        )
+    """Real approval and format checks remain; HTTP single creation is now forbidden."""
+    import sys
+    from app.tests.release_single_export_contract import check_single_export_disabled
+    check_single_export_disabled(sys.modules[__name__], "mintrud", "portal-artifact")
 
 
 def test_mintrud_internal_export_rejects_stale_approval() -> None:
@@ -3826,7 +2990,10 @@ def test_mintrud_internal_export_rejects_stale_approval() -> None:
             )
         ).lower()
 
-        assert "stale" in detail
+        assert rejected["detail"]["code"] == "registry.single_export.disabled"
+        # The service must still reject the genuinely stale source independently.
+        from app.tests.release_single_export_contract import assert_stale_approval
+        asyncio.run(assert_stale_approval(obligation_id))
 
         (
             after_status,
@@ -3984,7 +3151,7 @@ def test_mintrud_batch_create_route_commits_and_audits(
     )
 
     batch = SimpleNamespace(
-        id="batch-success",
+        id=str(__import__("uuid").uuid4()),
         registry="mintrud",
         status="exported",
         artifact_kind=(
@@ -4025,6 +3192,16 @@ def test_mintrud_batch_create_route_commits_and_audits(
         def __init__(self):
             self.commit_count = 0
             self.rollback_count = 0
+            self.fence_calls = 0
+
+        async def execute(self, statement, params=None):
+            sql = str(statement).strip()
+            if sql != "SELECT pg_advisory_xact_lock(:fence_key)":
+                raise AssertionError("Unexpected SQL in FakeSession")
+            if not isinstance(params, dict) or not isinstance(params.get("fence_key"), int):
+                raise AssertionError("Invalid advisory fence key")
+            self.fence_calls += 1
+            return None
 
         async def commit(self):
             self.commit_count += 1
@@ -4088,7 +3265,7 @@ def test_mintrud_batch_create_route_commits_and_audits(
     )
 
     assert response_item.id == (
-        "batch-success"
+        batch.id
     )
 
     assert response_item.obligation_count == 2
@@ -4136,6 +3313,7 @@ def test_mintrud_batch_create_route_commits_and_audits(
 
     assert session.commit_count == 1
     assert session.rollback_count == 0
+    assert session.fence_calls == 1
 
 
 def test_mintrud_batch_create_route_rolls_back_and_cleans(
@@ -4164,7 +3342,7 @@ def test_mintrud_batch_create_route_rolls_back_and_cleans(
     )
 
     batch = SimpleNamespace(
-        id="batch-failure",
+        id=str(__import__("uuid").uuid4()),
         registry="mintrud",
         status="exported",
         artifact_kind=(
@@ -4199,6 +3377,16 @@ def test_mintrud_batch_create_route_rolls_back_and_cleans(
         def __init__(self):
             self.commit_count = 0
             self.rollback_count = 0
+            self.fence_calls = 0
+
+        async def execute(self, statement, params=None):
+            sql = str(statement).strip()
+            if sql != "SELECT pg_advisory_xact_lock(:fence_key)":
+                raise AssertionError("Unexpected SQL in FakeSession")
+            if not isinstance(params, dict) or not isinstance(params.get("fence_key"), int):
+                raise AssertionError("Invalid advisory fence key")
+            self.fence_calls += 1
+            return None
 
         async def commit(self):
             self.commit_count += 1
@@ -4274,6 +3462,7 @@ def test_mintrud_batch_create_route_rolls_back_and_cleans(
 
     assert session.commit_count == 0
     assert session.rollback_count == 1
+    assert session.fence_calls == 1
     assert deleted == [
         artifact_path
     ]

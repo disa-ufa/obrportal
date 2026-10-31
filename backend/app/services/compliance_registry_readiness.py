@@ -1519,6 +1519,21 @@ def _evaluate_frdo_readiness(
             )
         )
 
+        # Keep readiness aligned with the XLSX formatter.
+        if (
+            po_document_type
+            == FRDO_PO_DOCUMENT_TYPE_TRAINING_REFERENCE
+        ):
+            _append_issue(
+                issues,
+                code="frdo.po.training_reference_export_unsupported",
+                field="frdo_context.po_document_type",
+                message=(
+                    "FRDO PO training-reference export is not "
+                    "supported by the current XLSX mapping."
+                ),
+            )
+
         if (
             po_document_type
             == FRDO_PO_DOCUMENT_TYPE_ART_CERTIFICATE

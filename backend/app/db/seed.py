@@ -5,6 +5,7 @@ import asyncio
 from sqlalchemy import select
 
 from app.db.session import AsyncSessionLocal
+from app.services.registry_catalog_policy_fence import begin_registry_catalog_policy_fence
 from app.models.organization import Organization  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.role import Permission, Role, RolePermission
@@ -305,6 +306,7 @@ async def ensure_role_permission(session, role: Role, permission: Permission) ->
 
 async def seed() -> None:
     async with AsyncSessionLocal() as session:
+        catalog_fence = await begin_registry_catalog_policy_fence(session=session, mode='exclusive')
         roles_by_code: dict[str, Role] = {}
         permissions_by_code: dict[str, Permission] = {}
 
@@ -332,7 +334,7 @@ async def seed() -> None:
 
         mintrud_sync_result = (
             await sync_mintrud_learn_program_catalog_v109(
-                session
+                session, catalog_fence=catalog_fence
             )
         )
 

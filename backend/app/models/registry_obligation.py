@@ -116,6 +116,13 @@ class RegistryObligation(
         nullable=True,
     )
 
+    # Stable identity of an approval action; distinct from the content hash.
+    # Historical approvals are intentionally NULL until a new approval occurs.
+    approval_event_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+    )
+
     approval_invalidated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

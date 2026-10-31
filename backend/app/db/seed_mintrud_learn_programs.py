@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from app.db.session import AsyncSessionLocal
+from app.services.registry_catalog_policy_fence import begin_registry_catalog_policy_fence
 from app.services.mintrud_learn_programs import (
     sync_mintrud_learn_program_catalog_v109,
 )
@@ -10,9 +11,10 @@ from app.services.mintrud_learn_programs import (
 
 async def seed_mintrud_learn_programs() -> None:
     async with AsyncSessionLocal() as session:
+        catalog_fence = await begin_registry_catalog_policy_fence(session=session, mode='exclusive')
         result = (
             await sync_mintrud_learn_program_catalog_v109(
-                session
+                session, catalog_fence=catalog_fence
             )
         )
 

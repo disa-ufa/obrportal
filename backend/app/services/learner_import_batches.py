@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.services.registry_import_transaction import require_import_scope
 from dataclasses import dataclass, field
 from hashlib import sha256
 from uuid import uuid4
@@ -1364,6 +1365,7 @@ async def apply_learner_import_batch(
     *,
     batch: ImportBatch,
 ) -> LearnerImportApplyResult:
+    import_scope = require_import_scope(db, batch)
     if batch.status == "applied":
         raise ValueError(
             "Learner import batch has already been applied."
@@ -1461,6 +1463,7 @@ async def apply_learner_import_batch(
         learner_role_assigned = False
 
         try:
+            await import_scope.before_savepoint(db, batch, apply_lookups)
             async with db.begin_nested():
                 user, user_conflict = (
                     resolve_learner_import_user(
@@ -1513,6 +1516,7 @@ async def apply_learner_import_batch(
                     ] += 1
                     continue
 
+                import_scope.require_user(user)
                 if user is None:
                     user = User(
                         email=email,
@@ -1673,6 +1677,7 @@ async def apply_learner_import_batch(
                         enrollment is not None
                     )
 
+                    import_scope.require_enrollment(enrollment)
                     if enrollment is None:
                         enrollment = Enrollment(
                             user_id=user_id,

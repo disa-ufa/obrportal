@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import delete, func, or_, select
+import asyncio
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,6 +51,7 @@ from app.schemas.org import (
     OrgUserSearchRoleItem,
 )
 from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 
 
 router = APIRouter(prefix="/org", tags=["org"])
@@ -1379,6 +1381,7 @@ async def create_org_group_enrollments(
         session.add(enrollment)
         created_enrollments.append(enrollment)
 
+    boundary = CompletionPDFTransactionBoundary(session)
     try:
         await session.flush()
         created_ids = [str(enrollment.id) for enrollment in created_enrollments]
@@ -1391,13 +1394,15 @@ async def create_org_group_enrollments(
                     completed_at=payload.completed_at,
                 )
 
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Enrollment already exists",
-        )
+        await boundary.commit()
+    except (Exception, asyncio.CancelledError) as exc:
+        await boundary.compensate(exc)
+        if isinstance(exc, IntegrityError) and not boundary.commit_attempted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Enrollment already exists",
+            )
+        raise
 
     created_rows = await get_org_enrollment_rows_by_ids(created_ids, session)
     created = [build_org_enrollment_item(row) for row in created_rows]

@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from hashlib import sha256
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -128,6 +129,7 @@ def make_obligation(
     return SimpleNamespace(
         id=obligation_id,
         registry=registry,
+        approval_event_id=str(uuid4()),
         approval_snapshot_json=snapshot,
         approval_fingerprint=(
             fingerprint_registry_approval_snapshot(
@@ -178,9 +180,9 @@ class FakeSession:
     ):
         self.execute_count += 1
 
-        return FakeScalarResult(
-            self.rows
-        )
+        entity = statement.column_descriptions[0].get("entity")
+        rows = [] if entity is RegistrySubmissionBatchItem else self.rows
+        return FakeScalarResult(rows)
 
     def add(
         self,
@@ -376,7 +378,7 @@ def test_create_batch_preserves_requested_order_and_snapshots(
         "obligation-2",
     ]
 
-    assert session.execute_count == 1
+    assert session.execute_count == 2
     assert session.flush_count == 1
 
     assert batch.registry == REGISTRY_MINTRUD
@@ -719,27 +721,33 @@ def test_xsd_validation_happens_before_storage_and_persistence(
     assert session.flush_count == 0
 
 
+@pytest.mark.parametrize("flush_kind", ["runtime", "oserror"])
+@pytest.mark.parametrize(
+    "cleanup_mode",
+    ["success", "unconfirmed", "raises_oserror"],
+)
 def test_database_flush_failure_cleans_written_artifact(
-    monkeypatch,
+    monkeypatch, flush_kind, cleanup_mode,
 ):
     snapshot = make_snapshot(
         last_name="Worker",
-        program_ids=(
-            1,
-        ),
+        program_ids=(1,),
     )
-
     obligation = make_obligation(
         "obligation-1",
         snapshot,
     )
 
     session = FakeSession(
-        [
-            obligation
-        ],
+        [obligation],
         fail_flush=True,
     )
+
+    if flush_kind == "oserror":
+        async def fail_flush_with_oserror():
+            raise OSError("forced flush I/O error")
+
+        session.flush = fail_flush_with_oserror
 
     written = []
     deleted = []
@@ -750,58 +758,62 @@ def test_database_flush_failure_cleans_written_artifact(
         noop_current_approval,
     )
 
-    def write_file(
-        storage_path,
-        content,
-    ):
-        written.append(
-            str(storage_path)
-        )
+    def write_file(storage_path, content):
+        written.append(str(storage_path))
+        return str(storage_path)
 
-        return str(
-            storage_path
-        )
+    def delete_file(storage_path):
+        deleted.append(storage_path)
 
-    def delete_file(
-        storage_path,
-    ):
-        deleted.append(
-            storage_path
-        )
+        if cleanup_mode == "raises_oserror":
+            raise OSError("forced cleanup I/O error")
 
-        return True
+        return cleanup_mode == "success"
 
     monkeypatch.setattr(
         batch_service,
         "write_private_storage_file_exclusive",
         write_file,
     )
-
     monkeypatch.setattr(
         batch_service,
         "delete_private_storage_file",
         delete_file,
     )
 
+    if cleanup_mode != "success":
+        expected_exception = RegistrySubmissionBatchError
+        expected_message = "cleanup could not be confirmed"
+    elif flush_kind == "oserror":
+        expected_exception = RegistrySubmissionBatchError
+        expected_message = "artifact storage is unavailable"
+    else:
+        expected_exception = RuntimeError
+        expected_message = "forced flush failure"
+
     with pytest.raises(
-        RuntimeError,
-        match="forced flush failure",
-    ):
+        expected_exception,
+        match=expected_message,
+    ) as caught:
         asyncio.run(
             create_mintrud_registry_submission_batch(
                 session,
-                obligation_ids=[
-                    "obligation-1",
-                ],
-                generated_by_user_id=(
-                    "admin-user"
-                ),
+                obligation_ids=["obligation-1"],
+                generated_by_user_id="admin-user",
             )
         )
 
     assert len(written) == 1
     assert deleted == written
 
+    if cleanup_mode != "success":
+        original_type = (
+            OSError if flush_kind == "oserror" else RuntimeError
+        )
+        assert isinstance(
+            caught.value.__cause__,
+            original_type,
+        )
 
 def test_read_batch_artifact_checks_sha256(
     monkeypatch,
@@ -2255,3 +2267,13 @@ def test_batch_result_is_immutable_after_reconciliation(
         )
 
     assert session.flush_count == 0
+
+
+@pytest.fixture(autouse=True)
+def isolate_transaction_owner_for_business_unit_tests(monkeypatch):
+    # These existing tests exercise serialization/replay/artifact errors with
+    # fake sessions. Real C/S/D/O is qualified in test_registry_step36e_pg.
+    from app.services import registry_batch_transaction
+    async def qualified_test_boundary(*args, **kwargs):
+        return None
+    monkeypatch.setattr(registry_batch_transaction, 'require_batch_transaction', qualified_test_boundary)

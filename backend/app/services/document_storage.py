@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+import errno
+import os
 from mimetypes import guess_type
 
 from pathlib import Path, PurePosixPath
@@ -61,6 +64,35 @@ def write_private_storage_file(
     return safe_relative_path
 
 
+def prepare_durable_artifact_directory(parent: Path) -> Path:
+    """Remember the existing ancestor whose new directory entry needs syncing."""
+    ancestor = parent
+    while not ancestor.exists():
+        ancestor = ancestor.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    return ancestor
+
+
+def sync_artifact_directory_chain(parent: Path, ancestor: Path) -> None:
+    """Persist directory entries bottom-up, including newly created parents.
+
+    Fail closed on unsupported platforms/filesystems. This requests OS/storage
+    durability; it cannot guarantee that the underlying device honors fsync.
+    """
+    if not hasattr(os, "O_DIRECTORY"):
+        raise OSError(errno.ENOTSUP, "Artifact directory fsync is unsupported")
+    directory = parent
+    while True:
+        fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        if directory == ancestor:
+            break
+        directory = directory.parent
+
+
 def write_private_storage_file_exclusive(
     storage_path: str | Path | PurePosixPath,
     content: bytes,
@@ -78,22 +110,27 @@ def write_private_storage_file_exclusive(
             "Invalid document storage path"
         )
 
-    absolute_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    ancestor = prepare_durable_artifact_directory(absolute_path.parent)
 
     created = False
     try:
         with absolute_path.open("xb") as file_handle:
             created = True
-            file_handle.write(content)
+            if file_handle.write(content) != len(content):
+                raise OSError("Registry artifact write was incomplete")
             file_handle.flush()
-    except OSError:
+            os.fsync(file_handle.fileno())
+        sync_artifact_directory_chain(absolute_path.parent, ancestor)
+    except (Exception, asyncio.CancelledError) as exc:
         # The handle is closed before cleanup, including failed buffered flushes.
         # Never remove an artifact that existed before the exclusive open.
         if created:
-            absolute_path.unlink(missing_ok=True)
+            try:
+                absolute_path.unlink(missing_ok=True)
+            except OSError as cleanup_error:
+                if not isinstance(exc, asyncio.CancelledError):
+                    raise
+                exc.add_note(f"Partial artifact cleanup failed: {cleanup_error}")
         raise
 
     return safe_relative_path
@@ -163,3 +200,18 @@ def detect_document_download_metadata(
     )
 
     return media_type, filename
+
+def write_new_private_storage_file(
+    storage_path: str | Path | PurePosixPath,
+    content: bytes,
+) -> str:
+    """Create a new durable file without overwriting existing data.
+
+    Compatibility wrapper for completion-document PDF generation.
+    The established exclusive writer owns partial-write cleanup.
+    Database transaction compensation is handled separately.
+    """
+    return write_private_storage_file_exclusive(
+        storage_path,
+        content,
+    )

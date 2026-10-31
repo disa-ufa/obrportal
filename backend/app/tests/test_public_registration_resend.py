@@ -14,7 +14,29 @@ import app.services.public_registration_rate_limit as rate_limit
 
 from app.core.config import Settings
 from app.core.security import get_password_hash
-from app.db.session import AsyncSessionLocal, engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.pool import NullPool
+
+from app.core.config import settings
+from app.services.registry_session_coordination import RegistryCoordinatedSession
+
+# Dedicated test engine; do not reuse connections across event loops.
+engine = create_async_engine(
+    settings.database_url,
+    echo=False,
+    pool_pre_ping=True,
+    poolclass=NullPool,
+)
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    expire_on_commit=False,
+    class_=AsyncSession,
+    sync_session_class=RegistryCoordinatedSession,
+)
 from app.models.learner_profile import LearnerProfile
 from app.models.role import Role, UserRole
 from app.models.user import User

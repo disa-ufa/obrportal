@@ -30,6 +30,21 @@ REGISTRY_CODES = frozenset(
     }
 )
 
+# Applicability is independent from obligation processing/status.
+# These states classify a registry requirement; they do not approve
+# source data or authorize creating/exporting registry artifacts.
+APPLICABILITY_REQUIRED = "required"
+APPLICABILITY_NOT_REQUIRED = "not_required"
+APPLICABILITY_NEEDS_REVIEW = "needs_review"
+
+APPLICABILITY_STATUSES = frozenset(
+    {
+        APPLICABILITY_REQUIRED,
+        APPLICABILITY_NOT_REQUIRED,
+        APPLICABILITY_NEEDS_REVIEW,
+    }
+)
+
 REQUIREMENT_MODE_AUTO = "auto"
 REQUIREMENT_MODE_REQUIRED = "required"
 REQUIREMENT_MODE_NOT_REQUIRED = "not_required"

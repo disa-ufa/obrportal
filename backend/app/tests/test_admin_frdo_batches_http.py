@@ -17,6 +17,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.models.registry_obligation import RegistryObligation
+from app.services.registry_applicability_db_inputs import (
+    load_current_registry_applicability_inputs,
+)
+from app.services.registry_applicability_writer import (
+    persist_registry_applicability,
+)
 from app.models.registry_submission_batch import (
     RegistrySubmissionBatch,
     RegistrySubmissionBatchItem,
@@ -139,6 +145,48 @@ async def _read_persisted_state(batch_id, obligation_ids):
         await engine.dispose()
 
 
+async def _persist_required_applicability(obligation_ids):
+    engine = create_async_engine(
+        str(settings.database_url),
+        hide_parameters=True,
+    )
+
+    try:
+        factory = async_sessionmaker(
+            engine,
+            expire_on_commit=False,
+        )
+
+        async with factory.begin() as session:
+            for obligation_id in obligation_ids:
+                obligation = await session.get(
+                    RegistryObligation,
+                    obligation_id,
+                )
+
+                assert obligation is not None
+                assert obligation.registry == "frdo"
+                assert obligation.status == "needs_approval"
+
+                current = await load_current_registry_applicability_inputs(
+                    session=session,
+                    obligation=obligation,
+                )
+
+                assert current.evaluation.status == "required", (
+                    "Synthetic FRDO fixture is not applicable: "
+                    + str(current.evaluation.status)
+                )
+
+                await persist_registry_applicability(
+                    session=session,
+                    enrollment_id=obligation.enrollment_id,
+                    evaluation=current.evaluation,
+                    input_fingerprint=current.fingerprint,
+                )
+    finally:
+        await engine.dispose()
+
 def test_frdo_batch_http_lifecycle_and_audit():
     _require_disposable_environment()
 
@@ -155,6 +203,8 @@ def test_frdo_batch_http_lifecycle_and_audit():
         fixture["obligation_id"]
         for fixture in fixtures
     ]
+
+    asyncio.run(_persist_required_applicability(obligation_ids))
 
     admin_token = base.login(
         base.ADMIN_EMAIL,
@@ -510,3 +560,39 @@ def test_frdo_batch_http_lifecycle_and_audit():
     assert actions.count(
         "admin.frdo_submission_batch_results_recorded"
     ) == 2
+
+def test_frdo_batch_without_applicability_returns_409():
+    _require_disposable_environment()
+
+    fixture = base.create_frdo_fixture(
+        with_profile=True,
+        obligation_status="needs_approval",
+    )
+
+    token = base.login(
+        base.ADMIN_EMAIL,
+        base.ADMIN_PASSWORD,
+    )
+
+    approved = _assert_status(
+        _request(
+            "POST",
+            "/api/v1/admin/frdo/obligations/"
+            + fixture["obligation_id"]
+            + "/approve",
+            token=token,
+        ),
+        200,
+    )
+
+    assert approved["status"] == "approved"
+
+    status, data = _request(
+        "POST",
+        BATCH_PATH,
+        {"obligation_ids": [fixture["obligation_id"]]},
+        token=token,
+    )
+
+    assert status == 409, (status, data)
+    assert data.get("detail") == "registry.applicability_missing"
