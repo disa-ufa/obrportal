@@ -1729,21 +1729,56 @@ def create_learner_import_batch_fixture(
 
 
 def test_admin_apply_learner_import_returns_password_setup_invitation_for_new_user() -> None:
-    # Historical positive scenario is forbidden: prove no partial commit.
-    from app.tests.import_boundary_scenarios import live_snapshot
+    # RC2 creates an inactive learner and offers a password-setup invitation.
     token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
-    email = f"import_denied_{uuid4().hex}@test.invalid"
+    email = f"import_invited_{uuid4().hex}@test.invalid"
     batch_id = create_learner_import_batch_fixture(email=email)
-    before = live_snapshot()
-    status, rejected = request_json("POST", f"/api/v1/admin/learner-imports/{batch_id}/apply", token=token)
-    assert status == 409
-    assert rejected["detail"] == "registry.import_new_identity_not_supported"
-    assert live_snapshot() == before  # includes users, enrollments, tokens, rows, audit
-    status, users = request_json("GET", f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}", token=token)
-    assert status == 200 and not any(u["email"] == email for u in users)
-    status, detail = request_json("GET", f"/api/v1/admin/learner-imports/{batch_id}", token=token)
-    assert status == 200 and detail["status"] == "parsed"
-    assert detail["invitations"] == []
+
+    status, applied = request_json(
+        "POST",
+        f"/api/v1/admin/learner-imports/{batch_id}/apply",
+        token=token,
+    )
+    assert status == 200, applied
+    assert isinstance(applied, dict)
+    assert applied["status"] == "applied"
+    assert applied["created_users_count"] == 1
+    assert applied["created_profiles_count"] == 1
+    assert applied["created_enrollments_count"] == 0
+    assert applied["course_notifications"] == []
+    assert len(applied["invitations"]) == 1
+
+    invitation = applied["invitations"][0]
+    assert invitation["email"] == email
+    assert invitation["user_id"]
+    assert invitation["setup_url"].startswith(
+        settings.public_base_url.rstrip("/") + "/set-password?token="
+    )
+    assert invitation["expires_at"]
+
+    status, users = request_json(
+        "GET",
+        f"/api/v1/admin/users?{urlencode({'q': email, 'limit': 20})}",
+        token=token,
+    )
+    assert status == 200
+    matches = [user for user in users if user["email"] == email]
+    assert len(matches) == 1
+    created = matches[0]
+    assert created["id"] == invitation["user_id"]
+    assert created["is_active"] is False
+    assert created["is_email_verified"] is False
+
+    status, detail = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{batch_id}",
+        token=token,
+    )
+    assert status == 200
+    assert detail["status"] == "applied"
+    assert len(detail["rows"]) == 1
+    assert detail["rows"][0]["status"] == "applied"
+    assert detail["rows"][0]["user_id"] == created["id"]
 
 
 def test_admin_can_invite_user_and_user_can_set_password() -> None:
