@@ -134,8 +134,8 @@ def test_real_database_dryrun_apply_idempotence_and_atomic_failure(
             assert await count() == 0
             original = cli.sync_mintrud_learn_program_catalog_v109
 
-            async def fail_after_flush(session, *, dry_run=False):
-                result = await original(session, dry_run=dry_run)
+            async def fail_after_flush(session, *, dry_run=False, catalog_fence=None):
+                result = await original(session, dry_run=dry_run, catalog_fence=catalog_fence)
                 if not dry_run:
                     raise RuntimeError("Simulated failure after database writes")
                 return result

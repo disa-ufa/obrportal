@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import json
 import os
 from uuid import uuid4
@@ -266,6 +267,23 @@ def assert_status(actual: int, expected: int, label: str) -> None:
         raise AssertionError(f"{label}: expected status {expected}, got {actual}")
 
 
+def assert_organization_delete_blocked(organization_id: str, token: str, label: str) -> None:
+    path = f"/api/v1/admin/organizations/{organization_id}"
+    status, before = request_json("GET", path, token=token)
+    assert_status(status, 200, f"{label} before delete")
+    assert isinstance(before, dict)
+
+    # RC2 blocks DELETE until all organization membership writers coordinate.
+    status, rejected = request_json("DELETE", path, token=token)
+    assert_status(status, 409, label)
+    assert isinstance(rejected, dict)
+    assert rejected.get("detail") == "registry.organization_delete_requires_coordinated_writers"
+
+    status, after = request_json("GET", path, token=token)
+    assert_status(status, 200, f"{label} after rejected delete")
+    assert after == before, f"{label}: organization changed after rejected delete"
+
+
 def login(email: str, password: str) -> str:
     status, payload = request_json(
         "POST",
@@ -522,9 +540,50 @@ def main() -> int:
         f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
         token=admin_token,
     )
-    assert_status(status, 400, "admin learner import repeat apply")
+    # The transaction guard rejects an applied batch before any import writes.
+    assert_status(status, 409, "admin learner import repeat apply")
     assert isinstance(repeated_learner_import_apply, dict)
-    checks.append("admin learner import repeat apply returns 400")
+    assert repeated_learner_import_apply.get("detail") == "registry.import_batch_not_parsed"
+    checks.append("admin learner import repeat apply returns 409")
+
+    status, learner_import_after_repeat = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner import detail after repeat apply")
+    assert isinstance(learner_import_after_repeat, dict)
+    for key in (
+        "id", "status", "total_rows", "valid_rows", "invalid_rows",
+        "created_users_count", "updated_users_count",
+        "created_profiles_count", "updated_profiles_count",
+        "created_enrollments_count",
+    ):
+        assert learner_import_after_repeat[key] == applied_learner_import[key], key
+
+    # Compare persisted links; apply-only invitation/outcome fields differ on GET.
+    row_keys = ("id", "row_number", "status", "user_id", "learner_profile_id", "enrollment_id")
+    assert sorted(
+        tuple(row[key] for key in row_keys)
+        for row in learner_import_after_repeat["rows"]
+    ) == sorted(
+        tuple(row[key] for key in row_keys)
+        for row in applied_learner_import_rows
+    )
+
+    status, imported_users_after_repeat = request_json(
+        "GET",
+        "/api/v1/admin/users?q=smoke-import-learner@mail.ru",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin imported learner user search after repeat apply")
+    assert isinstance(imported_users_after_repeat, list)
+    assert [
+        item["id"]
+        for item in imported_users_after_repeat
+        if item.get("email") == "smoke-import-learner@mail.ru"
+    ] == [imported_user_matches[0]["id"]]
+    checks.append("admin learner import repeat apply preserves counts and record links")
 
     status, admin_dashboard_summary = request_json(
         "GET",
@@ -2161,7 +2220,7 @@ def main() -> int:
     status, missing_user_password_reset = request_json(
         "POST",
         "/api/v1/admin/users/00000000-0000-0000-0000-000000000000/password",
-        {"password": "MissingSmoke123!"},
+        {"password": secrets.token_urlsafe(24)},
         token=admin_token,
     )
     assert_status(status, 404, "admin user password reset 404")
@@ -2266,38 +2325,21 @@ def main() -> int:
     checks.append("admin organization update 404 ok")
 
     delete_org_inn = unique_inn()
-    status, deletable_org = request_json(
+    status, unused_org = request_json(
         "POST",
         "/api/v1/admin/organizations",
         {
             "inn": delete_org_inn,
-            "name": f"Smoke deletable organization {delete_org_inn}",
+            "name": f"Smoke unused organization {delete_org_inn}",
         },
         token=admin_token,
     )
     assert_status(status, 201, "admin organization create for delete")
-    assert isinstance(deletable_org, dict)
-    deletable_org_id = str(deletable_org["id"])
-
-    status, deleted_org = request_json(
-        "DELETE",
-        f"/api/v1/admin/organizations/{deletable_org_id}",
-        token=admin_token,
+    assert isinstance(unused_org, dict)
+    assert_organization_delete_blocked(
+        str(unused_org["id"]), admin_token, "admin unused organization delete protected",
     )
-    assert_status(status, 200, "admin organization delete")
-    assert isinstance(deleted_org, dict)
-    assert deleted_org["status"] == "deleted"
-    assert deleted_org["id"] == deletable_org_id
-    checks.append("admin organization delete ok")
-
-    status, deleted_org_detail = request_json(
-        "GET",
-        f"/api/v1/admin/organizations/{deletable_org_id}",
-        token=admin_token,
-    )
-    assert_status(status, 404, "admin deleted organization detail")
-    assert isinstance(deleted_org_detail, dict)
-    checks.append("admin deleted organization detail returns 404")
+    checks.append("admin unused organization delete returns 409 and preserves organization")
 
     created_group_code = unique_group_code()
     status, created_group = request_json(
@@ -2996,14 +3038,10 @@ def main() -> int:
     assert isinstance(duplicate_role_assign, dict)
     checks.append("admin duplicate user role assign returns 409")
 
-    status, assigned_organization_delete = request_json(
-        "DELETE",
-        f"/api/v1/admin/organizations/{created_organization_id}",
-        token=admin_token,
+    assert_organization_delete_blocked(
+        created_organization_id, admin_token, "admin assigned organization delete protected",
     )
-    assert_status(status, 400, "admin assigned organization delete protected")
-    assert isinstance(assigned_organization_delete, dict)
-    checks.append("admin assigned organization delete protected returns 400")
+    checks.append("admin assigned organization delete returns 409 and preserves organization")
 
     status, last_admin_role_remove = request_json(
         "DELETE",
@@ -4013,7 +4051,7 @@ def main() -> int:
         "/api/v1/admin/users",
         {
             "email": f"forbidden-smoke-{uuid4().hex[:10]}@obrportal.local",
-            "password": "ForbiddenSmoke123!",
+            "password": secrets.token_urlsafe(24),
         },
         token=learner_token,
     )
@@ -4023,7 +4061,7 @@ def main() -> int:
     status, _ = request_json(
         "POST",
         f"/api/v1/admin/users/{learner_user_id}/password",
-        {"password": "ForbiddenResetSmoke123!"},
+        {"password": secrets.token_urlsafe(24)},
         token=learner_token,
     )
     assert_status(status, 403, "learner admin user password reset")
@@ -4154,14 +4192,10 @@ def main() -> int:
     assert_status(status, 403, "learner org group update")
     checks.append("learner learning group update returns 403")
 
-    status, deleted_created_org = request_json(
-        "DELETE",
-        f"/api/v1/admin/organizations/{created_organization_id}",
-        token=admin_token,
+    assert_organization_delete_blocked(
+        created_organization_id, admin_token, "admin created organization cleanup delete protected",
     )
-    assert_status(status, 200, "admin created organization cleanup delete")
-    assert isinstance(deleted_created_org, dict)
-    checks.append("admin created organization cleanup delete ok")
+    checks.append("admin created organization cleanup delete returns 409 and preserves organization")
 
     status, _ = request_json(
         "GET",

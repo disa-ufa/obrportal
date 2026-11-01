@@ -1,3 +1,4 @@
+import secrets
 import pytest
 from pydantic import ValidationError
 
@@ -31,14 +32,14 @@ def test_forgot_password_response_requires_accepted_status() -> None:
 def test_reset_password_request_validates_lengths() -> None:
     payload = ResetPasswordRequest(
         token="a" * 32,
-        password="new-password-test-123!",
+        password=secrets.token_urlsafe(24),
     )
     assert len(payload.token) == 32
 
     with pytest.raises(ValidationError):
         ResetPasswordRequest(
             token="short",
-            password="new-password-test-123!",
+            password=secrets.token_urlsafe(24),
         )
 
 

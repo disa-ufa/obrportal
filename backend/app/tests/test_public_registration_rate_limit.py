@@ -1,3 +1,4 @@
+import secrets
 import asyncio
 
 import pytest
@@ -103,7 +104,7 @@ def test_rate_limit_key_does_not_expose_identifier() -> None:
         build_public_registration_rate_limit_key(
             scope=PUBLIC_REGISTRATION_RATE_LIMIT_SCOPE_EMAIL,
             identifier="private@example.test",
-            secret_key="other-test-secret",
+            secret_key=secrets.token_urlsafe(24),
         )
     )
 

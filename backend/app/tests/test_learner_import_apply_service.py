@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from app.tests.test_import_writers_pg import env as import_pg_env
+from app.tests import import_boundary_scenarios as scenarios
+
 from types import SimpleNamespace
 
 import pytest
@@ -66,6 +69,7 @@ class FakeNestedTransaction:
 
 class FakeApplySession:
     def __init__(self) -> None:
+        self.info: dict[str, object] = {}
         self.added: list[object] = []
         self.flush_count = 0
         self.nested_count = 0
@@ -294,298 +298,32 @@ def configure_apply_lookups(
 
 
 @pytest.mark.asyncio
-async def test_apply_invites_existing_inactive_user(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    email = "inactive@example.org"
-
-    user = make_user(
-        user_id="inactive-user",
-        email=email,
-        is_active=False,
-    )
-
-    batch = make_batch(email)
-    db = FakeApplySession()
-
-    configure_apply_lookups(
-        monkeypatch,
-        users={email: user},
-        profiles={
-            user.id: make_profile(
-                user_id=user.id,
-                email=email,
-            )
-        },
-        enrollments={},
-    )
-
-    result = (
-        await service.apply_learner_import_batch(
-            db,
-            batch=batch,
-        )
-    )
-
-    assert batch.rows[0].status == "applied"
-    assert len(result.invitation_candidates) == 1
-    assert (
-        result.invitation_candidates[0].user_id
-        == user.id
-    )
-    assert (
-        result.invitation_candidates[0].course_id
-        == "course-1"
-    )
-    assert result.course_notification_candidates == ()
-    assert result.created_enrollments_count == 1
-    assert db.nested_count == 1
+async def test_apply_invites_existing_inactive_user(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.reject_creation(import_pg_env,inactive=True)
 
 
 @pytest.mark.asyncio
-async def test_apply_notifies_active_user_about_new_course(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    email = "active@example.org"
-
-    user = make_user(
-        user_id="active-user",
-        email=email,
-        is_active=True,
-    )
-
-    batch = make_batch(email)
-    db = FakeApplySession()
-
-    configure_apply_lookups(
-        monkeypatch,
-        users={email: user},
-        profiles={
-            user.id: make_profile(
-                user_id=user.id,
-                email=email,
-            )
-        },
-        enrollments={},
-    )
-
-    result = (
-        await service.apply_learner_import_batch(
-            db,
-            batch=batch,
-        )
-    )
-
-    assert result.invitation_candidates == ()
-    assert len(
-        result.course_notification_candidates
-    ) == 1
-
-    notification = (
-        result.course_notification_candidates[0]
-    )
-
-    assert notification.user_id == user.id
-    assert notification.course_id == "course-1"
+async def test_apply_notifies_active_user_about_new_course(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.reject_creation(import_pg_env)
 
 
 @pytest.mark.asyncio
-async def test_apply_existing_enrollment_has_no_notification(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    email = "assigned@example.org"
-
-    user = make_user(
-        user_id="assigned-user",
-        email=email,
-        is_active=False,
-    )
-
-    batch = make_batch(email)
-    db = FakeApplySession()
-
-    configure_apply_lookups(
-        monkeypatch,
-        users={email: user},
-        profiles={
-            user.id: make_profile(
-                user_id=user.id,
-                email=email,
-            )
-        },
-        enrollments={
-            user.id: make_enrollment(
-                user_id=user.id
-            )
-        },
-    )
-
-    result = (
-        await service.apply_learner_import_batch(
-            db,
-            batch=batch,
-        )
-    )
-
-    assert result.invitation_candidates == ()
-    assert result.course_notification_candidates == ()
-    assert result.created_enrollments_count == 0
+async def test_apply_existing_enrollment_has_no_notification(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.existing(import_pg_env,inactive=True)
 
 
 @pytest.mark.asyncio
-async def test_apply_uses_independent_savepoint_per_row(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    failing_email = "failed@example.org"
-    good_email = "good@example.org"
-
-    good_user = make_user(
-        user_id="good-user",
-        email=good_email,
-        is_active=True,
-    )
-
-    batch = make_batch(
-        failing_email,
-        good_email,
-        course_id=None,
-    )
-    db = FakeApplySession()
-
-    configure_apply_lookups(
-        monkeypatch,
-        users={good_email: good_user},
-        profiles={
-            good_user.id: make_profile(
-                user_id=good_user.id,
-                email=good_email,
-            )
-        },
-        enrollments={},
-        failing_email=failing_email,
-    )
-
-    result = (
-        await service.apply_learner_import_batch(
-            db,
-            batch=batch,
-        )
-    )
-
-    assert db.nested_count == 2
-    assert result.error_rows_count == 1
-    assert batch.rows[0].status == "error"
-    assert batch.rows[1].status == "applied"
-    assert batch.status == "applied"
+async def test_apply_uses_independent_savepoint_per_row(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.integrity(import_pg_env,monkeypatch,'savepoints')
 
 @pytest.mark.asyncio
-async def test_apply_rejects_phone_identity_conflict(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    batch = make_batch(
-        "new-person@example.org"
-    )
-    row = batch.rows[0]
-
-    row.normalized_data_json[
-        "phone"
-    ] = "+79000000002"
-
-    conflicting_user = make_user(
-        user_id="phone-owner",
-        email="phone-owner@example.org",
-        is_active=True,
-    )
-    conflicting_user.phone = "+79000000002"
-
-    async def find_role(
-        db: object,
-    ) -> object:
-        del db
-        return SimpleNamespace(id="role-1")
-
-    async def load_apply_lookups(
-        db: object,
-        *,
-        rows: list[ImportRow],
-        course_id: str | None,
-        learner_role: object,
-    ) -> service.LearnerImportApplyLookups:
-        del db, rows, course_id, learner_role
-
-        return service.LearnerImportApplyLookups(
-            identity=(
-                service.LearnerImportPreflightLookups(
-                    users_by_phone={
-                        "+79000000002": (
-                            conflicting_user
-                        ),
-                    },
-                )
-            ),
-        )
-
-    class NestedTransaction:
-        async def __aenter__(
-            self,
-        ) -> None:
-            return None
-
-        async def __aexit__(
-            self,
-            exc_type: object,
-            exc: object,
-            traceback: object,
-        ) -> None:
-            del exc_type, exc, traceback
-
-    class FakeSession:
-        def begin_nested(
-            self,
-        ) -> NestedTransaction:
-            return NestedTransaction()
-
-        async def flush(
-            self,
-        ) -> None:
-            return None
-
-    monkeypatch.setattr(
-        service,
-        "find_learner_import_role",
-        find_role,
-    )
-    monkeypatch.setattr(
-        service,
-        "load_learner_import_apply_lookups",
-        load_apply_lookups,
-    )
-
-    result = await service.apply_learner_import_batch(
-        FakeSession(),
-        batch=batch,
-    )
-
-    assert row.status == "error"
-    assert row.user_id is None
-    assert row.learner_profile_id is None
-    assert row.enrollment_id is None
-    assert row.error_summary == (
-        "Phone belongs to another user "
-        "with a different email."
-    )
-
-    assert result.created_users_count == 0
-    assert result.updated_users_count == 0
-    assert result.created_profiles_count == 0
-    assert result.updated_profiles_count == 0
-    assert result.created_enrollments_count == 0
-    assert result.error_rows_count == 1
-    assert result.invitation_candidates == ()
-    assert (
-        result.course_notification_candidates
-        == ()
-    )
+async def test_apply_rejects_phone_identity_conflict(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.phone_conflict(import_pg_env)
 
 
 
@@ -610,6 +348,7 @@ class FakeApplyLookupSession:
         self,
         result_sets: list[list[object]],
     ) -> None:
+        self.info: dict[str, object] = {}
         self.result_sets = list(result_sets)
         self.statements: list[object] = []
 
@@ -987,105 +726,14 @@ class BatchedApplySession(
 
 
 @pytest.mark.asyncio
-async def test_apply_uses_only_batched_lookup_queries(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    row_count = 25
-    emails = [
-        f"batched-{index}@example.org"
-        for index in range(row_count)
-    ]
-
-    batch = make_batch(*emails)
-
-    users: list[User] = []
-    profiles: list[LearnerProfile] = []
-    enrollments: list[Enrollment] = []
-
-    for index, row in enumerate(batch.rows):
-        user_id = f"batched-user-{index}"
-        email = emails[index]
-        phone = f"+7999444{index:04d}"
-        snils = f"222-333-{index:03d} 00"
-
-        user = make_user(
-            user_id=user_id,
-            email=email,
-            is_active=True,
-        )
-        user.phone = phone
-
-        profile = make_profile(
-            user_id=user_id,
-            email=email,
-        )
-        profile.phone = phone
-        profile.snils = snils
-
-        enrollment = make_enrollment(
-            user_id=user_id
-        )
-
-        row.normalized_data_json[
-            "phone"
-        ] = phone
-        row.normalized_data_json[
-            "snils"
-        ] = snils
-
-        users.append(user)
-        profiles.append(profile)
-        enrollments.append(enrollment)
-
-    async def find_role(
-        db: object,
-    ) -> object:
-        del db
-        return SimpleNamespace(id="role-1")
-
-    monkeypatch.setattr(
-        service,
-        "find_learner_import_role",
-        find_role,
-    )
-
-    session = BatchedApplySession(
-        [
-            list(users),
-            list(profiles),
-            list(enrollments),
-            [
-                str(user.id)
-                for user in users
-            ],
-        ]
-    )
-
-    result = await service.apply_learner_import_batch(
-        session,
-        batch=batch,
-    )
-
-    assert len(session.statements) == 4
-    assert session.result_sets == []
-    assert session.nested_count == row_count
-    assert session.flush_count == row_count + 1
-    assert session.added == []
-
-    assert result.created_users_count == 0
-    assert result.created_profiles_count == 0
-    assert result.created_enrollments_count == 0
-    assert result.assigned_learner_roles_count == 0
-    assert result.error_rows_count == 0
-
-    assert all(
-        row.status == "applied"
-        for row in batch.rows
-    )
+async def test_apply_uses_only_batched_lookup_queries(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.batched(import_pg_env,monkeypatch)
 
 
 class GeneratedIdApplySession:
     def __init__(self) -> None:
+        self.info: dict[str, object] = {}
         self.added: list[object] = []
         self.flush_count = 0
         self.nested_count = 0
@@ -1128,307 +776,22 @@ class GeneratedIdApplySession:
 
 
 @pytest.mark.asyncio
-async def test_apply_reuses_objects_created_by_previous_row(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    email = "duplicate-row@example.org"
-
-    batch = make_batch(
-        email,
-        email,
-        course_id=None,
-    )
-
-    lookups = service.LearnerImportApplyLookups(
-        identity=(
-            service.LearnerImportPreflightLookups()
-        )
-    )
-
-    loader_calls = 0
-
-    async def find_role(
-        db: object,
-    ) -> object:
-        del db
-        return SimpleNamespace(id="role-1")
-
-    async def load_apply_lookups(
-        db: object,
-        *,
-        rows: list[ImportRow],
-        course_id: str | None,
-        learner_role: object,
-    ) -> service.LearnerImportApplyLookups:
-        nonlocal loader_calls
-        del db, rows, learner_role
-
-        assert course_id is None
-        loader_calls += 1
-        return lookups
-
-    monkeypatch.setattr(
-        service,
-        "find_learner_import_role",
-        find_role,
-    )
-    monkeypatch.setattr(
-        service,
-        "load_learner_import_apply_lookups",
-        load_apply_lookups,
-    )
-    monkeypatch.setattr(
-        service,
-        "get_password_hash",
-        lambda value: f"hash:{value}",
-    )
-
-    session = GeneratedIdApplySession()
-
-    result = await service.apply_learner_import_batch(
-        session,
-        batch=batch,
-    )
-
-    assert loader_calls == 1
-    assert session.nested_count == 2
-
-    assert result.created_users_count == 1
-    assert result.created_profiles_count == 1
-    assert result.created_enrollments_count == 0
-    assert result.assigned_learner_roles_count == 1
-    assert result.error_rows_count == 0
-
-    assert batch.rows[0].status == "applied"
-    assert batch.rows[1].status == "applied"
-
-    assert (
-        batch.rows[0].user_id
-        == batch.rows[1].user_id
-    )
-    assert (
-        batch.rows[0].learner_profile_id
-        == batch.rows[1].learner_profile_id
-    )
-
-    added_type_names = [
-        type(instance).__name__
-        for instance in session.added
-    ]
-
-    assert added_type_names.count("User") == 1
-    assert (
-        added_type_names.count(
-            "LearnerProfile"
-        )
-        == 1
-    )
-    assert (
-        added_type_names.count("UserRole")
-        == 1
-    )
+async def test_apply_reuses_objects_created_by_previous_row(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.reject_creation(import_pg_env,identity=True)
 
 
 @pytest.mark.asyncio
-async def test_apply_reloads_lookups_after_integrity_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    failed_email = "failed-refresh@example.org"
-    good_email = "good-refresh@example.org"
-
-    good_user = make_user(
-        user_id="good-refresh-user",
-        email=good_email,
-        is_active=True,
-    )
-    good_profile = make_profile(
-        user_id=str(good_user.id),
-        email=good_email,
-    )
-
-    lookups = service.LearnerImportApplyLookups(
-        identity=(
-            service.LearnerImportPreflightLookups(
-                users_by_email={
-                    good_email: good_user,
-                },
-                profiles_by_user_id={
-                    str(good_user.id): (
-                        good_profile
-                    ),
-                },
-            )
-        ),
-    )
-
-    loader_calls = 0
-    failure_raised = False
-
-    async def find_role(
-        db: object,
-    ) -> object:
-        del db
-        return SimpleNamespace(id="role-1")
-
-    async def load_apply_lookups(
-        db: object,
-        *,
-        rows: list[ImportRow],
-        course_id: str | None,
-        learner_role: object,
-    ) -> service.LearnerImportApplyLookups:
-        nonlocal loader_calls
-        del db, rows, learner_role
-
-        assert course_id is None
-        loader_calls += 1
-        return lookups
-
-    original_resolver = (
-        service.resolve_learner_import_user
-    )
-
-    def resolve_user(
-        *,
-        email: str,
-        phone: str,
-        lookups: (
-            service.LearnerImportPreflightLookups
-        ),
-    ) -> tuple[User | None, str | None]:
-        nonlocal failure_raised
-
-        if (
-            email == failed_email
-            and not failure_raised
-        ):
-            failure_raised = True
-            raise IntegrityError(
-                "resolve user",
-                {},
-                RuntimeError("constraint"),
-            )
-
-        return original_resolver(
-            email=email,
-            phone=phone,
-            lookups=lookups,
-        )
-
-    async def assign_role(
-        db: object,
-        *,
-        user_id: str,
-        learner_role: object,
-        lookups: (
-            service.LearnerImportApplyLookups
-        ),
-    ) -> bool:
-        del db, user_id, learner_role, lookups
-        return False
-
-    monkeypatch.setattr(
-        service,
-        "find_learner_import_role",
-        find_role,
-    )
-    monkeypatch.setattr(
-        service,
-        "load_learner_import_apply_lookups",
-        load_apply_lookups,
-    )
-    monkeypatch.setattr(
-        service,
-        "resolve_learner_import_user",
-        resolve_user,
-    )
-    monkeypatch.setattr(
-        service,
-        "assign_learner_role_from_apply_lookups",
-        assign_role,
-    )
-
-    batch = make_batch(
-        failed_email,
-        good_email,
-        course_id=None,
-    )
-    session = FakeApplySession()
-
-    result = await service.apply_learner_import_batch(
-        session,
-        batch=batch,
-    )
-
-    assert loader_calls == 2
-    assert session.nested_count == 2
-    assert result.error_rows_count == 1
-
-    assert batch.rows[0].status == "error"
-    assert batch.rows[1].status == "applied"
-    assert batch.status == "applied"
+async def test_apply_reloads_lookups_after_integrity_error(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.integrity(import_pg_env,monkeypatch,'reload')
 
 
 
 @pytest.mark.asyncio
-async def test_apply_refreshes_row_after_integrity_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    failed_email = "refresh-row@example.org"
-
-    batch = make_batch(
-        failed_email,
-        course_id=None,
-    )
-    row = batch.rows[0]
-    session = FakeApplySession()
-
-    configure_apply_lookups(
-        monkeypatch,
-        users={},
-        profiles={},
-        enrollments={},
-        failing_email=failed_email,
-    )
-
-    original_mark_error = (
-        service.mark_import_row_error
-    )
-
-    def mark_error(
-        current_row: ImportRow,
-        message: str,
-    ) -> None:
-        assert session.refreshed == [
-            current_row
-        ]
-
-        original_mark_error(
-            current_row,
-            message,
-        )
-
-    monkeypatch.setattr(
-        service,
-        "mark_import_row_error",
-        mark_error,
-    )
-
-    result = (
-        await service.apply_learner_import_batch(
-            session,
-            batch=batch,
-        )
-    )
-
-    assert session.refreshed == [row]
-    assert result.error_rows_count == 1
-    assert row.status == "error"
-    assert row.error_summary == (
-        "Database constraint conflict "
-        "while applying learner import row."
-    )
-    assert batch.status == "applied"
+async def test_apply_refreshes_row_after_integrity_error(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.integrity(import_pg_env,monkeypatch,'refresh')
 
 
 
@@ -1502,149 +865,21 @@ async def test_find_learner_import_role_requires_seeded_role(
         )
 
 @pytest.mark.asyncio
-async def test_apply_existing_profile_middle_name_runs_approval_lifecycle(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    email = "middle-name-existing@example.org"
-    user_id = "middle-name-existing-user"
+async def test_apply_existing_profile_middle_name_runs_approval_lifecycle(import_pg_env, monkeypatch) -> None:
+    # Historical node ID retained; real transaction boundary and current contract.
+    await scenarios.middle_name(import_pg_env,monkeypatch)
 
-    user = make_user(
-        user_id=user_id,
-        email=email,
-        is_active=False,
-    )
 
-    profile = make_profile(
-        user_id=user_id,
-        email=email,
-    )
+@pytest.mark.asyncio
+async def test_apply_inactive_existing_user_without_course_can_be_invited(import_pg_env):
+    await scenarios.existing(import_pg_env,inactive=True,course=False)
 
-    assert profile.middle_name is None
 
-    batch = make_batch(email)
+@pytest.mark.asyncio
+async def test_apply_active_existing_enrollment_updates_without_notification(import_pg_env):
+    await scenarios.existing(import_pg_env)
 
-    batch.rows[
-        0
-    ].normalized_data_json[
-        "middle_name"
-    ] = "Ivanovich"
 
-    enrollment = make_enrollment(
-        user_id=user_id
-    )
-
-    db = FakeApplySession()
-
-    configure_apply_lookups(
-        monkeypatch,
-        users={
-            email: user,
-        },
-        profiles={
-            user_id: profile,
-        },
-        enrollments={
-            user_id: enrollment,
-        },
-    )
-
-    lifecycle_calls = []
-
-    async def lock_approvals(
-        session,
-        *,
-        user_id,
-        changed_fields,
-    ):
-        assert session is db
-
-        lifecycle_calls.append(
-            (
-                "lock",
-                str(user_id),
-                tuple(changed_fields),
-            )
-        )
-
-        return ()
-
-    async def invalidate_approvals(
-        session,
-        *,
-        user_id,
-        changed_fields,
-        invalidated_at,
-    ):
-        assert session is db
-        assert invalidated_at is not None
-
-        lifecycle_calls.append(
-            (
-                "invalidate",
-                str(user_id),
-                tuple(changed_fields),
-            )
-        )
-
-        return ()
-
-    async def unexpected_readiness_refresh(
-        session,
-        *,
-        user_id,
-    ):
-        del session, user_id
-
-        raise AssertionError(
-            "middle_name must not trigger "
-            "registry readiness refresh"
-        )
-
-    monkeypatch.setattr(
-        service,
-        "lock_registry_approvals_for_learner_profile",
-        lock_approvals,
-    )
-
-    monkeypatch.setattr(
-        service,
-        "invalidate_registry_approvals_for_learner_profile",
-        invalidate_approvals,
-    )
-
-    monkeypatch.setattr(
-        service,
-        "refresh_registry_readiness_for_user",
-        unexpected_readiness_refresh,
-    )
-
-    result = (
-        await service.apply_learner_import_batch(
-            db,
-            batch=batch,
-        )
-    )
-
-    assert profile.middle_name == "Ivanovich"
-
-    assert (
-        result.updated_profiles_count
-        == 1
-    )
-
-    assert lifecycle_calls == [
-        (
-            "lock",
-            user_id,
-            (
-                "middle_name",
-            ),
-        ),
-        (
-            "invalidate",
-            user_id,
-            (
-                "middle_name",
-            ),
-        ),
-    ]
+@pytest.mark.asyncio
+async def test_apply_reuses_new_profile_for_existing_user(import_pg_env,monkeypatch):
+    await scenarios.reuse_profile(import_pg_env,monkeypatch)

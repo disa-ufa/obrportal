@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+import asyncio
+import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -10,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.registry_obligation import RegistryObligation
+from app.services.registry_batch_replay import require_unexported_approval_events
 from app.models.registry_submission_batch import (
     RegistrySubmissionBatch,
     RegistrySubmissionBatchItem,
@@ -69,6 +73,98 @@ REGISTRY_SUBMISSION_BATCH_RESULT_STATUSES = frozenset(
 
 class RegistrySubmissionBatchError(ValueError):
     """Raised when a Mintrud submission batch cannot be prepared."""
+
+
+# Retain timed-out rollback tasks until they finish; never let a late task delete
+# an artifact. The request's compensation deadline does not restart on cancel.
+_batch_rollbacks: set[asyncio.Task] = set()
+_BATCH_ROLLBACK_TIMEOUT = 5.0
+
+
+async def compensate_registry_batch_export(
+    session: AsyncSession,
+    *,
+    artifact_path_to_cleanup: str | None,
+    commit_attempted: bool,
+    original_error: Exception | asyncio.CancelledError,
+    delete_artifact=None,
+    definitely_not_committed: Callable[[], Awaitable[bool]] | None = None,
+) -> None:
+    cancellation = original_error if isinstance(original_error, asyncio.CancelledError) else None
+    failures: list[str] = []
+    rolled_back = False
+    task = asyncio.create_task(session.rollback())
+    _batch_rollbacks.add(task)
+
+    def finished(done):
+        _batch_rollbacks.discard(done)
+        if not done.cancelled():
+            done.exception()  # Consume a late rollback failure after timeout.
+
+    task.add_done_callback(finished)
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + _BATCH_ROLLBACK_TIMEOUT
+    while not task.done():
+        remaining = deadline - loop.time()
+        if remaining <= 0:
+            task.cancel()
+            failures.append("rollback timed out")
+            break
+        try:
+            # asyncio.wait does not cancel the rollback when this task is cancelled.
+            await asyncio.wait({task}, timeout=remaining)
+        except asyncio.CancelledError as exc:
+            if cancellation is None:
+                cancellation = exc
+    if task.done():
+        try:
+            task.result()
+            rolled_back = True
+        except (Exception, asyncio.CancelledError) as exc:
+            failures.append(f"rollback failed: {exc}")
+
+    # Do not infer an uncommitted transaction from a successful rollback alone:
+    # the server may have committed before the client lost the response.
+    # A caller can provide independent *fenced* proof that this exact batch was
+    # NOT committed. The callback is run only after attempting original rollback.
+    # Failed/ambiguous verification never authorizes artifact deletion.
+    if commit_attempted and definitely_not_committed is not None:
+        try:
+            absent = await definitely_not_committed()
+        except (Exception, asyncio.CancelledError) as exc:
+            absent = False
+            if isinstance(exc, asyncio.CancelledError) and cancellation is None:
+                cancellation = exc
+            logging.getLogger(__name__).warning(
+                "Registry batch COMMIT absence could not be proved", exc_info=True
+            )
+        if absent:
+            commit_attempted = False
+            # The independent advisory-lock fence, not rollback(), proves that
+            # the writer transaction has ended without persisting its batch.
+            rolled_back = True
+
+    if artifact_path_to_cleanup and not commit_attempted and rolled_back:
+        delete_artifact = delete_artifact or delete_registry_submission_batch_artifact_safely
+        try:
+            if not delete_artifact(artifact_path_to_cleanup):
+                failures.append("batch artifact cleanup could not be confirmed")
+        except (Exception, asyncio.CancelledError) as exc:
+            if isinstance(exc, asyncio.CancelledError) and cancellation is None:
+                cancellation = exc
+            failures.append(f"batch artifact cleanup raised: {exc}")
+
+    if cancellation is not None:
+        if failures:
+            message = "Registry batch compensation incomplete: " + "; ".join(failures)
+            cancellation.add_note(message)
+            logging.getLogger(__name__).error(message)
+        raise cancellation
+    if failures:
+        raise RuntimeError(
+            "Registry batch compensation incomplete: " + "; ".join(failures)
+            + f"; original failure: {original_error}"
+        ) from original_error
 
 
 def normalize_batch_obligation_ids(
@@ -286,6 +382,30 @@ def delete_registry_submission_batch_artifact_safely(
         return False
 
 
+def _require_mintrud_batch_artifact_cleanup(
+    storage_path: str | None,
+    *,
+    original_error: Exception,
+) -> None:
+    """Make incomplete pre-COMMIT cleanup observable."""
+    if not storage_path:
+        return
+
+    try:
+        removed = delete_registry_submission_batch_artifact_safely(
+            storage_path
+        )
+    except Exception as cleanup_error:
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch artifact cleanup raised: "
+            + str(cleanup_error)
+        ) from original_error
+
+    if not removed:
+        raise RegistrySubmissionBatchError(
+            "Registry submission batch artifact cleanup could not be confirmed"
+        ) from original_error
+
 def read_registry_submission_batch_artifact(
     batch: RegistrySubmissionBatch,
 ) -> bytes:
@@ -362,6 +482,7 @@ async def _load_mintrud_obligations_for_update(
                 obligation_ids
             )
         )
+        .order_by(RegistryObligation.id.asc())
         .with_for_update()
     )
 
@@ -418,6 +539,10 @@ async def create_mintrud_registry_submission_batch(
             generated_by_user_id
         )
     )
+
+    from app.services.registry_batch_transaction import require_batch_transaction
+    await require_batch_transaction(session, registry='mintrud', actor_id=actor_id,
+        obligation_ids=normalized_ids, error_type=RegistrySubmissionBatchError)
 
     obligations = (
         await _load_mintrud_obligations_for_update(
@@ -504,6 +629,14 @@ async def create_mintrud_registry_submission_batch(
         item_record_counts.append(
             item_record_count
         )
+
+    # The complete selection is checked before serialization and any file write.
+    # Hold the obligation locks through this query and the HTTP commit.
+    approval_event_ids = await require_unexported_approval_events(
+        session,
+        obligations=obligations,
+        error_type=RegistrySubmissionBatchError,
+    )
 
     try:
         export_content = (
@@ -607,6 +740,7 @@ async def create_mintrud_registry_submission_batch(
                         position
                     ]
                 ),
+                approval_event_id=approval_event_ids[position],
                 record_count=(
                     item_record_counts[
                         position
@@ -629,6 +763,15 @@ async def create_mintrud_registry_submission_batch(
 
         await session.flush()
 
+    except asyncio.CancelledError as exc:
+        await compensate_registry_batch_export(
+            session,
+            artifact_path_to_cleanup=saved_path,
+            commit_attempted=False,
+            original_error=exc,
+        )
+        raise
+
     except FileExistsError as exc:
         raise RegistrySubmissionBatchError(
             "Registry submission batch artifact "
@@ -636,18 +779,19 @@ async def create_mintrud_registry_submission_batch(
         ) from exc
 
     except OSError as exc:
-        if saved_path:
-            delete_registry_submission_batch_artifact_safely(saved_path)
+        _require_mintrud_batch_artifact_cleanup(
+            saved_path,
+            original_error=exc,
+        )
         raise RegistrySubmissionBatchError(
             "Registry submission batch artifact storage is unavailable"
         ) from exc
 
-    except Exception:
-        if saved_path:
-            delete_registry_submission_batch_artifact_safely(
-                saved_path
-            )
-
+    except Exception as exc:
+        _require_mintrud_batch_artifact_cleanup(
+            saved_path,
+            original_error=exc,
+        )
         raise
 
     return batch

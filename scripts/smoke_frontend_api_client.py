@@ -85,7 +85,7 @@ def main() -> None:
             "const data = text ? JSON.parse(text) : null;",
             "if (!response.ok)",
             "const message = data?.detail || `HTTP ${response.status}`;",
-            "const error = new Error(typeof message === \"string\" ? message : JSON.stringify(message));",
+            "const error = new Error(typeof message === \"string\" ? message : (message?.message || JSON.stringify(message)));",
             "error.status = response.status;",
             "error.payload = data;",
             "throw error;",

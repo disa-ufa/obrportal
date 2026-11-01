@@ -197,7 +197,8 @@ def test_po_training_reference_allows_blank_series_and_number() -> None:
         post_2021_fields=True,
     )
 
-    assert result.is_ready is True
+    assert result.is_ready is False
+    assert "frdo.po.training_reference_export_unsupported" in result.error_codes
 
     assert (
         "document.series_missing"

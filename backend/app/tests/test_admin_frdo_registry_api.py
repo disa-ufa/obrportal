@@ -2734,414 +2734,10 @@ def get_frdo_obligation_approval_fingerprint(
 
 
 def test_frdo_admin_export_preparation_api() -> None:
-    fixture = create_frdo_fixture(
-        with_profile=True,
-        obligation_status="needs_approval",
-    )
-
-    artifact_path = None
-    second_artifact_path = None
-
-    try:
-        admin_token = login(
-            ADMIN_EMAIL,
-            ADMIN_PASSWORD,
-        )
-
-        learner_token = login(
-            LEARNER_EMAIL,
-            LEARNER_PASSWORD,
-        )
-
-        obligation_id = fixture[
-            "obligation_id"
-        ]
-
-        approve_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/approve"
-        )
-
-        status_code, approved = (
-            request_json(
-                "POST",
-                approve_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert (
-            approved["status"]
-            == "approved"
-        )
-        approval_fingerprint = (
-            get_frdo_obligation_approval_fingerprint(
-                obligation_id
-            )
-        )
-
-        assert approval_fingerprint is not None
-        assert len(approval_fingerprint) == 64
-
-        export_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/export"
-        )
-
-        status_code, forbidden = (
-            request_json(
-                "POST",
-                export_path,
-                token=learner_token,
-            )
-        )
-
-        assert status_code == 403
-        assert isinstance(
-            forbidden,
-            dict,
-        )
-
-        status_code, attempt = (
-            request_json(
-                "POST",
-                export_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 201
-        assert isinstance(
-            attempt,
-            dict,
-        )
-
-        assert (
-            attempt[
-                "obligation_id"
-            ]
-            == obligation_id
-        )
-
-        assert attempt[
-            "attempt_no"
-        ] == 1
-
-        assert (
-            attempt["transport"]
-            == "file"
-        )
-
-        assert (
-            attempt[
-                "artifact_kind"
-            ]
-            == "internal-export-package"
-        )
-
-        assert (
-            attempt[
-                "schema_version"
-            ]
-            == (
-                "obrportal-"
-                "registry-export-v1"
-            )
-        )
-
-        assert (
-            attempt[
-                "has_artifact"
-            ]
-            is True
-        )
-
-        assert isinstance(
-            attempt[
-                "artifact_sha256"
-            ],
-            str,
-        )
-
-        assert (
-            len(
-                attempt[
-                    "artifact_sha256"
-                ]
-            )
-            == 64
-        )
-
-        assert (
-            attempt[
-                "submitted_at"
-            ]
-            is None
-        )
-
-        assert (
-            attempt[
-                "result_status"
-            ]
-            is None
-        )
-
-        assert (
-            attempt[
-                "errors_json"
-            ]
-            == []
-        )
-
-        package = attempt[
-            "snapshot_json"
-        ]
-
-        assert (
-            package[
-                "schema_version"
-            ]
-            == (
-                "obrportal-"
-                "registry-export-v1"
-            )
-        )
-
-        assert (
-            package["purpose"]
-            == (
-                "internal-export-package"
-            )
-        )
-
-        assert (
-            package["registry"]
-            == "frdo"
-        )
-
-        assert (
-            package[
-                "obligation"
-            ][
-                "id"
-            ]
-            == obligation_id
-        )
-
-        assert (
-            package[
-                "obligation"
-            ][
-                "enrollment_id"
-            ]
-            == fixture[
-                "enrollment_id"
-            ]
-        )
-
-        assert (
-            package[
-                "obligation"
-            ][
-                "document_id"
-            ]
-            == fixture[
-                "document_id"
-            ]
-        )
-
-        assert (
-            package[
-                "approval"
-            ][
-                "fingerprint"
-            ]
-            == approval_fingerprint
-        )
-
-        assert (
-            package[
-                "approval"
-            ][
-                "snapshot"
-            ][
-                "schema_version"
-            ]
-            == "registry-approval-frdo-v2"
-        )
-
-        attempt_id = attempt["id"]
-
-        artifact_path = (
-            get_frdo_attempt_artifact_path(
-                attempt_id
-            )
-        )
-
-        assert artifact_path is not None
-        assert artifact_path.endswith(
-            ".json"
-        )
-
-        attempts_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/attempts"
-        )
-
-        status_code, attempts = (
-            request_json(
-                "GET",
-                attempts_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert len(attempts) == 1
-        assert (
-            attempts[0]["id"]
-            == attempt_id
-        )
-
-        download_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/attempts/"
-            + attempt_id
-            + "/download"
-        )
-
-        (
-            status_code,
-            body,
-            _headers,
-        ) = request_bytes(
-            "GET",
-            download_path,
-            token=admin_token,
-        )
-
-        assert status_code == 200
-
-        downloaded_package = (
-            json.loads(
-                body.decode(
-                    "utf-8"
-                )
-            )
-        )
-
-        assert (
-            downloaded_package
-            == package
-        )
-
-        status_code, second_attempt = (
-            request_json(
-                "POST",
-                export_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 201
-        assert isinstance(
-            second_attempt,
-            dict,
-        )
-
-        assert (
-            second_attempt[
-                "attempt_no"
-            ]
-            == 2
-        )
-
-        assert (
-            second_attempt[
-                "artifact_kind"
-            ]
-            == "internal-export-package"
-        )
-
-        second_artifact_path = (
-            get_frdo_attempt_artifact_path(
-                second_attempt["id"]
-            )
-        )
-
-        assert (
-            second_artifact_path
-            is not None
-        )
-
-        status_code, attempts = (
-            request_json(
-                "GET",
-                attempts_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert len(attempts) == 2
-
-        assert (
-            attempts[0][
-                "attempt_no"
-            ]
-            == 2
-        )
-
-        assert (
-            attempts[1][
-                "attempt_no"
-            ]
-            == 1
-        )
-
-        assert all(
-            item[
-                "artifact_kind"
-            ]
-            == "internal-export-package"
-            for item in attempts
-        )
-
-        actions = (
-            get_frdo_audit_actions(
-                obligation_id
-            )
-        )
-
-        assert (
-            "admin.frdo_registry_"
-            "export_prepared"
-            in actions
-        )
-
-    finally:
-        delete_frdo_test_artifact(
-            artifact_path
-        )
-
-        delete_frdo_test_artifact(
-            second_artifact_path
-        )
-
-        cleanup_frdo_fixtures(
-            [
-                fixture,
-            ]
-        )
+    """Real approval and format checks remain; HTTP single creation is now forbidden."""
+    import sys
+    from app.tests.release_single_export_contract import check_single_export_disabled
+    check_single_export_disabled(sys.modules[__name__], "frdo", "export")
 
 
 
@@ -3301,384 +2897,16 @@ def count_frdo_registry_submission_attempts(
 
 
 def test_frdo_portal_artifact_working_reference_xlsx_contract() -> None:
-    from hashlib import sha256
+    """Real approval and format checks remain; HTTP single creation is now forbidden."""
+    import sys
+    from app.tests.release_single_export_contract import check_single_export_disabled
+    check_single_export_disabled(sys.modules[__name__], "frdo", "portal-artifact")
 
-    from app.services.compliance_registry_contract import (
-        PROGRAM_TYPE_VOCATIONAL_TRAINING,
-    )
-    from app.services.frdo_po_portal_contract import (
-        FRDO_PO_TEMPLATE_CONTRACT_VERSION,
-        read_verified_frdo_po_template_bytes,
-    )
-    from app.services.frdo_po_xlsx_validator import (
-        validate_frdo_po_xlsx,
-    )
 
+def test_frdo_training_reference_approve_returns_409_without_attempt() -> None:
     fixture = create_frdo_fixture(
         with_profile=True,
         obligation_status="needs_approval",
-    )
-
-    artifact_path = None
-
-    try:
-        admin_token = login(
-            ADMIN_EMAIL,
-            ADMIN_PASSWORD,
-        )
-
-        learner_token = login(
-            LEARNER_EMAIL,
-            LEARNER_PASSWORD,
-        )
-
-        obligation_id = fixture[
-            "obligation_id"
-        ]
-
-        assert (
-            count_frdo_registry_submission_attempts(
-                obligation_id
-            )
-            == 0
-        )
-
-        approve_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/approve"
-        )
-
-        status_code, approved = (
-            request_json(
-                "POST",
-                approve_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert isinstance(
-            approved,
-            dict,
-        )
-        assert (
-            approved["status"]
-            == "approved"
-        )
-
-        approval_fingerprint = (
-            get_frdo_obligation_approval_fingerprint(
-                obligation_id
-            )
-        )
-
-        assert approval_fingerprint is not None
-        assert len(
-            approval_fingerprint
-        ) == 64
-
-        portal_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/portal-artifact"
-        )
-
-        status_code, forbidden = (
-            request_json(
-                "POST",
-                portal_path,
-                token=learner_token,
-            )
-        )
-
-        assert status_code == 403
-        assert isinstance(
-            forbidden,
-            dict,
-        )
-
-        assert (
-            count_frdo_registry_submission_attempts(
-                obligation_id
-            )
-            == 0
-        )
-
-        status_code, attempt = (
-            request_json(
-                "POST",
-                portal_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 201
-        assert isinstance(
-            attempt,
-            dict,
-        )
-
-        assert (
-            attempt["obligation_id"]
-            == obligation_id
-        )
-
-        assert (
-            attempt["attempt_no"]
-            == 1
-        )
-
-        assert (
-            attempt["artifact_kind"]
-            == "portal-upload-artifact"
-        )
-
-        assert (
-            attempt["transport"]
-            == "file"
-        )
-
-        assert (
-            attempt["schema_version"]
-            == FRDO_PO_TEMPLATE_CONTRACT_VERSION
-        )
-
-        assert (
-            attempt["has_artifact"]
-            is True
-        )
-
-        artifact_sha256 = attempt[
-            "artifact_sha256"
-        ]
-
-        assert isinstance(
-            artifact_sha256,
-            str,
-        )
-        assert len(
-            artifact_sha256
-        ) == 64
-
-        assert (
-            attempt["submitted_at"]
-            is None
-        )
-        assert (
-            attempt["result_status"]
-            is None
-        )
-
-        snapshot = attempt[
-            "snapshot_json"
-        ]
-
-        assert isinstance(
-            snapshot,
-            dict,
-        )
-        assert (
-            snapshot["registry"]
-            == "frdo"
-        )
-
-        artifact_path = (
-            get_frdo_attempt_artifact_path(
-                attempt["id"]
-            )
-        )
-
-        assert artifact_path is not None
-        assert artifact_path.endswith(
-            ".xlsx"
-        )
-
-        download_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/attempts/"
-            + attempt["id"]
-            + "/download"
-        )
-
-        (
-            download_status,
-            xlsx_content,
-            headers,
-        ) = request_bytes(
-            "GET",
-            download_path,
-            token=admin_token,
-        )
-
-        assert download_status == 200
-        assert isinstance(
-            xlsx_content,
-            bytes,
-        )
-        assert xlsx_content.startswith(
-            b"PK"
-        )
-
-        assert (
-            sha256(
-                xlsx_content
-            ).hexdigest()
-            == artifact_sha256
-        )
-
-        disposition = next(
-            (
-                value
-                for key, value
-                in headers.items()
-                if key.lower()
-                == "content-disposition"
-            ),
-            "",
-        )
-
-        assert (
-            "attachment"
-            in disposition.lower()
-        )
-        assert (
-            ".xlsx"
-            in disposition.lower()
-        )
-
-        validate_frdo_po_xlsx(
-            content=xlsx_content,
-            approval_snapshot=snapshot,
-            template_bytes=(
-                read_verified_frdo_po_template_bytes(
-                    program_type=(
-                        PROGRAM_TYPE_VOCATIONAL_TRAINING
-                    ),
-                )
-            ),
-        )
-
-        assert (
-            count_frdo_registry_submission_attempts(
-                obligation_id
-            )
-            == 1
-        )
-
-        status_code, attempts = (
-            request_json(
-                "GET",
-                (
-                    "/api/v1/admin/"
-                    "frdo/obligations/"
-                    + obligation_id
-                    + "/attempts"
-                ),
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 200
-        assert isinstance(
-            attempts,
-            list,
-        )
-        assert len(
-            attempts
-        ) == 1
-        assert (
-            attempts[0]["id"]
-            == attempt["id"]
-        )
-
-        async def _read_status():
-            engine = create_async_engine(
-                str(
-                    settings.database_url
-                )
-            )
-
-            session_factory = (
-                async_sessionmaker(
-                    engine,
-                    expire_on_commit=False,
-                )
-            )
-
-            try:
-                async with session_factory() as session:
-                    obligation = (
-                        await session.scalar(
-                            select(
-                                RegistryObligation
-                            ).where(
-                                RegistryObligation.id
-                                == obligation_id
-                            )
-                        )
-                    )
-
-                    assert obligation is not None
-
-                    return obligation.status
-            finally:
-                await engine.dispose()
-
-        assert (
-            asyncio.run(
-                _read_status()
-            )
-            == "exported"
-        )
-
-        status_code, missing = (
-            request_json(
-                "POST",
-                (
-                    "/api/v1/admin/"
-                    "frdo/obligations/"
-                    "00000000-0000-0000-"
-                    "0000-000000000000/"
-                    "portal-artifact"
-                ),
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 404
-        assert isinstance(
-            missing,
-            dict,
-        )
-
-        assert (
-            count_frdo_registry_submission_attempts(
-                obligation_id
-            )
-            == 1
-        )
-
-    finally:
-        delete_frdo_test_artifact(
-            artifact_path
-        )
-
-        cleanup_frdo_fixtures(
-            [
-                fixture,
-            ]
-        )
-
-
-def test_frdo_portal_artifact_training_reference_gap_returns_409_without_attempt() -> None:
-    fixture = create_frdo_fixture(
-        with_profile=True,
-        obligation_status="pending_data",
     )
 
     try:
@@ -3719,8 +2947,7 @@ def test_frdo_portal_artifact_training_reference_gap_returns_409_without_attempt
             dict,
         )
         assert (
-            updated["status"]
-            == "ready"
+            updated["status"] == "needs_approval"
         )
 
         approve_path = (
@@ -3738,14 +2965,27 @@ def test_frdo_portal_artifact_training_reference_gap_returns_409_without_attempt
             )
         )
 
-        assert status_code == 200
+        assert status_code == 409
         assert isinstance(
             approved,
             dict,
         )
         assert (
-            approved["status"]
-            == "approved"
+            'frdo.po.training_reference_export_unsupported'
+            in {
+                item.get('code')
+                for item in updated.get('readiness_errors', [])
+                if isinstance(item, dict)
+            }
+        )
+        assert isinstance(approved.get('detail'), dict)
+        issues = approved['detail'].get('issues')
+        assert isinstance(issues, list)
+        assert any(
+            isinstance(item, dict)
+            and item.get('code') == 'frdo.po.training_reference_export_unsupported'
+            and item.get('field') == 'frdo_context.po_document_type'
+            for item in issues
         )
 
         assert (
@@ -3755,45 +2995,11 @@ def test_frdo_portal_artifact_training_reference_gap_returns_409_without_attempt
             == 0
         )
 
-        portal_path = (
-            "/api/v1/admin/"
-            "frdo/obligations/"
-            + obligation_id
-            + "/portal-artifact"
-        )
-
-        status_code, rejected = (
-            request_json(
-                "POST",
-                portal_path,
-                token=admin_token,
-            )
-        )
-
-        assert status_code == 409
-        assert isinstance(
-            rejected,
-            dict,
-        )
-
-        detail = str(
-            rejected.get(
-                "detail",
-                "",
-            )
-        )
-
         assert (
-            "training_reference_"
-            "art_preprofessional_profession"
-            in detail
-        )
-
-        assert (
-            count_frdo_registry_submission_attempts(
+            get_frdo_obligation_approval_fingerprint(
                 obligation_id
             )
-            == 0
+            is None
         )
 
         async def _read_status():
@@ -3831,7 +3037,7 @@ def test_frdo_portal_artifact_training_reference_gap_returns_409_without_attempt
             asyncio.run(
                 _read_status()
             )
-            == "approved"
+            == "needs_approval"
         )
 
         actions = get_frdo_audit_actions(
@@ -3970,7 +3176,10 @@ def test_frdo_portal_artifact_rejects_stale_approval_without_attempt() -> None:
             )
         ).lower()
 
-        assert "stale" in detail
+        assert rejected["detail"]["code"] == "registry.single_export.disabled"
+        # The service must still reject the genuinely stale source independently.
+        from app.tests.release_single_export_contract import assert_stale_approval
+        asyncio.run(assert_stale_approval(obligation_id))
 
         assert (
             count_frdo_registry_submission_attempts(
@@ -4210,7 +3419,10 @@ def test_frdo_internal_export_rejects_stale_approval() -> None:
             )
         ).lower()
 
-        assert "stale" in detail
+        assert rejected["detail"]["code"] == "registry.single_export.disabled"
+        # The service must still reject the genuinely stale source independently.
+        from app.tests.release_single_export_contract import assert_stale_approval
+        asyncio.run(assert_stale_approval(obligation_id))
 
         (
             after_status,

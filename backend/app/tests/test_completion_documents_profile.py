@@ -148,7 +148,7 @@ def test_write_completion_pdf_uses_profile_name(
     )
     monkeypatch.setattr(
         service,
-        "write_private_storage_file",
+        "write_new_private_storage_file",
         write,
     )
 

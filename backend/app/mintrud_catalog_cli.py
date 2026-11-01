@@ -23,6 +23,7 @@ from app.mintrud_learn_program_catalog import (
 )
 from app.models.mintrud_learn_program import MintrudLearnProgram
 from app.services.mintrud_learn_programs import sync_mintrud_learn_program_catalog_v109
+from app.services.registry_catalog_policy_fence import begin_registry_catalog_policy_fence
 
 
 class CatalogOperationError(ValueError):
@@ -90,6 +91,7 @@ async def operate(
     engine = create_async_engine(
         url,
         hide_parameters=True,
+        isolation_level="READ COMMITTED" if apply else "REPEATABLE READ",
         connect_args={
             "server_settings": {
                 "default_transaction_read_only": "off" if apply else "on",
@@ -99,11 +101,14 @@ async def operate(
         },
     )
     try:
-        async with engine.connect() as connection:
-            await connection.execution_options(
-                isolation_level="READ COMMITTED" if apply else "REPEATABLE READ"
-            )
-            transaction = await connection.begin()
+        async with AsyncSession(bind=engine, autoflush=False, expire_on_commit=False) as session:
+            catalog_fence = None
+            if apply:
+                catalog_fence = await begin_registry_catalog_policy_fence(session=session, mode='exclusive')
+                transaction = session.get_transaction()
+            else:
+                transaction = await session.begin()
+            connection = await session.connection()
             try:
                 if apply:
                     # Serializes syncs and course mapping writes; fails promptly under contention.
@@ -131,87 +136,84 @@ async def operate(
                     raise CatalogOperationError(
                         "Database schema does not match this release"
                     )
-                async with AsyncSession(
-                    bind=connection, autoflush=False, expire_on_commit=False
-                ) as session:
-                    rows = list(
-                        (
-                            await session.scalars(
-                                select(MintrudLearnProgram).order_by(
-                                    MintrudLearnProgram.id
-                                )
+                rows = list(
+                    (
+                        await session.scalars(
+                            select(MintrudLearnProgram).order_by(
+                                MintrudLearnProgram.id
                             )
-                        ).all()
-                    )
-                    validate_rows(rows)
-                    links = [
-                        tuple(row)
-                        for row in (
-                            await connection.execute(
-                                text(
-                                    "SELECT course_id, mintrud_learn_program_id FROM course_mintrud_learn_programs ORDER BY course_id, mintrud_learn_program_id"
-                                )
-                            )
-                        ).all()
-                    ]
-                    canonical = {
-                        p.learn_program_id: p
-                        for p in MINTRUD_LEARN_PROGRAM_CATALOG_V109
-                    }
-                    changed = {
-                        p.id
-                        for p in rows
-                        if p.title != canonical[p.learn_program_id].title
-                        or p.is_active is not True
-                    }
-                    if changed & {p[1] for p in links}:
-                        raise CatalogOperationError(
-                            "Referenced programs require a separate approval invalidation plan"
                         )
-                    plan = await sync_mintrud_learn_program_catalog_v109(
-                        session, dry_run=True
+                    ).all()
+                )
+                validate_rows(rows)
+                links = [
+                    tuple(row)
+                    for row in (
+                        await connection.execute(
+                            text(
+                                "SELECT course_id, mintrud_learn_program_id FROM course_mintrud_learn_programs ORDER BY course_id, mintrud_learn_program_id"
+                            )
+                        )
+                    ).all()
+                ]
+                canonical = {
+                    p.learn_program_id: p
+                    for p in MINTRUD_LEARN_PROGRAM_CATALOG_V109
+                }
+                changed = {
+                    p.id
+                    for p in rows
+                    if p.title != canonical[p.learn_program_id].title
+                    or p.is_active is not True
+                }
+                if changed & {p[1] for p in links}:
+                    raise CatalogOperationError(
+                        "Referenced programs require a separate approval invalidation plan"
                     )
-                    state = {
-                        "host": url.host,
-                        "port": url.port or 5432,
-                        "database": url.database,
-                        "revisions": revisions,
-                        "canonical": [asdict(p) for p in canonical.values()],
-                        "existing": [
-                            {
-                                k: getattr(p, k)
-                                for k in (
-                                    "id",
-                                    "learn_program_id",
-                                    "code",
-                                    "title",
-                                    "schema_version",
-                                    "is_active",
-                                )
-                            }
-                            for p in rows
-                        ],
-                        "links": links,
-                        "counts": asdict(plan),
-                    }
-                    digest = sha256(
-                        json.dumps(
-                            state,
-                            ensure_ascii=False,
-                            sort_keys=True,
-                            separators=(",", ":"),
-                        ).encode()
-                    ).hexdigest()
-                    if apply:
-                        if not confirmed_plan or confirmed_plan != digest:
-                            raise CatalogOperationError(
-                                "Plan changed or confirmation missing; run dry-run again"
+                plan = await sync_mintrud_learn_program_catalog_v109(
+                    session, dry_run=True
+                )
+                state = {
+                    "host": url.host,
+                    "port": url.port or 5432,
+                    "database": url.database,
+                    "revisions": revisions,
+                    "canonical": [asdict(p) for p in canonical.values()],
+                    "existing": [
+                        {
+                            k: getattr(p, k)
+                            for k in (
+                                "id",
+                                "learn_program_id",
+                                "code",
+                                "title",
+                                "schema_version",
+                                "is_active",
                             )
-                        actual = await sync_mintrud_learn_program_catalog_v109(session)
-                        if actual != plan:
-                            raise CatalogOperationError(
-                                "Applied counts differ from confirmed plan"
-                            )
+                        }
+                        for p in rows
+                    ],
+                    "links": links,
+                    "counts": asdict(plan),
+                }
+                digest = sha256(
+                    json.dumps(
+                        state,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode()
+                ).hexdigest()
+                if apply:
+                    if not confirmed_plan or confirmed_plan != digest:
+                        raise CatalogOperationError(
+                            "Plan changed or confirmation missing; run dry-run again"
+                        )
+                    actual = await sync_mintrud_learn_program_catalog_v109(session, catalog_fence=catalog_fence)
+                    if actual != plan:
+                        raise CatalogOperationError(
+                            "Applied counts differ from confirmed plan"
+                        )
                 if apply:
                     await transaction.commit()
                 else:
@@ -225,7 +227,7 @@ async def operate(
                     "committed": apply,
                     "external_requests": 0,
                 }
-            except Exception:
+            except BaseException:
                 if transaction.is_active:
                     await transaction.rollback()
                 raise

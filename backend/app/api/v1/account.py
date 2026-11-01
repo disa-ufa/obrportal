@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
+
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
@@ -15,6 +18,7 @@ from app.api.v1.auth import (
     write_audit_event,
 )
 from app.db.session import get_db
+from app.services.registry_document_transaction import (get_registry_document_db, require_registry_profile_user, lock_profile_sources)
 from app.models.assignment_submission import AssignmentSubmission
 from app.models.course import Course
 from app.models.course_lesson import CourseLesson
@@ -29,6 +33,14 @@ from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
 from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
+from app.services.registry_action_lockset import (
+    RegistryActionLockError,
+    RegistrySourceFence,
+)
+from app.services.registry_source_write_scope import (
+    acquire_discovered_registry_source_write_scope,
+)
 from app.services.learner_profile_fields import (
     is_valid_learner_email,
     is_valid_learner_phone,
@@ -77,6 +89,75 @@ from app.services.compliance_registry_approval_invalidation import (
     invalidate_registry_approvals_for_learner_profile,
     lock_registry_approvals_for_learner_profile,
 )
+
+
+
+@asynccontextmanager
+async def _account_registry_source_write_transaction(
+    *,
+    enrollment_id: str,
+    current_user: User,
+    session: AsyncSession,
+    boundary: CompletionPDFTransactionBoundary | None = None,
+):
+    """Acquire registry fences before source row locks or writes.
+
+    The caller owns the commit. Every failure must roll back,
+    including cancellation and failure while acquiring locks.
+    """
+    try:
+        with session.no_autoflush:
+            enrollment = await get_account_enrollment_entity_or_404(
+                enrollment_id=enrollment_id,
+                current_user=current_user,
+                session=session,
+                for_update=False,
+            )
+
+            await acquire_discovered_registry_source_write_scope(
+                session=session,
+                roots=(
+                    RegistrySourceFence(
+                        "enrollment",
+                        str(enrollment.id),
+                    ),
+                ),
+            )
+
+            # The initial read may be stale after waiting on locks.
+            # Refresh and lock the enrollment only after source fences.
+            await session.refresh(
+                enrollment,
+                with_for_update=True,
+            )
+
+            if str(enrollment.user_id) != str(current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found",
+                )
+
+        yield enrollment
+
+    except RegistryActionLockError as exc:
+        if boundary is None:
+            await session.rollback()
+        else:
+            await boundary.compensate(exc)
+            if boundary.commit_attempted:
+                raise
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    except (Exception, asyncio.CancelledError) as exc:
+        if boundary is None:
+            await session.rollback()
+        else:
+            await boundary.compensate(exc)
+        raise
+
 
 
 router = APIRouter(prefix="/account", tags=["account"])
@@ -364,9 +445,10 @@ async def get_account_learner_profile(
 async def update_account_learner_profile(
     payload: AccountLearnerProfileUpdateRequest,
     request: Request,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_registry_profile_user),
+    session: AsyncSession = Depends(get_registry_document_db),
 ) -> AccountLearnerProfileResponse:
+    await lock_profile_sources(session=session, user=current_user)
     profile = await load_account_learner_profile(
         session,
         user_id=str(current_user.id),
@@ -2226,123 +2308,121 @@ async def complete_account_course_lesson(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> AccountCourseDetailResponse:
-    enrollment = await get_account_enrollment_entity_or_404(
+    boundary = CompletionPDFTransactionBoundary(session)
+    async with _account_registry_source_write_transaction(
         enrollment_id=enrollment_id,
         current_user=current_user,
         session=session,
-        for_update=True,
-    )
+        boundary=boundary,
+    ) as enrollment:
 
-    await ensure_account_learning_mutation_allowed(
-        enrollment,
-        session,
-    )
-
-    lesson_result = await session.execute(
-        select(CourseLesson)
-        .join(CourseModule, CourseModule.id == CourseLesson.module_id)
-        .where(
-            CourseLesson.id == lesson_id.strip(),
-            CourseLesson.is_active.is_(True),
-            CourseModule.is_active.is_(True),
-            CourseModule.course_id == enrollment.course_id,
-        )
-    )
-    lesson = lesson_result.scalar_one_or_none()
-
-    if lesson is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lesson not found in this course",
+        await ensure_account_learning_mutation_allowed(
+            enrollment,
+            session,
         )
 
-    missing_required_quiz_block_ids = await get_missing_required_quiz_block_ids(
-        session,
-        enrollment_id=str(enrollment.id),
-        lesson_id=str(lesson.id),
-    )
+        lesson_result = await session.execute(
+            select(CourseLesson)
+            .join(CourseModule, CourseModule.id == CourseLesson.module_id)
+            .where(
+                CourseLesson.id == lesson_id.strip(),
+                CourseLesson.is_active.is_(True),
+                CourseModule.is_active.is_(True),
+                CourseModule.course_id == enrollment.course_id,
+            )
+        )
+        lesson = lesson_result.scalar_one_or_none()
 
-    if missing_required_quiz_block_ids:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "required_quiz_not_passed",
-                "message": "Required quiz is not passed",
-                "block_ids": missing_required_quiz_block_ids,
-            },
+        if lesson is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lesson not found in this course",
+            )
+
+        missing_required_quiz_block_ids = await get_missing_required_quiz_block_ids(
+            session,
+            enrollment_id=str(enrollment.id),
+            lesson_id=str(lesson.id),
         )
 
-    missing_required_assignment_block_ids = await get_missing_required_assignment_block_ids(
-        session,
-        enrollment_id=str(enrollment.id),
-        lesson_id=str(lesson.id),
-    )
+        if missing_required_quiz_block_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "required_quiz_not_passed",
+                    "message": "Required quiz is not passed",
+                    "block_ids": missing_required_quiz_block_ids,
+                },
+            )
 
-    if missing_required_assignment_block_ids:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "required_assignment_not_completed",
-                "message": "Required assignment is not completed",
-                "block_ids": missing_required_assignment_block_ids,
-            },
+        missing_required_assignment_block_ids = await get_missing_required_assignment_block_ids(
+            session,
+            enrollment_id=str(enrollment.id),
+            lesson_id=str(lesson.id),
         )
 
-    now = datetime.now(timezone.utc)
+        if missing_required_assignment_block_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "required_assignment_not_completed",
+                    "message": "Required assignment is not completed",
+                    "block_ids": missing_required_assignment_block_ids,
+                },
+            )
+
+        now = datetime.now(timezone.utc)
 
 
 
-    if enrollment.started_at is None:
-        enrollment.started_at = now
+        if enrollment.started_at is None:
+            enrollment.started_at = now
 
-    progress_result = await session.execute(
-        select(LessonProgress).where(
-            LessonProgress.enrollment_id == enrollment.id,
-            LessonProgress.lesson_id == lesson.id,
+        progress_result = await session.execute(
+            select(LessonProgress).where(
+                LessonProgress.enrollment_id == enrollment.id,
+                LessonProgress.lesson_id == lesson.id,
+            )
         )
-    )
-    progress = progress_result.scalar_one_or_none()
+        progress = progress_result.scalar_one_or_none()
 
-    if progress is None:
-        progress = LessonProgress(
-            enrollment_id=enrollment.id,
-            lesson_id=lesson.id,
-            status="completed",
-            completed_at=now,
+        if progress is None:
+            progress = LessonProgress(
+                enrollment_id=enrollment.id,
+                lesson_id=lesson.id,
+                status="completed",
+                completed_at=now,
+            )
+            session.add(progress)
+        else:
+            progress.status = "completed"
+
+            if progress.completed_at is None:
+                progress.completed_at = now
+
+        await session.flush()
+
+        completion_modules = await load_account_course_modules(
+            session,
+            str(enrollment.course_id),
+            enrollment_id=str(enrollment.id),
         )
-        session.add(progress)
-    else:
-        progress.status = "completed"
-
-        if progress.completed_at is None:
-            progress.completed_at = now
-
-    await session.flush()
-
-    completion_modules = await load_account_course_modules(
-        session,
-        str(enrollment.course_id),
-        enrollment_id=str(enrollment.id),
-    )
-    completion_progress = calculate_account_course_progress(
-        completion_modules
-    )
-
-    if (
-        completion_progress["required_lessons_total"] > 0
-        and completion_progress["required_lessons_completed"]
-        >= completion_progress["required_lessons_total"]
-    ):
-        await ensure_enrollment_completed(
-            enrollment=enrollment,
-            session=session,
-            completed_at=now,
+        completion_progress = calculate_account_course_progress(
+            completion_modules
         )
 
-    try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
+        if (
+            completion_progress["required_lessons_total"] > 0
+            and completion_progress["required_lessons_completed"]
+            >= completion_progress["required_lessons_total"]
+        ):
+            await ensure_enrollment_completed(
+                enrollment=enrollment,
+                session=session,
+                completed_at=now,
+            )
+
+        await boundary.commit()
 
     row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
     modules = await load_account_course_modules(
@@ -2519,40 +2599,41 @@ async def complete_account_course_learning(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> AccountCourseItemResponse:
-    enrollment = await get_account_enrollment_entity_or_404(
+    boundary = CompletionPDFTransactionBoundary(session)
+    async with _account_registry_source_write_transaction(
         enrollment_id=enrollment_id,
         current_user=current_user,
         session=session,
-        for_update=True,
-    )
+        boundary=boundary,
+    ) as enrollment:
 
-    await ensure_account_learning_mutation_allowed(
-        enrollment,
-        session,
-    )
-
-    modules = await load_account_course_modules(
-        session,
-        str(enrollment.course_id),
-        enrollment_id=str(enrollment.id),
-    )
-    progress = calculate_account_course_progress(modules)
-
-    if (
-        progress["required_lessons_total"] > 0
-        and progress["required_lessons_completed"] < progress["required_lessons_total"]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Complete required lessons before completing course",
+        await ensure_account_learning_mutation_allowed(
+            enrollment,
+            session,
         )
 
-    await ensure_enrollment_completed(
-        enrollment=enrollment,
-        session=session,
-    )
+        modules = await load_account_course_modules(
+            session,
+            str(enrollment.course_id),
+            enrollment_id=str(enrollment.id),
+        )
+        progress = calculate_account_course_progress(modules)
 
-    await session.commit()
+        if (
+            progress["required_lessons_total"] > 0
+            and progress["required_lessons_completed"] < progress["required_lessons_total"]
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Complete required lessons before completing course",
+            )
+
+        await ensure_enrollment_completed(
+            enrollment=enrollment,
+            session=session,
+        )
+
+        await boundary.commit()
 
     row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
 

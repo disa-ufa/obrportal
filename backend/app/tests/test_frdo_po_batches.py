@@ -53,7 +53,16 @@ class FakeSession:
         self.flush_calls = 0
 
     async def execute(self, statement):
-        return FakeResult(self.rows)
+        descriptions = getattr(statement, "column_descriptions", ())
+        if len(descriptions) != 1:
+            raise AssertionError("Unexpected query shape")
+        entity = descriptions[0].get("entity")
+        entity_name = getattr(entity, "__name__", None)
+        if entity_name == "RegistrySubmissionBatchItem":
+            return FakeResult([])
+        if entity_name == "RegistryObligation":
+            return FakeResult(self.rows)
+        raise AssertionError("Unexpected entity in FakeSession")
 
     def add(self, batch):
         self.batch = batch
@@ -88,6 +97,7 @@ def make_obligation(index):
     return SimpleNamespace(
         id="obligation-" + str(index),
         registry="frdo",
+        approval_event_id=str(__import__("uuid").uuid4()),
         status="approved",
         approval_snapshot_json=snapshot,
         approval_fingerprint=(
@@ -610,3 +620,13 @@ def test_frdo_real_partial_file_failure_cleans_artifact(
 
     assert not target.exists()
     assert not list(tmp_path.rglob("*.xlsx"))
+
+
+@pytest.fixture(autouse=True)
+def isolate_transaction_owner_for_business_unit_tests(monkeypatch):
+    # These existing tests exercise serialization/replay/artifact errors with
+    # fake sessions. Real C/S/D/O is qualified in test_registry_step36e_pg.
+    from app.services import registry_batch_transaction
+    async def qualified_test_boundary(*args, **kwargs):
+        return None
+    monkeypatch.setattr(registry_batch_transaction, 'require_batch_transaction', qualified_test_boundary)

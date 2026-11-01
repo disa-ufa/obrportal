@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import pytest
 from pydantic import ValidationError
 
@@ -48,7 +49,7 @@ def test_public_registration_request_accepts_target_fields() -> None:
 
 def test_public_registration_request_rejects_password_field() -> None:
     payload = valid_request_payload()
-    payload["password"] = "MustNotBeAccepted123!"
+    payload["password"] = secrets.token_urlsafe(24)
 
     with pytest.raises(ValidationError):
         PublicRegistrationRequest(**payload)

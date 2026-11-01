@@ -51,7 +51,7 @@ export const ADMIN_ROUTE_ITEMS = [
     key: "registries",
     label: "Госреестры",
     path: "/admin/registries",
-    description: "ФРДО и Минтруд: готовность, утверждение, попытки и ручная сверка.",
+    description: "ФРДО и Минтруд: готовность, утверждение, пакетные выгрузки, история и сверка результатов.",
   },
   {
     key: "roles",

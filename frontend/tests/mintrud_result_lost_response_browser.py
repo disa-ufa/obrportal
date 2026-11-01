@@ -1,0 +1,1130 @@
+import os
+import sys
+import re
+import json
+import html
+import shutil
+import hashlib
+import tempfile
+import subprocess
+import threading
+from pathlib import Path
+from functools import partial
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+
+ROOT = Path(__file__).resolve().parents[2]
+PAGE = "frontend/src/pages/AdminRegistriesPage.jsx"
+
+EXTRA = [
+    "frontend/src/api/client.js",
+    "frontend/src/utils/mintrudWorkflow.js",
+    "frontend/src/utils/mintrudWorkflow.test.js",
+]
+
+def git(*args):
+    result = subprocess.run(
+        ["git", "--no-optional-locks", "-C", str(ROOT), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace"
+    )
+    if result.returncode:
+        raise RuntimeError(
+            "GIT_ERROR:" + " ".join(args) +
+            ":" + result.stderr[-500:]
+        )
+    return result.stdout
+
+def state():
+    return (
+        git("branch", "--show-current").strip(),
+        git("rev-parse", "HEAD").strip(),
+        tuple(git(
+            "status", "--porcelain=v1",
+            "--untracked-files=all"
+        ).splitlines()),
+        git("diff", "--cached", "--name-only").strip(),
+        git("diff", "--check")
+    )
+
+def sha(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1048576), b""):
+            h.update(block)
+    return h.hexdigest().upper()
+
+def chrome_path():
+    for key, default in [
+        ("PROGRAMFILES", "C:/Program Files"),
+        ("PROGRAMFILES(X86)", "C:/Program Files (x86)"),
+        ("LOCALAPPDATA", "C:/Users/Public")
+    ]:
+        candidate = Path(
+            os.environ.get(key, default)
+        ) / "Google/Chrome/Application/chrome.exe"
+
+        if candidate.is_file():
+            return str(candidate)
+
+    return (
+        shutil.which("chrome.exe") or
+        shutil.which("chrome")
+    )
+
+class Handler(SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+HTML = r'''<!doctype html>
+<html lang="ru">
+<head><meta charset="UTF-8"></head>
+<body>
+<div id="root"></div>
+<pre id="obr-result">{"phase":"HTML_ONLY"}</pre>
+<script type="module" src="/src/obr-result-error-retry.js"></script>
+</body>
+</html>'''
+
+JS = r'''
+const batchId = "synthetic-error-retry-001";
+const base = "/api/v1/admin/mintrud/batches";
+const detailPath = `${base}/${batchId}`;
+
+const ids = [
+  "synthetic-obligation-001",
+  "synthetic-obligation-002",
+  "synthetic-obligation-003"
+];
+
+const batch = {
+  id: batchId,
+  status: "submitted",
+  schema_version: "1.0.9",
+  obligation_count: 3,
+  record_count: 3,
+  has_artifact: true,
+  artifact_sha256: "a".repeat(64),
+  generated_at: "2026-10-18T08:00:00Z",
+  imported_at: "2026-10-18T09:00:00Z",
+  submitted_at: "2026-10-18T10:00:00Z",
+  external_reference: "SYN-REFERENCE",
+  reconciled_at: null
+};
+
+const items = ids.map((id, index) => ({
+  id: `synthetic-item-${index + 1}`,
+  obligation_id: id,
+  position: index + 1,
+  record_count: 1,
+  result_status: null,
+  external_id: null,
+  errors_json: []
+}));
+
+const d = {
+  phase: "INITIAL",
+  checks: [],
+  calls: [],
+  errors: [],
+  events: [],
+  confirmations: [],
+  payloads: [],
+  postAttempts: 0,
+  allowConfirmation: true,
+  batch
+};
+
+function phase(name) {
+  d.phase = name;
+  document.getElementById("obr-result").textContent =
+    JSON.stringify(d);
+}
+
+function check(name, condition) {
+  const pass = Boolean(condition);
+  d.checks.push({name, pass});
+  if (!pass) throw new Error(`CHECK_FAILED:${name}`);
+}
+
+async function waitFor(fn, timeout = 12000) {
+  const started = Date.now();
+
+  while (Date.now() - started < timeout) {
+    const value = fn();
+    if (value) return value;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  return null;
+}
+
+const byId = id =>
+  document.querySelector(`[data-testid="${id}"]`);
+
+const formNode = () =>
+  byId(
+    `admin-registries-mintrud-batch-result-form-${batchId}`
+  );
+
+const openButton = () =>
+  byId(
+    `admin-registries-mintrud-batch-results-open-${batchId}`
+  );
+
+const row = id =>
+  byId(
+    `admin-registries-mintrud-batch-result-item-${id}`
+  );
+
+const submit = () =>
+  formNode()?.querySelector('button[type="submit"]');
+
+const postCount = () =>
+  d.calls.filter(call =>
+    call.method === "POST" &&
+    call.path === `${detailPath}/result`
+  ).length;
+
+function setControl(node, value) {
+  if (!node) {
+    throw new Error("CONTROL_NOT_FOUND");
+  }
+
+  const proto = node.tagName === "SELECT"
+    ? HTMLSelectElement.prototype
+    : node.tagName === "TEXTAREA"
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+
+  Object.getOwnPropertyDescriptor(
+    proto, "value"
+  ).set.call(node, value);
+
+  node.dispatchEvent(
+    new Event(
+      node.tagName === "SELECT" ? "change" : "input",
+      {bubbles: true}
+    )
+  );
+
+  if (node.tagName !== "SELECT") {
+    node.dispatchEvent(
+      new Event("change", {bubbles: true})
+    );
+  }
+}
+
+window.confirm = message => {
+  d.confirmations.push(String(message));
+  return d.allowConfirmation;
+};
+
+window.addEventListener("error", event => {
+  d.errors.push(
+    `WINDOW_ERROR:${event.message}`
+  );
+  phase("WINDOW_ERROR");
+});
+
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+    d.errors.push(
+      `UNHANDLED_REJECTION:${String(event.reason)}`
+    );
+    phase("UNHANDLED_REJECTION");
+  }
+);
+
+const respond = (body, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {"Content-Type": "application/json"}
+  });
+
+function detail() {
+  return {
+    ...batch,
+    items: items.map(item => ({
+      ...item,
+      errors_json: [...item.errors_json]
+    }))
+  };
+}
+
+window.fetch = async (input, options = {}) => {
+  const raw = typeof input === "string"
+    ? input
+    : input.url;
+
+  const url = new URL(raw, location.href);
+
+  const method = String(
+    options.method ||
+    (
+      typeof input === "object"
+        ? input.method
+        : "GET"
+    )
+  ).toUpperCase();
+
+  const path = url.pathname;
+  d.calls.push({method, path});
+
+  if (url.origin !== location.origin) {
+    d.errors.push("EXTERNAL_REQUEST_BLOCKED");
+    return respond({detail: "blocked"}, 403);
+  }
+
+  if (method === "GET" && [
+    "/api/v1/admin/frdo/batches",
+    "/api/v1/admin/frdo/obligations",
+    "/api/v1/admin/mintrud/obligations"
+  ].includes(path)) {
+    return respond([]);
+  }
+
+  if (method === "GET" && path === base) {
+    return respond([{...batch}]);
+  }
+
+  if (method === "GET" && path === detailPath) {
+    return respond(detail());
+  }
+
+  if (
+    method === "POST" &&
+    path === `${detailPath}/result`
+  ) {
+    const payload = JSON.parse(options.body || "{}");
+    d.payloads.push(payload);
+    d.postAttempts += 1;
+
+    const expected = [
+      {
+        obligation_id: ids[0],
+        result_status: "accepted",
+        external_id: "SYN-REC-001",
+        errors: []
+      },
+      {
+        obligation_id: ids[1],
+        result_status: "rejected",
+        external_id: null,
+        errors: ["Invalid identifier"]
+      },
+      {
+        obligation_id: ids[2],
+        result_status: "correction_required",
+        external_id: null,
+        errors: ["Missing field X"]
+      }
+    ];
+
+    if (
+      JSON.stringify(payload.items) !==
+      JSON.stringify(expected)
+    ) {
+      d.errors.push("RESULT_PAYLOAD_MISMATCH");
+      return respond(
+        {detail: "unexpected payload"},
+        422
+      );
+    }
+
+    if (d.postAttempts !== 1 || batch.reconciled_at) {
+      d.errors.push("UNEXPECTED_EXTRA_MUTATION");
+      return respond(
+        {detail: "unexpected retry"},
+        409
+      );
+    }
+
+    payload.items.forEach((item, index) => {
+      items[index].result_status = item.result_status;
+      items[index].external_id = item.external_id;
+      items[index].errors_json = [...item.errors];
+    });
+
+    batch.reconciled_at = "2026-10-18T11:00:00Z";
+    d.events.push("reconciled");
+
+    d.events.push("response_lost_after_commit");
+    throw new TypeError("Failed to fetch");
+  }
+
+  d.errors.push(
+    `UNEXPECTED_API:${method} ${path}`
+  );
+  return respond(
+    {detail: "unexpected request"},
+    403
+  );
+};
+
+try {
+  phase("STARTED");
+
+  const React = await import("react");
+  const ReactDOM = await import("react-dom/client");
+  const page = await import(
+    "./pages/AdminRegistriesPage.jsx"
+  );
+
+  check(
+    "COMPONENT_EXPORTED",
+    typeof page.AdminRegistriesPage === "function"
+  );
+
+  ReactDOM.createRoot(
+    document.getElementById("root")
+  ).render(
+    React.createElement(page.AdminRegistriesPage)
+  );
+
+  check(
+    "PAGE_RENDERED",
+    Boolean(await waitFor(() =>
+      byId("admin-registries-filters")
+    ))
+  );
+
+  const tab = await waitFor(() =>
+    byId("admin-registries-tab-mintrud")
+  );
+
+  check("MINTRUD_TAB_FOUND", Boolean(tab));
+  tab.click();
+
+  const open = await waitFor(openButton);
+  check("RESULT_OPEN_FOUND", Boolean(open));
+  open.click();
+
+  check(
+    "FORM_RENDERED",
+    Boolean(await waitFor(formNode))
+  );
+
+  const rows = ids.map(row);
+  check("THREE_ROWS_FOUND", rows.every(Boolean));
+
+  check(
+    "INITIAL_RESULTS_UNSELECTED",
+    rows.every(r =>
+      r.querySelector("select")?.value === ""
+    )
+  );
+
+  setControl(
+    rows[0].querySelector("select"),
+    "accepted"
+  );
+
+  const externalId = await waitFor(() =>
+    rows[0].querySelector("input")
+  );
+
+  check(
+    "ACCEPTED_EXTERNAL_ID_INPUT",
+    Boolean(externalId)
+  );
+
+  setControl(
+    externalId,
+    "  SYN-REC-001  "
+  );
+
+  setControl(
+    rows[1].querySelector("select"),
+    "rejected"
+  );
+
+  const rejectedErrors = await waitFor(() =>
+    rows[1].querySelector("textarea")
+  );
+
+  check(
+    "REJECTED_ERRORS_INPUT",
+    Boolean(rejectedErrors)
+  );
+
+  setControl(
+    rejectedErrors,
+    " Invalid identifier \n"
+  );
+
+  setControl(
+    rows[2].querySelector("select"),
+    "correction_required"
+  );
+
+  const correctionErrors = await waitFor(() =>
+    rows[2].querySelector("textarea")
+  );
+
+  check(
+    "CORRECTION_ERRORS_INPUT",
+    Boolean(correctionErrors)
+  );
+
+  setControl(
+    correctionErrors,
+    " Missing field X \n"
+  );
+
+  check(
+    "COMPLETE_RESULTS_ENABLE_SAVE",
+    Boolean(await waitFor(() =>
+      submit() && !submit().disabled
+    ))
+  );
+
+  formNode().requestSubmit();
+
+
+  const detailGetCount = () =>
+    d.calls.filter(call =>
+      call.method === "GET" &&
+      call.path === detailPath
+    ).length;
+
+  const pending = () =>
+    byId(`admin-registries-mintrud-result-pending-${batchId}`);
+
+  const recheck = () =>
+    byId(`admin-registries-mintrud-result-check-${batchId}`);
+
+  const pendingStored = () =>
+    JSON.parse(
+      sessionStorage.getItem(
+        "obrportal_mintrud_result_pending_ids_v1"
+      ) || "[]"
+    ).includes(batchId);
+
+
+
+  check(
+    "FIRST_POST_RECEIVED",
+    Boolean(await waitFor(() => postCount() === 1))
+  );
+
+  check(
+    "SERVER_COMMITTED_BEFORE_RESPONSE_LOSS",
+    batch.reconciled_at !== null &&
+    d.events.includes("reconciled")
+  );
+
+  check(
+    "RESPONSE_LOST_AFTER_COMMIT",
+    d.events.includes("response_lost_after_commit")
+  );
+
+  check(
+    "AUTOMATIC_RECOVERY_GET",
+    Boolean(await waitFor(() => detailGetCount() === 2))
+  );
+
+  check(
+    "RESULTS_RESTORED_READONLY",
+    Boolean(await waitFor(() => {
+      const form = formNode();
+
+      if (!form) return false;
+
+      const controls = [
+        ...form.querySelectorAll("select,input,textarea")
+      ];
+
+      return (
+        controls.length === 6 &&
+        controls.every(control => control.disabled) &&
+        !form.querySelector('button[type="submit"]')
+      );
+    }))
+  );
+
+  check(
+    "RESULT_STATUSES_PRESERVED",
+    row(ids[0]).querySelector("select").value === "accepted" &&
+    row(ids[1]).querySelector("select").value === "rejected" &&
+    row(ids[2]).querySelector("select").value ===
+      "correction_required"
+  );
+
+  check(
+    "PENDING_FENCE_CLEARED_AFTER_CONFIRMED_GET",
+    !JSON.parse(
+      sessionStorage.getItem(
+        "obrportal_mintrud_result_pending_ids_v1"
+      ) || "[]"
+    ).includes(batchId)
+  );
+
+  check(
+    "NO_DUPLICATE_POST",
+    postCount() === 1
+  );
+
+  check(
+    "ONE_OPERATOR_CONFIRMATION",
+    d.confirmations.length === 1
+  );
+
+  check(
+    "NO_MOCK_ERRORS",
+    d.errors.length === 0
+  );
+
+  phase("PASS");
+
+} catch (error) {
+  d.errors.push(
+    `TEST_ERROR:${String(error.message || error)}`
+  );
+  phase("FAIL");
+} finally {
+  d.diagnostic = {
+    postCount: postCount(),
+    detailGetCount: d.calls.filter(call =>
+      call.method === "GET" &&
+      call.path === detailPath
+    ).length,
+    reconciledAt: batch.reconciled_at,
+    events: d.events,
+    confirmationCount: d.confirmations.length,
+    submitPresent: Boolean(submit())
+  };
+
+  phase(d.phase);
+}
+'''
+
+def main():
+    print(
+        "=== C4.4D.8AA.7D.1B.2G.4C.4D LOST RESPONSE AFTER SERVER COMMIT ===",
+        flush=True
+    )
+
+    print("\n=== 1. STRICT SOURCE PREFLIGHT ===",
+          flush=True)
+
+    before = state()
+    branch, head, status, staged, diffcheck = before
+
+    assert branch == "local/m2231", "BRANCH_MISMATCH"
+    assert not staged, "STAGED_CHANGES"
+    assert not diffcheck, "DIFF_CHECK_FAILED"
+    assert (ROOT / PAGE).is_file(), "PAGE_MISSING"
+
+    unexpected = [
+        item for item in status
+        if not (
+            item.startswith(" M ") or
+            item.startswith("?? ")
+        )
+    ]
+    assert not unexpected, "UNEXPECTED_GIT_STATUS"
+
+    modified = {
+        item[3:] for item in status
+        if item.startswith(" M ")
+    }
+    untracked = {
+        item[3:] for item in status
+        if item.startswith("?? ")
+    }
+
+    protected = sorted(
+        modified | untracked | set(EXTRA) | {PAGE}
+    )
+
+    assert all(
+        (ROOT / relative).is_file()
+        for relative in protected
+    ), "PROTECTED_FILE_MISSING"
+
+    baseline = {
+        relative: sha(ROOT / relative)
+        for relative in protected
+    }
+
+    print("STRICT_PREFLIGHT=PASS", flush=True)
+    print("PROTECTED_FILES=" + str(len(protected)), flush=True)
+    print("PAGE_BASELINE_SHA256=" + baseline[PAGE], flush=True)
+
+    temp = None
+    server = None
+    thread = None
+    failure = None
+
+    try:
+        npm = (
+            shutil.which("npm.cmd") or
+            shutil.which("npm")
+        )
+        node = (
+            shutil.which("node.exe") or
+            shutil.which("node")
+        )
+        chrome = chrome_path()
+
+        assert npm, "NPM_NOT_FOUND"
+        assert node, "NODE_NOT_FOUND"
+        assert chrome, "CHROME_NOT_FOUND"
+
+        print(
+            "\n=== 2. EXISTING NODE TESTS ===",
+            flush=True
+        )
+
+        node_result = subprocess.run(
+            [
+                node, "--test",
+                "src/utils/mintrudWorkflow.test.js",
+                "src/utils/adminEnrollmentsCsv.test.js",
+            ],
+            cwd=ROOT / "frontend",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=90
+        )
+
+        print(
+            "NODE_TEST_EXIT=" +
+            str(node_result.returncode),
+            flush=True
+        )
+
+        for line in node_result.stdout.splitlines()[-12:]:
+            print("NODE=" + line[:220], flush=True)
+
+        if node_result.returncode:
+            raise RuntimeError(
+                "EXISTING_NODE_TESTS_FAILED:" +
+                node_result.stderr[-900:]
+            )
+
+        print("EXISTING_NODE_TESTS=PASS",
+              flush=True)
+
+        print(
+            "\n=== 3. COPY FRONTEND ===",
+            flush=True
+        )
+
+        listing = subprocess.run(
+            [
+                "git", "--no-optional-locks",
+                "-C", str(ROOT),
+                "ls-files", "-z", "--", "frontend"
+            ],
+            capture_output=True
+        )
+
+        assert listing.returncode == 0, (
+            "FRONTEND_LIST_FAILED"
+        )
+
+        files = [
+            item.decode("utf-8")
+            for item in listing.stdout.split(b"\0")
+            if item
+        ]
+
+        assert files, "FRONTEND_LIST_EMPTY"
+
+        temp = Path(
+            tempfile.mkdtemp(prefix="obr_2g1_")
+        )
+        frontend = temp / "frontend"
+
+        for relative in files:
+            source = ROOT / relative
+            target = temp / relative
+
+            assert source.is_file(), (
+                "SOURCE_MISSING:" + relative
+            )
+
+            target.parent.mkdir(
+                parents=True,
+                exist_ok=True
+            )
+            shutil.copy2(source, target)
+
+        assert sha(temp / PAGE) == baseline[PAGE], (
+            "COPY_HASH_MISMATCH"
+        )
+        # Optional test-only page override, never the working tree.
+        import os as _obr_os
+
+        override_name = _obr_os.environ.get(
+            "OBR_TEST_PAGE_OVERRIDE", ""
+        ).strip()
+
+        if override_name:
+            override_path = Path(override_name)
+
+            assert override_path.is_file(), (
+                "ISOLATED_PAGE_OVERRIDE_MISSING"
+            )
+
+            override_bytes = override_path.read_bytes()
+            override_hash = hashlib.sha256(
+                override_bytes
+            ).hexdigest().upper()
+
+            assert override_hash == (
+                "AE3B8C11082D59A84416C81F65C61416D113D3D99597E3BAD2DDA406809705DB"
+            ), "ISOLATED_PAGE_OVERRIDE_HASH_MISMATCH"
+
+            (temp / PAGE).write_bytes(override_bytes)
+            print("ISOLATED_PAGE_OVERRIDE=PASS", flush=True)
+
+
+        (frontend / "index.html").write_text(
+            HTML, encoding="utf-8"
+        )
+
+        (
+            frontend / "src/obr-result-error-retry.js"
+        ).write_text(
+            JS, encoding="utf-8"
+        )
+
+        print(
+            "FRONTEND_FILES_COPIED=" +
+            str(len(files)),
+            flush=True
+        )
+        print("TEMP_REACT_PATCH=NONE", flush=True)
+
+        handler = partial(
+            Handler,
+            directory=str(frontend / "dist")
+        )
+
+        server = ThreadingHTTPServer(
+            ("127.0.0.1", 0),
+            handler
+        )
+
+        port = server.server_address[1]
+
+        environment = os.environ.copy()
+        environment["npm_config_offline"] = "true"
+        environment["npm_config_audit"] = "false"
+        environment["npm_config_fund"] = "false"
+        environment["CI"] = "1"
+        environment["VITE_API_BASE_URL"] = (
+            f"http://127.0.0.1:{port}"
+        )
+
+        print(
+            "\n=== 4. OFFLINE NPM CI ===",
+            flush=True
+        )
+
+        install = subprocess.run(
+            [
+                npm, "ci", "--offline",
+                "--ignore-scripts",
+                "--no-audit", "--no-fund"
+            ],
+            cwd=frontend,
+            env=environment,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=180
+        )
+
+        if install.returncode:
+            raise RuntimeError(
+                "NPM_CI_FAILED:" +
+                install.stderr[-1000:]
+            )
+
+        print("OFFLINE_NPM_CI=PASS", flush=True)
+
+        print("\n=== 5. VITE BUILD ===", flush=True)
+
+        build = subprocess.run(
+            [npm, "run", "build"],
+            cwd=frontend,
+            env=environment,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=180
+        )
+
+        if build.returncode:
+            raise RuntimeError(
+                "VITE_BUILD_FAILED:" +
+                build.stderr[-1200:]
+            )
+
+        assert (
+            frontend / "dist/index.html"
+        ).is_file(), "BUILD_INDEX_MISSING"
+
+        print("VITE_BUILD=PASS", flush=True)
+
+        print(
+            "\n=== 6. LOOPBACK SERVER ===",
+            flush=True
+        )
+
+        thread = threading.Thread(
+            target=server.serve_forever,
+            daemon=True
+        )
+        thread.start()
+
+        print("LOOPBACK_ONLY=PASS", flush=True)
+
+        print(
+            "\n=== 7. CHROME FAILURE AND RETRY ===",
+            flush=True
+        )
+
+        browser = subprocess.run(
+            [
+                chrome,
+                "--headless=new",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-background-networking",
+                "--disable-extensions",
+                "--disable-gpu",
+                "--no-proxy-server",
+                f"--user-data-dir={temp / 'chrome-profile'}",
+                "--virtual-time-budget=35000",
+                "--dump-dom",
+                f"http://127.0.0.1:{port}/index.html"
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=85
+        )
+
+        print(
+            "CHROME_EXIT=" +
+            str(browser.returncode),
+            flush=True
+        )
+
+        match = re.search(
+            r'<pre id="obr-result"[^>]*>(.*?)</pre>',
+            browser.stdout,
+            re.DOTALL
+        )
+
+        if not match:
+            print(
+                "DOM_PREFIX=" +
+                repr(browser.stdout[:900]),
+                flush=True
+            )
+            raise RuntimeError(
+                "BROWSER_REPORT_MISSING"
+            )
+
+        report = json.loads(
+            html.unescape(match.group(1))
+        )
+
+        print(
+            "BROWSER_PHASE=" +
+            report.get("phase", "?"),
+            flush=True
+        )
+
+        for item in report.get("checks", []):
+            print(
+                "CHECK_" + item["name"] + "=" +
+                (
+                    "PASS"
+                    if item["pass"]
+                    else "FAIL"
+                ),
+                flush=True
+            )
+
+        print(
+            "CHECK_COUNT=" +
+            str(len(report.get("checks", []))),
+            flush=True
+        )
+
+        for call in report.get("calls", []):
+            print(
+                "API=" + call["method"] +
+                " " + call["path"],
+                flush=True
+            )
+
+        for error in report.get("errors", []):
+            print(
+                "BROWSER_ERROR=" + error,
+                flush=True
+            )
+
+        if report.get("phase") != "PASS":
+            print(
+                "DOM_DIAG=" +
+                json.dumps(
+                    report.get("diagnostic", {}),
+                    ensure_ascii=True
+                )[:2500],
+                flush=True
+            )
+
+            print(
+                "CHROME_STDERR=" +
+                repr(browser.stderr[-900:]),
+                flush=True
+            )
+
+        assert browser.returncode == 0, (
+            "CHROME_FAILED"
+        )
+        assert report.get("phase") == "PASS", (
+            "BROWSER_TEST_FAILED"
+        )
+        assert all(
+            item.get("pass") is True
+            for item in report["checks"]
+        ), "CHECK_FAILURE"
+
+        print(
+            "MINTRUD_LOST_RESPONSE_BROWSER=PASS",
+            flush=True
+        )
+
+    except Exception as error:
+        failure = str(error)
+
+    finally:
+        print(
+            "\n=== 8. CLEANUP AND SOURCE POSTFLIGHT ===",
+            flush=True
+        )
+
+        if server:
+            if thread:
+                server.shutdown()
+                thread.join(timeout=10)
+            server.server_close()
+
+        if temp:
+            try:
+                shutil.rmtree(temp)
+                print(
+                    "TEMP_CLEANUP=PASS",
+                    flush=True
+                )
+            except OSError as error:
+                print(
+                    "TEMP_CLEANUP_ERROR=" +
+                    str(error),
+                    flush=True
+                )
+                failure = (
+                    failure or "TEMP_CLEANUP_FAILED"
+                )
+
+        try:
+            after = state()
+
+            changed = [
+                relative
+                for relative in protected
+                if sha(ROOT / relative) !=
+                baseline[relative]
+            ]
+
+            print(
+                "SOURCE_HASH_CHANGED=" +
+                str(len(changed)),
+                flush=True
+            )
+
+            assert before == after, (
+                "GIT_STATE_CHANGED"
+            )
+            assert not changed, (
+                "SOURCE_HASH_CHANGED"
+            )
+
+            print(
+                "SOURCE_POSTFLIGHT=PASS",
+                flush=True
+            )
+            print(
+                "GIT_POSTFLIGHT=PASS",
+                flush=True
+            )
+
+        except Exception as error:
+            print(
+                "POSTFLIGHT_ERROR=" +
+                str(error),
+                flush=True
+            )
+            failure = (
+                failure or "POSTFLIGHT_FAILED"
+            )
+
+    print("\n=== FINAL RESULT ===", flush=True)
+
+    if failure:
+        print("ERROR=" + failure, flush=True)
+        print(
+            "C4.4D.8AA.7D.1B.2G.4C.4D=FAIL",
+            flush=True
+        )
+        print(
+            "NO_AUTOMATIC_REPAIR=YES",
+            flush=True
+        )
+        return 1
+
+    print(
+        "C4.4D.8AA.7D.1B.2G.4C.4D=PASS",
+        flush=True
+    )
+    print(
+        "API_MODE=SYNTHETIC_MOCK_ONLY",
+        flush=True
+    )
+    print(
+        "WORKTREE_MODIFIED=NO",
+        flush=True
+    )
+    print(
+        "NO_COMMIT_NO_DEPLOYMENT=PASS",
+        flush=True
+    )
+
+    return 0
+
+try:
+    sys.exit(main())
+except Exception as error:
+    print(
+        "UNEXPECTED_ERROR=" + str(error),
+        flush=True
+    )
+    print(
+        "C4.4D.8AA.7D.1B.2G.4C.4D=FAIL",
+        flush=True
+    )
+    sys.exit(1)

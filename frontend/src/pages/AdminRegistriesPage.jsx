@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   approveAdminFrdoObligation,
   approveAdminMintrudObligation,
-  prepareAdminFrdoPortalArtifact,
-  prepareAdminMintrudPortalArtifact,
   prepareAdminMintrudSubmissionBatch,
   downloadAdminMintrudSubmissionBatch,
   getAdminMintrudSubmissionBatch,
@@ -35,7 +33,40 @@ import { FrdoPoBatchesPanel } from "../components/admin/FrdoPoBatchesPanel";
 import { formatMintrudError, prepareAndDownloadMintrudBatch } from "../utils/mintrudWorkflow";
 
 
+const MINTRUD_RESULT_PENDING_KEY =
+  "obrportal_mintrud_result_pending_ids_v1";
+
+function readPendingMintrudResultIds() {
+  try {
+    const value = JSON.parse(
+      window.sessionStorage.getItem(
+        MINTRUD_RESULT_PENDING_KEY
+      ) || "[]"
+    );
+    return Array.isArray(value)
+      ? value.filter((id) => (
+          typeof id === "string" && id.length > 0
+        ))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 const T = {
+  mintrudResultUncertain:
+    "Результат отправки неизвестен. Повторное сохранение заблокировано. Проверьте состояние партии.",
+  mintrudResultCheck: "Проверить состояние партии",
+
+  mintrudBatchChooseResult: "Выберите результат",
+  mintrudBatchIncompleteResults: "Выберите результат для каждой записи партии.",
+  mintrudBatchFinalConfirmTitle: "Подтвердить окончательную сверку XML-партии?",
+  mintrudBatchFinalConfirmWarning: "После сохранения изменить результаты этой партии будет нельзя.",
+  mintrudBatchFinalTotal: "Всего записей",
+  mintrudBatchFinalAccepted: "Принято",
+  mintrudBatchFinalRejected: "Отклонено",
+  mintrudBatchFinalCorrection: "Требуют исправления",
+
   title: "\u0413\u043e\u0441\u0440\u0435\u0435\u0441\u0442\u0440\u044b",
   subtitle: "\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u044c \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u0441\u0442\u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0438 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430.",
   frdo: "\u0424\u0418\u0421 \u0424\u0420\u0414\u041e",
@@ -48,8 +79,6 @@ const T = {
   reset: "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c",
   validate: "\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c",
   approve: "\u0423\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c",
-  prepareExport: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XLSX \u0434\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e",
-  prepareMintrudPortalArtifact: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422",
   mintrudBatchPrepareDownload: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0438 \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u043f\u0430\u043a\u0435\u0442 XML",
   mintrudBatchSelected: "\u0412\u044b\u0431\u0440\u0430\u043d\u043e \u0434\u043b\u044f \u043f\u0430\u043a\u0435\u0442\u0430",
   mintrudBatchSelect: "\u0412 \u043f\u0430\u043a\u0435\u0442",
@@ -77,7 +106,7 @@ const T = {
   mintrudBatchStatusImported: "XML \u0438\u043c\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u043d",
   mintrudBatchStatusSubmitted: "\u041d\u0430\u0431\u043e\u0440 \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d",
   reopen: "\u041d\u0430\u0447\u0430\u0442\u044c \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435",
-  attempts: "\u041f\u043e\u043f\u044b\u0442\u043a\u0438",
+  attempts: "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u043f\u043e\u043f\u044b\u0442\u043e\u043a",
   frdoContext: "\u0414\u0430\u043d\u043d\u044b\u0435 \u0424\u0420\u0414\u041e",
   context: "\u0414\u0430\u043d\u043d\u044b\u0435 \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430",
   save: "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c",
@@ -88,10 +117,10 @@ const T = {
   noRows: "\u0417\u0430\u043f\u0438\u0441\u0438 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.",
   warning: "\u0414\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0437\u0430\u043a\u0440\u0435\u043f\u043b\u0451\u043d\u043d\u044b\u0439 \u0440\u0430\u0431\u043e\u0447\u0438\u0439 XLSX-\u0448\u0430\u0431\u043b\u043e\u043d. \u042d\u0442\u043e \u0440\u0430\u0431\u043e\u0447\u0438\u0439 \u044d\u0442\u0430\u043b\u043e\u043d \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u043f\u0438\u043b\u043e\u0442\u0430, \u0430 \u043d\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435, \u0447\u0442\u043e \u0448\u0430\u0431\u043b\u043e\u043d \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0439 \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0439 \u0444\u043e\u0440\u043c\u043e\u0439 \u0424\u0420\u0414\u041e. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442 \u0444\u0430\u0439\u043b \u043f\u0435\u0440\u0435\u0434 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435\u043c; \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f \u0432\u0440\u0443\u0447\u043d\u0443\u044e.",
   mintrudWarning: "\u0414\u043b\u044f \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043e\u0444\u0438\u0446\u0438\u0430\u043b\u044c\u043d\u044b\u0439 XML \u043f\u043e \u0441\u0445\u0435\u043c\u0435 educated_person_import v1.0.9. \u0424\u0430\u0439\u043b \u043f\u0440\u0435\u0434\u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422; \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0430 \u0441\u0438\u0441\u0442\u0435\u043c\u043e\u0439 \u043d\u0435 \u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f.",
-  mintrudPortalAvailableTitle: "XML \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0415\u0418\u0421\u041e\u0422 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
-  mintrudPortalAvailable: "\u041f\u043e\u0441\u043b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422\u00bb. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442 XML v1.0.9 \u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 \u0435\u0433\u043e \u043f\u043e XSD. \u0417\u0430\u0442\u0435\u043c \u0441\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043b, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0435\u0433\u043e \u0432 \u043f\u043e\u0440\u0442\u0430\u043b \u041c\u0438\u043d\u0442\u0440\u0443\u0434\u0430 \u0432\u0440\u0443\u0447\u043d\u0443\u044e \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0432 \u041e\u0431\u0440\u041f\u043e\u0440\u0442\u0430\u043b\u0435.",
-  frdoPortalAvailableTitle: "XLSX \u0434\u043b\u044f \u0440\u0443\u0447\u043d\u043e\u0439 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
-  frdoPortalAvailable: "\u041f\u043e\u0441\u043b\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f \u043d\u0430\u0436\u043c\u0438\u0442\u0435 \u00ab\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c XLSX \u0434\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e\u00bb. \u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442 \u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442 XLSX \u043f\u043e \u0437\u0430\u043a\u0440\u0435\u043f\u043b\u0451\u043d\u043d\u043e\u043c\u0443 \u0440\u0430\u0431\u043e\u0447\u0435\u043c\u0443 \u0448\u0430\u0431\u043b\u043e\u043d\u0443. \u0417\u0430\u0442\u0435\u043c \u0441\u043a\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 \u0440\u0430\u0437\u0434\u0435\u043b\u0435 \u00ab\u041f\u043e\u043f\u044b\u0442\u043a\u0438\u00bb, \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0435\u0433\u043e \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0432\u0440\u0443\u0447\u043d\u0443\u044e, \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u0440\u0443\u0447\u043d\u0443\u044e \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442.",
+  mintrudPortalAvailableTitle: "\u041f\u0430\u043a\u0435\u0442\u043d\u044b\u0439 XML \u0434\u043b\u044f \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422",
+  mintrudPortalAvailable: "\u0414\u043b\u044f \u0415\u0418\u0421\u041e\u0422/\u041b\u041a\u041e\u0422 XML v1.0.9 \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043f\u0430\u043a\u0435\u0442\u043d\u043e \u0438\u0437 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0445 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0445 \u0437\u0430\u043f\u0438\u0441\u0435\u0439 \u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f \u043f\u043e XSD. \u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0438 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u0435 \u043f\u0430\u043a\u0435\u0442\u043e\u0432 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u044e\u0442\u0441\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430\u043c\u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u0430. \u041f\u043e\u0441\u043b\u0435 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 XML \u0432\u0440\u0443\u0447\u043d\u0443\u044e \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0438\u043c\u043f\u043e\u0440\u0442 \u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0432 \u041e\u0431\u0440\u041f\u043e\u0440\u0442\u0430\u043b\u0435.",
+  frdoPortalAvailableTitle: "\u041f\u0430\u043a\u0435\u0442\u043d\u0430\u044f \u0432\u044b\u0433\u0440\u0443\u0437\u043a\u0430 XLSX \u0434\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e",
+  frdoPortalAvailable: "\u0414\u043b\u044f \u0424\u0418\u0421 \u0424\u0420\u0414\u041e XLSX \u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043f\u0430\u043a\u0435\u0442\u043d\u043e \u0438\u0437 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043d\u043d\u044b\u0445 \u0437\u0430\u043f\u0438\u0441\u0435\u0439 \u043f\u043e \u0437\u0430\u043a\u0440\u0435\u043f\u043b\u0451\u043d\u043d\u043e\u043c\u0443 \u0440\u0430\u0431\u043e\u0447\u0435\u043c\u0443 \u0448\u0430\u0431\u043b\u043e\u043d\u0443. \u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0438 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u0435 \u043f\u0430\u043a\u0435\u0442\u043e\u0432 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u044e\u0442\u0441\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0430\u043c\u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u0430. \u041f\u043e\u0441\u043b\u0435 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u043d\u0438\u044f \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 \u0424\u0418\u0421 \u0424\u0420\u0414\u041e \u0432\u0440\u0443\u0447\u043d\u0443\u044e, \u043e\u0442\u043c\u0435\u0442\u044c\u0442\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0443 \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u0443\u0439\u0442\u0435 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442.",
 };
 
 
@@ -184,7 +213,7 @@ function buildMintrudBatchResultForms(
       forms[item.obligation_id] = {
         result_status:
           item.result_status
-          || "accepted",
+          || "",
         external_id:
           item.external_id
           || "",
@@ -197,6 +226,25 @@ function buildMintrudBatchResultForms(
   );
 
   return forms;
+}
+
+
+function mintrudBatchResultsComplete(batch, forms) {
+  const entries = batch?.items || [];
+  const allowed = [
+    "accepted",
+    "rejected",
+    "correction_required",
+  ];
+
+  return (
+    entries.length > 0 &&
+    entries.every((item) =>
+      allowed.includes(
+        forms[item.obligation_id]?.result_status
+      )
+    )
+  );
 }
 
 function artifactKindLabel(attempt) {
@@ -1221,6 +1269,15 @@ export function AdminRegistriesPage() {
     setMintrudBatchResultForms,
   ] = useState({});
 
+  const [
+    mintrudResultPendingIds,
+    setMintrudResultPendingIds,
+  ] = useState(readPendingMintrudResultIds);
+
+  const mintrudResultPendingRef = useRef(
+    new Set(mintrudResultPendingIds)
+  );
+
   const selectedMintrudIdSet = useMemo(
     () => new Set(
       selectedMintrudIds
@@ -1274,7 +1331,7 @@ export function AdminRegistriesPage() {
         list: getAdminMintrudObligations,
         validate: validateAdminMintrudObligation,
         approve: approveAdminMintrudObligation,
-        prepareExport: prepareAdminMintrudPortalArtifact,
+
         reopen: reopenAdminMintrudObligation,
         attempts: getAdminMintrudSubmissionAttempts,
         download: downloadAdminMintrudSubmissionAttempt,
@@ -1287,7 +1344,7 @@ export function AdminRegistriesPage() {
       list: getAdminFrdoObligations,
       validate: validateAdminFrdoObligation,
       approve: approveAdminFrdoObligation,
-      prepareExport: prepareAdminFrdoPortalArtifact,
+
       reopen: reopenAdminFrdoObligation,
       attempts: getAdminFrdoSubmissionAttempts,
       download: downloadAdminFrdoSubmissionAttempt,
@@ -1606,6 +1663,28 @@ export function AdminRegistriesPage() {
 
 
 
+  function updateMintrudResultPending(batchId, pending) {
+    const pendingIds = mintrudResultPendingRef.current;
+
+    if (pending) {
+      pendingIds.add(batchId);
+    } else {
+      pendingIds.delete(batchId);
+    }
+
+    const updated = [...pendingIds];
+    setMintrudResultPendingIds(updated);
+
+    try {
+      window.sessionStorage.setItem(
+        MINTRUD_RESULT_PENDING_KEY,
+        JSON.stringify(updated)
+      );
+    } catch {
+      // Keep the in-memory submission fence active.
+    }
+  }
+
   async function openMintrudBatchResults(
     batch
   ) {
@@ -1617,6 +1696,20 @@ export function AdminRegistriesPage() {
             batch.id
           )
         );
+
+        if (!detail || detail.id !== batch.id) {
+          throw new Error("Batch detail mismatch.");
+        }
+
+        if (detail.reconciled_at) {
+          updateMintrudResultPending(batch.id, false);
+        } else if (
+          mintrudResultPendingRef.current.has(batch.id) &&
+          mintrudBatchResultId === batch.id
+        ) {
+          // Preserve the operator's unsent draft.
+          return;
+        }
 
         setMintrudBatchResultId(
           batch.id
@@ -1673,6 +1766,25 @@ export function AdminRegistriesPage() {
     event.preventDefault();
 
     if (
+      mintrudResultPendingRef.current.has(batch.id) ||
+      mintrudBatchDetail?.reconciled_at
+    ) {
+      setError(T.mintrudResultUncertain);
+      return;
+    }
+
+    if (
+      !mintrudBatchResultsComplete(
+        mintrudBatchDetail,
+        mintrudBatchResultForms
+      )
+    ) {
+      setError(T.mintrudBatchIncompleteResults);
+      return;
+    }
+
+
+    if (
       !mintrudBatchDetail
       || mintrudBatchDetail.id
         !== batch.id
@@ -1693,7 +1805,7 @@ export function AdminRegistriesPage() {
           mintrudBatchResultForms[
             item.obligation_id
           ] || {
-            result_status: "accepted",
+            result_status: "",
             external_id: "",
             errors: "",
           }
@@ -1748,17 +1860,75 @@ export function AdminRegistriesPage() {
       }
     );
 
+    const counts = items.reduce(
+      (totals, item) => {
+        totals[item.result_status] += 1;
+        return totals;
+      },
+      {
+        accepted: 0,
+        rejected: 0,
+        correction_required: 0,
+      }
+    );
+
+    const confirmed = window.confirm(
+      [
+        T.mintrudBatchFinalConfirmTitle,
+        T.mintrudBatchFinalConfirmWarning,
+        "",
+        `${T.mintrudBatchFinalTotal}: ${items.length}`,
+        `${T.mintrudBatchFinalAccepted}: ${counts.accepted}`,
+        `${T.mintrudBatchFinalRejected}: ${counts.rejected}`,
+        `${T.mintrudBatchFinalCorrection}: ${counts.correction_required}`,
+      ].join("\n")
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    updateMintrudResultPending(batch.id, true);
+
     const success = await withAction(
       `mintrud-batch-result:${batch.id}`,
       async () => {
-        const detail = await (
-          recordAdminMintrudSubmissionBatchResult(
+        let detail = null;
+
+        try {
+          detail = await recordAdminMintrudSubmissionBatchResult(
             batch.id,
-            {
-              items,
+            { items }
+          );
+        } catch (postError) {
+          try {
+            const latest = await getAdminMintrudSubmissionBatch(
+              batch.id
+            );
+
+            if (
+              latest?.id === batch.id &&
+              latest.reconciled_at
+            ) {
+              detail = latest;
             }
-          )
-        );
+          } catch {
+            // GET failed: do not conclude POST was rolled back.
+          }
+
+          if (!detail) {
+            throw postError;
+          }
+        }
+
+        if (
+          detail?.id !== batch.id ||
+          !detail.reconciled_at
+        ) {
+          throw new Error("Result recording is not confirmed.");
+        }
+
+        updateMintrudResultPending(batch.id, false);
 
         setMintrudBatchDetail(
           detail
@@ -1775,30 +1945,12 @@ export function AdminRegistriesPage() {
     );
 
     if (!success) {
+      if (mintrudResultPendingRef.current.has(batch.id)) {
+        setError(T.mintrudResultUncertain);
+      }
       return;
     }
   }
-
-  async function prepareExport(obligation) {
-    await withAction(
-      `export:${obligation.id}`,
-      async () => {
-        await api.prepareExport(
-          obligation.id
-        );
-
-        setExpandedId(
-          obligation.id
-        );
-
-        await load();
-        await reloadAttempts(
-          obligation.id
-        );
-      }
-    );
-  }
-
 
   async function reopen(obligation) {
     await withAction(
@@ -2357,6 +2509,23 @@ export function AdminRegistriesPage() {
                               )
                             : T.mintrudBatchResultsHint}
                         </div>
+                        {mintrudResultPendingIds.includes(batch.id) ? (
+                          <div
+                            data-testid={`admin-registries-mintrud-result-pending-${batch.id}`}
+                            className="mt-2 text-sm text-amber-800"
+                          >
+                            <p>{T.mintrudResultUncertain}</p>
+                            <button
+                              type="button"
+                              data-testid={`admin-registries-mintrud-result-check-${batch.id}`}
+                              className={SECONDARY}
+                              disabled={Boolean(busyKey)}
+                              onClick={() => openMintrudBatchResults(batch)}
+                            >
+                              {T.mintrudResultCheck}
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
 
                       {(mintrudBatchDetail.items || []).map(
@@ -2365,7 +2534,7 @@ export function AdminRegistriesPage() {
                             mintrudBatchResultForms[
                               item.obligation_id
                             ] || {
-                              result_status: "accepted",
+                              result_status: "",
                               external_id: "",
                               errors: "",
                             }
@@ -2414,6 +2583,9 @@ export function AdminRegistriesPage() {
                                     )
                                   )}
                                 >
+                                  <option value="" disabled>
+                                    {T.mintrudBatchChooseResult}
+                                  </option>
                                   <option value="accepted">
                                     {statusLabel(
                                       "accepted"
@@ -2491,7 +2663,14 @@ export function AdminRegistriesPage() {
                           <button
                             type="submit"
                             className={PRIMARY}
-                            disabled={Boolean(busyKey)}
+                            disabled={
+                              Boolean(busyKey) ||
+                              mintrudResultPendingIds.includes(batch.id) ||
+                              !mintrudBatchResultsComplete(
+                                mintrudBatchDetail,
+                                mintrudBatchResultForms
+                              )
+                            }
                           >
                             {T.mintrudBatchRecordResults}
                           </button>
@@ -2799,19 +2978,6 @@ export function AdminRegistriesPage() {
                                   >
                                     {activeRegistry === "mintrud" && obligation.status === "approved"
                                       ? "Повторно утвердить" : T.approve}
-                                  </button>
-                                ) : null}
-
-                                {canExport ? (
-                                  <button
-                                    type="button"
-                                    className={PRIMARY}
-                                    disabled={Boolean(busyKey)}
-                                    onClick={() => prepareExport(obligation)}
-                                  >
-                                    {activeRegistry === "mintrud"
-                                      ? T.prepareMintrudPortalArtifact
-                                      : T.prepareExport}
                                   </button>
                                 ) : null}
 

@@ -18,7 +18,12 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("APP_VERSION", "OBRPORTAL_APP_VERSION"),
     )
     environment: str = "local"
-    secret_key: str = Field(default="change-me-local-only")
+    # Closed in every environment unless separately authorized for exports.
+    production_exports_enabled: bool = False
+    # Partial attempt-only veto. Activation requires historical reconciliation
+    # and separate approval; this is NOT the full applicability/export gate.
+    registry_attempt_applicability_veto_enabled: bool = False
+    secret_key: str = Field(default="change-me")
     access_token_expire_minutes: int = 60
 
     database_url: str = "postgresql+asyncpg://obrportal:obrportal_password@postgres:5432/obrportal"

@@ -7,6 +7,7 @@ from datetime import date, datetime
 from hashlib import sha256
 import json
 from typing import Any
+from uuid import uuid4
 
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUS_APPROVED,
@@ -731,6 +732,10 @@ def apply_registry_approval(
     )
 
     obligation.approved_at = approved_at
+
+    # A new UUID is generated only after approval validation succeeded.
+    # It changes on a genuine reapproval even when fingerprint is unchanged.
+    obligation.approval_event_id = str(uuid4())
 
     obligation.approval_invalidated_at = (
         None

@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 from uuid import uuid4
 
@@ -15,7 +16,13 @@ from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.document_pdf import render_completion_document_pdf
-from app.services.document_storage import write_private_storage_file
+from app.services.document_storage import write_new_private_storage_file
+from app.services.completion_pdf_ownership import (
+    capture_completion_pdf_receipt,
+    cleanup_failed_completion_pdf_registration,
+    pending_completion_pdfs,
+    register_created_completion_pdf,
+)
 from app.services.document_templates import (
     CompletionDocumentTemplateContext,
     build_completion_document_title,
@@ -180,7 +187,11 @@ def write_completion_document_pdf_to_storage(
     learner: User | None,
     learner_profile: LearnerProfile | None = None,
     organization: Organization | None = None,
+    session: AsyncSession | None = None,
 ) -> str:
+    if session is not None:
+        pending_completion_pdfs(session)
+
     course_title = (
         course.title
         if course and course.title
@@ -262,7 +273,37 @@ def write_completion_document_pdf_to_storage(
 
     relative_path = build_completion_document_storage_path(document)
 
-    return write_private_storage_file(relative_path, pdf_bytes)
+    stored_path = write_new_private_storage_file(relative_path, pdf_bytes)
+    if session is not None:
+        receipt = None
+        try:
+            candidate = capture_completion_pdf_receipt(stored_path)
+            if (
+                candidate.size != len(pdf_bytes)
+                or candidate.sha256 != hashlib.sha256(pdf_bytes).hexdigest()
+            ):
+                raise RuntimeError(
+                    'Generated completion PDF content changed before registration'
+                )
+            receipt = candidate
+            register_created_completion_pdf(session, stored_path)
+        except BaseException as registration_error:
+            if receipt is None:
+                registration_error.add_note(
+                    'Completion PDF ownership was not confirmed; file preserved'
+                )
+            else:
+                try:
+                    cleanup_failed_completion_pdf_registration(
+                        session, receipt
+                    )
+                except BaseException as cleanup_error:
+                    registration_error.add_note(
+                        'Completion PDF cleanup unconfirmed: '
+                        + repr(cleanup_error)
+                    )
+            raise
+    return stored_path
 
 
 async def ensure_completion_document_for_enrollment(
@@ -296,6 +337,7 @@ async def ensure_completion_document_for_enrollment(
                 learner=learner,
                 learner_profile=learner_profile,
                 organization=organization,
+                session=session,
             )
             mark_completion_document_generation_metadata(
                 existing_document,
@@ -356,6 +398,7 @@ async def ensure_completion_document_for_enrollment(
         learner=learner,
         learner_profile=learner_profile,
         organization=organization,
+        session=session,
     )
     mark_completion_document_generation_metadata(
         document,

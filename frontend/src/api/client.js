@@ -60,7 +60,7 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const message = data?.detail || `HTTP ${response.status}`;
-    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    const error = new Error(typeof message === "string" ? message : (message?.message || JSON.stringify(message)));
     error.status = response.status;
     error.payload = data;
     throw error;
@@ -282,7 +282,7 @@ export async function downloadAccountDocument(documentId) {
     }
 
     const message = data?.detail || `HTTP ${response.status}`;
-    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    const error = new Error(typeof message === "string" ? message : (message?.message || JSON.stringify(message)));
     error.status = response.status;
     error.payload = data;
     throw error;
@@ -781,7 +781,7 @@ export async function downloadAdminDocumentGenerationEvent(documentId, eventId) 
     }
 
     const message = data?.detail || `HTTP ${response.status}`;
-    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    const error = new Error(typeof message === "string" ? message : (message?.message || JSON.stringify(message)));
     error.status = response.status;
     error.payload = data;
     throw error;
@@ -829,7 +829,7 @@ export async function downloadAdminDocument(documentId) {
     }
 
     const message = data?.detail || `HTTP ${response.status}`;
-    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    const error = new Error(typeof message === "string" ? message : (message?.message || JSON.stringify(message)));
     error.status = response.status;
     error.payload = data;
     throw error;
@@ -1397,28 +1397,10 @@ export async function reopenAdminFrdoObligation(
 }
 
 
-export async function prepareAdminFrdoRegistryExport(
-  obligationId
-) {
-  return request(
-    `/api/v1/admin/frdo/obligations/${obligationId}/export`,
-    {
-      method: "POST",
-    }
-  );
-}
 
 
-export async function prepareAdminFrdoPortalArtifact(
-  obligationId
-) {
-  return request(
-    `/api/v1/admin/frdo/obligations/${obligationId}/portal-artifact`,
-    {
-      method: "POST",
-    }
-  );
-}
+
+
 
 
 export async function getAdminFrdoSubmissionAttempts(
@@ -1534,28 +1516,10 @@ export async function reopenAdminMintrudObligation(
 }
 
 
-export async function prepareAdminMintrudRegistryExport(
-  obligationId
-) {
-  return request(
-    `/api/v1/admin/mintrud/obligations/${obligationId}/export`,
-    {
-      method: "POST",
-    }
-  );
-}
 
 
-export async function prepareAdminMintrudPortalArtifact(
-  obligationId
-) {
-  return request(
-    `/api/v1/admin/mintrud/obligations/${obligationId}/portal-artifact`,
-    {
-      method: "POST",
-    }
-  );
-}
+
+
 
 
 

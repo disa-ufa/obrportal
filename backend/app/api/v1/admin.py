@@ -1,5 +1,9 @@
 from __future__ import annotations
+from app.services.registry_batch_transaction import get_registry_batch_db, require_registry_batch_user
+from app.services.registry_import_transaction import prepare_import_scope, get_registry_import_db, require_registry_import_user
 
+import asyncio
+from hashlib import sha256
 import re
 import shutil
 import subprocess
@@ -8,6 +12,7 @@ from pathlib import Path, PurePosixPath
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
+from app.services.registry_release_gate import require_registry_batch_exports_enabled
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
@@ -19,6 +24,15 @@ from app.api.v1.rbac import get_user_permission_codes, require_permission
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import get_db
+from app.services.registry_document_transaction import (
+    get_registry_document_db, require_registry_document_user,
+    lock_document_sources, recheck_document_permission,
+)
+from app.services.registry_batch_commit_outcome import (
+    BatchCommitOutcome,
+    acquire_batch_commit_fence,
+    check_registry_batch_commit_outcome,
+)
 from app.models.audit_event import AuditEvent
 from app.models.assignment_submission import AssignmentSubmission
 from app.models.course import Course
@@ -49,10 +63,12 @@ from app.services.compliance_registry_attempts import (
     mark_registry_exported,
     mark_registry_submission,
     record_registry_submission_result,
+    require_registry_attempt_read_committed,
     validate_registry_attempt_artifact_integrity,
     validate_registry_approval_current,
 )
 from app.services.compliance_registry_batches import (
+    compensate_registry_batch_export,
     RegistrySubmissionBatchError,
     create_mintrud_registry_submission_batch,
     delete_registry_submission_batch_artifact_safely,
@@ -121,6 +137,7 @@ from app.services.completion_documents import (
     write_completion_document_pdf_to_storage,
 )
 from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUSES,
     OBLIGATION_STATUS_NEEDS_APPROVAL,
@@ -145,6 +162,8 @@ from app.services.frdo_po_portal_mapping import (
     normalize_frdo_po_classifier_value,
     search_frdo_po_classifier_values,
 )
+from app.services.registry_action_lockset import RegistryActionLockError, RegistrySourceFence
+from app.services.registry_source_write_scope import acquire_discovered_registry_source_write_scope
 from app.services.compliance_registry_approval import (
     apply_registry_approval,
     build_registry_approval_snapshot,
@@ -2400,6 +2419,9 @@ async def delete_organization(
     current_user: User = Depends(require_permission("admin.organizations.write")),
     session: AsyncSession = Depends(get_db),
 ) -> AdminDeleteResult:
+    # Import/other membership writers do not fence organization insertions yet.
+    # Fail before DELETE so FK SET NULL cannot escape a bounded source graph.
+    raise HTTPException(status_code=409, detail="registry.organization_delete_requires_coordinated_writers")
     organization = await get_admin_organization_or_404(organization_id, session)
     await ensure_organization_can_be_deleted(organization, session)
 
@@ -3298,9 +3320,13 @@ async def create_admin_document(
     course_id: str | None = Form(default=None),
     enrollment_id: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
-    current_user: User = Depends(require_permission("admin.users.write")),
-    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_registry_document_user),
+    session: AsyncSession = Depends(get_registry_document_db),
 ) -> AdminDocumentItem:
+    await lock_document_sources(session=session, user_id=user_id.strip(),
+        course_id=course_id.strip() if course_id and course_id.strip() else None,
+        enrollment_id=enrollment_id.strip() if enrollment_id and enrollment_id.strip() else None)
+    await recheck_document_permission(session, current_user)
     user = await get_admin_user_or_404(user_id.strip(), session)
 
     normalized_title = title.strip()
@@ -3643,10 +3669,11 @@ async def update_admin_document(
     course_id: str | None = Form(default=None),
     enrollment_id: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
-    current_user: User = Depends(require_permission("admin.users.write")),
-    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_registry_document_user),
+    session: AsyncSession = Depends(get_registry_document_db),
 ) -> AdminDocumentItem:
-    document = await get_admin_document_or_404(document_id, session)
+    document = await lock_document_sources(session=session, document_id=document_id, course_id=course_id.strip() if course_id and course_id.strip() else None, enrollment_id=enrollment_id.strip() if enrollment_id and enrollment_id.strip() else None)
+    await recheck_document_permission(session, current_user)
 
     has_file = file is not None and bool(file.filename)
     has_changes = any(
@@ -3968,10 +3995,11 @@ async def update_admin_document(
 async def delete_admin_document(
     document_id: str,
     request: Request,
-    current_user: User = Depends(require_permission("admin.users.write")),
-    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_registry_document_user),
+    session: AsyncSession = Depends(get_registry_document_db),
 ) -> AdminDeleteResult:
-    document = await get_admin_document_or_404(document_id, session)
+    document = await lock_document_sources(session=session, document_id=document_id)
+    await recheck_document_permission(session, current_user)
 
     deleted_document_id = str(document.id)
     storage_path = document.storage_path
@@ -4103,72 +4131,78 @@ async def regenerate_admin_completion_document(
         session,
     )
 
-    if (
-        document.status == "available"
-        and before.get("revoked_at") is not None
-    ):
-        await lock_registry_approval_for_document(
-            session,
-            document_id=str(document.id),
+    boundary = CompletionPDFTransactionBoundary(session)
+    try:
+        if (
+            document.status == "available"
+            and before.get("revoked_at") is not None
+        ):
+            await lock_registry_approval_for_document(
+                session,
+                document_id=str(document.id),
+            )
+
+        document.storage_path = write_completion_document_pdf_to_storage(
+            enrollment=enrollment,
+            document=document,
+            course=course,
+            learner=learner,
+            learner_profile=learner_profile,
+            organization=organization,
+            session=session,
         )
-
-    document.storage_path = write_completion_document_pdf_to_storage(
-        enrollment=enrollment,
-        document=document,
-        course=course,
-        learner=learner,
-        learner_profile=learner_profile,
-        organization=organization,
-    )
-    mark_completion_document_generation_metadata(
-        document,
-        actor_user=current_user,
-        source="admin_regenerate",
-    )
-    add_completion_document_generation_event(
-        document=document,
-        session=session,
-        actor_user=current_user,
-        source="admin_regenerate",
-    )
-
-    if document.status == "available":
-        apply_document_status_metadata(
+        mark_completion_document_generation_metadata(
             document,
-            "draft",
-            current_user,
+            actor_user=current_user,
+            source="admin_regenerate",
         )
-    await session.flush()
+        add_completion_document_generation_event(
+            document=document,
+            session=session,
+            actor_user=current_user,
+            source="admin_regenerate",
+        )
 
-    after = document_record_snapshot(document)
+        if document.status == "available":
+            apply_document_status_metadata(
+                document,
+                "draft",
+                current_user,
+            )
+        await session.flush()
 
-    if (
-        before.get("revoked_at")
-        != after.get("revoked_at")
-    ):
-        await invalidate_registry_approval_for_document(
+        after = document_record_snapshot(document)
+
+        if (
+            before.get("revoked_at")
+            != after.get("revoked_at")
+        ):
+            await invalidate_registry_approval_for_document(
+                session,
+                document_id=str(document.id),
+                invalidated_at=datetime.now(
+                    timezone.utc
+                ),
+            )
+
+        await create_admin_audit_event(
             session,
-            document_id=str(document.id),
-            invalidated_at=datetime.now(
-                timezone.utc
-            ),
+            actor_user=current_user,
+            action="admin.document_regenerated",
+            entity_type="document",
+            entity_id=str(document.id),
+            payload={
+                "before": before,
+                "after": after,
+                "regenerated_file_available": bool(document.storage_path),
+            },
+            request=request,
         )
 
-    await create_admin_audit_event(
-        session,
-        actor_user=current_user,
-        action="admin.document_regenerated",
-        entity_type="document",
-        entity_id=str(document.id),
-        payload={
-            "before": before,
-            "after": after,
-            "regenerated_file_available": bool(document.storage_path),
-        },
-        request=request,
-    )
-
-    await session.commit()
+        await boundary.commit()
+    except (Exception, asyncio.CancelledError) as exc:
+        await boundary.compensate(exc)
+        raise
 
     row = await get_admin_document_row_or_404(str(document.id), session)
 
@@ -4903,6 +4937,15 @@ async def delete_admin_course_cover(
     return build_admin_course_detail(course)
 
 
+# Direct Course columns used by load_current_registry_applicability_inputs for
+# either registry. Course ID is immutable here; catalog mappings have a separate
+# writer. Presence, not cached-value equality, selects the protected path.
+COURSE_APPLICABILITY_INPUT_FIELDS = frozenset({
+    "document_type", "regulatory_program_type",
+    "frdo_requirement_mode", "mintrud_requirement_mode",
+})
+
+
 @router.patch("/courses/{course_id}", response_model=AdminCourseDetail)
 async def update_admin_course(
     course_id: str,
@@ -4911,42 +4954,46 @@ async def update_admin_course(
     current_user: User = Depends(require_permission("catalog.write")),
     session: AsyncSession = Depends(get_db),
 ) -> AdminCourseDetail:
-    course = await get_admin_course_or_404(course_id, session)
-    data = normalize_course_update_data(model_to_dict(payload, exclude_unset=True))
-
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No fields to update",
-        )
-
-    before = course_snapshot(course)
-
-    approval_relevant_title_changed = (
-        "title" in data
-        and before.get("title")
-        != data.get("title")
-    )
-
-    if approval_relevant_title_changed:
-        await lock_registry_approvals_for_course(
-            session,
-            course_id=str(course.id),
-        )
-
-    for field, value in data.items():
-        setattr(course, field, value)
-
     try:
-        await session.flush()
+        # Auth/RBAC only read this request's transaction. Do not autoflush a
+        # dirty identity before the source scope can reject unsafe entry.
+        with session.no_autoflush:
+            course = await get_admin_course_or_404(course_id, session)
+            data = normalize_course_update_data(model_to_dict(payload, exclude_unset=True))
 
+            if not data:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No fields to update",
+                )
+
+            if COURSE_APPLICABILITY_INPUT_FIELDS.intersection(data):
+                # First lock-taking protocol: sources -> both decision keys for
+                # every enrollment -> sorted, refreshed obligations. The helper
+                # checks READ COMMITTED and re-discovers scope after waits.
+                await acquire_discovered_registry_source_write_scope(
+                    session=session,
+                    roots=(RegistrySourceFence("course", str(course.id)),),
+                )
+                # A pre-lock ORM identity may predate a competing writer's COMMIT.
+                await session.refresh(course)
+
+        before = course_snapshot(course)
+        approval_relevant_title_changed = (
+            "title" in data and before.get("title") != data.get("title")
+        )
+        if approval_relevant_title_changed:
+            await lock_registry_approvals_for_course(session, course_id=str(course.id))
+
+        for field, value in data.items():
+            setattr(course, field, value)
+
+        await session.flush()
         if approval_relevant_title_changed:
             await invalidate_registry_approvals_for_course(
                 session,
                 course_id=str(course.id),
-                invalidated_at=datetime.now(
-                    timezone.utc
-                ),
+                invalidated_at=datetime.now(timezone.utc),
             )
 
         await create_admin_audit_event(
@@ -4965,12 +5012,18 @@ async def update_admin_course(
 
         await session.commit()
         await session.refresh(course)
+    except RegistryActionLockError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except IntegrityError:
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Course with this slug already exists",
         )
+    except (Exception, asyncio.CancelledError):
+        await session.rollback()
+        raise
 
     return build_admin_course_detail(course)
 
@@ -7488,6 +7541,7 @@ async def create_admin_enrollment(
         started_at=payload.started_at,
         completed_at=payload.completed_at,
     )
+    boundary = CompletionPDFTransactionBoundary(session)
     session.add(enrollment)
 
     try:
@@ -7513,13 +7567,15 @@ async def create_admin_enrollment(
             request=request,
         )
 
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Enrollment already exists for this user and course",
-        )
+        await boundary.commit()
+    except (Exception, asyncio.CancelledError) as exc:
+        await boundary.compensate(exc)
+        if isinstance(exc, IntegrityError) and not boundary.commit_attempted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Enrollment already exists for this user and course",
+            )
+        raise
 
     row = await get_admin_enrollment_row_or_404(enrollment_id, session)
 
@@ -7619,6 +7675,7 @@ async def create_admin_group_enrollments(
         session.add(enrollment)
         created_enrollments.append(enrollment)
 
+    boundary = CompletionPDFTransactionBoundary(session)
     try:
         await session.flush()
         created_enrollment_ids = [
@@ -7662,13 +7719,15 @@ async def create_admin_group_enrollments(
             request=request,
         )
 
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Some enrollments already exist for this course",
-        )
+        await boundary.commit()
+    except (Exception, asyncio.CancelledError) as exc:
+        await boundary.compensate(exc)
+        if isinstance(exc, IntegrityError) and not boundary.commit_attempted:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Some enrollments already exist for this course",
+            )
+        raise
 
     created_items: list[AdminEnrollmentItem] = []
 
@@ -7878,77 +7937,116 @@ async def update_admin_enrollment(
     current_user: User = Depends(require_permission("admin.users.write")),
     session: AsyncSession = Depends(get_db),
 ) -> AdminEnrollmentItem:
-    enrollment = await get_admin_enrollment_or_404(enrollment_id, session)
-    data = model_to_dict(payload, exclude_unset=True)
+    boundary = CompletionPDFTransactionBoundary(session)
+    try:
+        with session.no_autoflush:
+            enrollment = await get_admin_enrollment_or_404(enrollment_id, session)
+            data = model_to_dict(payload, exclude_unset=True)
 
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No fields to update",
-        )
+            if not data:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No fields to update",
+                )
 
-    before = enrollment_snapshot(enrollment)
+            # Fence the old source graph and the requested new organization.
+            additional_source_fences: tuple[RegistrySourceFence, ...] = ()
+            if "organization_id" in data:
+                requested_organization_id = normalize_optional_reference(
+                    data["organization_id"]
+                )
+                if requested_organization_id is not None:
+                    await get_admin_organization_or_404(
+                        requested_organization_id, session
+                    )
+                    additional_source_fences = (
+                        RegistrySourceFence(
+                            "organization", str(requested_organization_id)
+                        ),
+                    )
 
-    if "status" in data and data["status"] is not None:
-        enrollment.status = normalize_enrollment_status(data["status"])
+            await acquire_discovered_registry_source_write_scope(
+                session=session,
+                roots=(RegistrySourceFence("enrollment", str(enrollment.id)),),
+                additional_source_fences=additional_source_fences,
+            )
 
-    if "organization_id" in data:
-        organization_id = normalize_optional_reference(data["organization_id"])
-        if organization_id is not None:
-            await get_admin_organization_or_404(organization_id, session)
-        enrollment.organization_id = organization_id
+            # Re-read values after a competing transaction may have committed.
+            await session.refresh(enrollment)
 
-    if "learning_group_id" in data:
-        enrollment.learning_group_id = normalize_optional_reference(data["learning_group_id"])
+        before = enrollment_snapshot(enrollment)
 
-    if "started_at" in data:
-        enrollment.started_at = data["started_at"]
+        if "status" in data and data["status"] is not None:
+            enrollment.status = normalize_enrollment_status(data["status"])
 
-    if (
-        "completed_at" in data
-        and enrollment.completed_at is None
-    ):
-        enrollment.completed_at = data["completed_at"]
+        if "organization_id" in data:
+            organization_id = normalize_optional_reference(data["organization_id"])
+            if organization_id is not None:
+                await get_admin_organization_or_404(organization_id, session)
+            enrollment.organization_id = organization_id
 
-    await ensure_learning_group_assignment_is_valid(
-        user_id=str(enrollment.user_id),
-        organization_id=str(enrollment.organization_id) if enrollment.organization_id else None,
-        learning_group_id=str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
-        session=session,
-    )
+        if "learning_group_id" in data:
+            enrollment.learning_group_id = normalize_optional_reference(data["learning_group_id"])
 
-    if enrollment.status == "completed":
-        await ensure_enrollment_completed(
-            enrollment=enrollment,
+        if "started_at" in data:
+            enrollment.started_at = data["started_at"]
+
+        if (
+            "completed_at" in data
+            and enrollment.completed_at is None
+        ):
+            enrollment.completed_at = data["completed_at"]
+
+        await ensure_learning_group_assignment_is_valid(
+            user_id=str(enrollment.user_id),
+            organization_id=str(enrollment.organization_id) if enrollment.organization_id else None,
+            learning_group_id=str(enrollment.learning_group_id) if enrollment.learning_group_id else None,
             session=session,
-            completed_at=(
-                data.get("completed_at")
-                if "completed_at" in data
-                else None
-            ),
         )
 
-    await session.flush()
+        if enrollment.status == "completed":
+            await ensure_enrollment_completed(
+                enrollment=enrollment,
+                session=session,
+                completed_at=(
+                    data.get("completed_at")
+                    if "completed_at" in data
+                    else None
+                ),
+            )
 
-    await create_admin_audit_event(
-        session,
-        actor_user=current_user,
-        action="admin.enrollment_updated",
-        entity_type="enrollment",
-        entity_id=str(enrollment.id),
-        payload={
-            "before": before,
-            "after": enrollment_snapshot(enrollment),
-            "changed_fields": sorted(data.keys()),
-        },
-        request=request,
-    )
+        await session.flush()
 
-    await session.commit()
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action="admin.enrollment_updated",
+            entity_type="enrollment",
+            entity_id=str(enrollment.id),
+            payload={
+                "before": before,
+                "after": enrollment_snapshot(enrollment),
+                "changed_fields": sorted(data.keys()),
+            },
+            request=request,
+        )
 
-    row = await get_admin_enrollment_row_or_404(enrollment_id, session)
+        await boundary.commit()
 
-    return build_admin_enrollment_item(row)
+        row = await get_admin_enrollment_row_or_404(enrollment_id, session)
+
+        return build_admin_enrollment_item(row)
+    except RegistryActionLockError as exc:
+        await boundary.compensate(exc)
+        if boundary.commit_attempted:
+            raise
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    except (Exception, asyncio.CancelledError) as exc:
+        await boundary.compensate(exc)
+        raise
 
 
 @router.delete("/enrollments/{enrollment_id}", response_model=AdminDeleteResult)
@@ -8034,16 +8132,11 @@ async def apply_learner_import(
     batch_id: str,
     request: Request,
     current_user: User = Depends(
-        require_permission("admin.users.write")
+        require_registry_import_user
     ),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_registry_import_db),
 ) -> AdminLearnerImportBatchDetail:
-    batch = (
-        await get_admin_learner_import_batch_or_404(
-            batch_id,
-            session,
-        )
-    )
+    batch = await prepare_import_scope(session=session, batch_id=batch_id, actor=current_user)
 
     try:
         preflight = (
@@ -9209,7 +9302,7 @@ async def get_admin_frdo_obligation_or_404(
     )
 
     if for_update:
-        query = query.with_for_update()
+        query = query.with_for_update().execution_options(populate_existing=True)
 
     result = await session.execute(
         query
@@ -10339,7 +10432,7 @@ async def get_admin_mintrud_obligation_or_404(
     )
 
     if for_update:
-        query = query.with_for_update()
+        query = query.with_for_update().execution_options(populate_existing=True)
 
     result = await session.execute(
         query
@@ -12584,6 +12677,140 @@ async def record_admin_mintrud_submission_attempt_result(
     )
 
 
+async def get_admin_registry_export_obligation_or_404(
+    obligation_id: str,
+    session: AsyncSession,
+    *,
+    registry: str,
+) -> RegistryObligation:
+    """Preserve 404 priority, then check isolation before the export row lock."""
+    getter, label = {
+        REGISTRY_FRDO: (get_admin_frdo_obligation_or_404, "FRDO"),
+        REGISTRY_MINTRUD: (get_admin_mintrud_obligation_or_404, "Mintrud"),
+    }[registry]
+    if settings.registry_attempt_applicability_veto_enabled:
+        # Scalar discovery must not populate the identity map: the locked getter
+        # below must still observe deletion or changes after this unlocked read.
+        result = await session.execute(
+            select(RegistryObligation.id).where(
+                RegistryObligation.id == obligation_id,
+                RegistryObligation.registry == registry,
+            )
+        )
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=label + " obligation not found",
+            )
+        try:
+            await require_registry_attempt_read_committed(session)
+        except RegistrySubmissionAttemptError as exc:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            ) from exc
+
+    return await getter(obligation_id, session, for_update=True)
+
+
+async def _compensate_failed_registry_export(
+    session: AsyncSession,
+    *,
+    artifact_path_to_cleanup: str | None,
+    commit_attempted: bool,
+    original_error: Exception,
+) -> None:
+    """Compensate safely without hiding rollback or cleanup failures."""
+    failures: list[str] = []
+
+    try:
+        await session.rollback()
+    except Exception as rollback_error:
+        failures.append(f"rollback failed: {rollback_error}")
+
+    # Before COMMIT, the file belongs only to this failed operation.
+    # After COMMIT begins, its persistence status may be unknown.
+    if artifact_path_to_cleanup and not commit_attempted:
+        try:
+            deleted = delete_registry_artifact_safely(
+                artifact_path_to_cleanup
+            )
+        except Exception as cleanup_error:
+            failures.append(
+                f"artifact cleanup raised: {cleanup_error}"
+            )
+        else:
+            if not deleted:
+                failures.append(
+                    "artifact cleanup could not be confirmed"
+                )
+
+    if failures:
+        raise RuntimeError(
+            "Registry export compensation incomplete: "
+            + "; ".join(failures)
+            + f"; original failure: {original_error}"
+        ) from original_error
+
+async def _compensate_failed_registry_batch_export(
+    session: AsyncSession,
+    *,
+    artifact_path_to_cleanup: str | None,
+    commit_attempted: bool,
+    original_error: Exception | asyncio.CancelledError,
+    batch_id: str | None = None,
+    artifact_sha256: str | None = None,
+    registry: str | None = None,
+    commit_fence_acquired: bool = False,
+) -> None:
+    async def definitely_not_committed() -> bool:
+        if not (
+            commit_fence_acquired and batch_id and artifact_path_to_cleanup
+            and artifact_sha256 and registry
+        ):
+            return False
+        outcome = await check_registry_batch_commit_outcome(
+            batch_id=batch_id,
+            registry=registry,
+            artifact_path=artifact_path_to_cleanup,
+            artifact_sha256=artifact_sha256,
+        )
+        return outcome is BatchCommitOutcome.NOT_COMMITTED
+
+    def delete_exact_artifact(storage_path: str) -> bool:
+        if storage_path != artifact_path_to_cleanup:
+            return False
+        if commit_attempted:
+            # Even after proving no DB commit, do not delete an unexpected or
+            # replaced file. Paths are UUID-scoped and stored under private root.
+            if not artifact_sha256:
+                return False
+            path = resolve_private_storage_path(storage_path)
+            if path is None or not path.is_file():
+                return False
+            digest = sha256()
+            try:
+                with path.open("rb") as content:
+                    for block in iter(lambda: content.read(1024 * 1024), b""):
+                        digest.update(block)
+            except OSError:
+                return False
+            if digest.hexdigest() != artifact_sha256.lower():
+                return False
+        return delete_registry_submission_batch_artifact_safely(storage_path)
+
+    # The compensator rolls back *before* verification. Only then can the
+    # independent session acquire the writer's transaction advisory lock.
+    await compensate_registry_batch_export(
+        session,
+        artifact_path_to_cleanup=artifact_path_to_cleanup,
+        commit_attempted=commit_attempted,
+        original_error=original_error,
+        delete_artifact=delete_exact_artifact,
+        definitely_not_committed=(definitely_not_committed if commit_attempted else None),
+    )
+
 async def prepare_admin_registry_export_attempt(
     session: AsyncSession,
     *,
@@ -12593,6 +12820,7 @@ async def prepare_admin_registry_export_attempt(
     audit_action: str,
 ) -> AdminRegistrySubmissionAttemptItem:
     artifact_path_to_cleanup: str | None = None
+    commit_attempted = False
 
     try:
         await validate_registry_approval_current(
@@ -12693,18 +12921,21 @@ async def prepare_admin_registry_export_attempt(
             request=request,
         )
 
+        # A failed commit may have reached PostgreSQL.
+        # Keep the artifact if commit outcome is unknown.
+        commit_attempted = True
         await session.commit()
 
     except (
         RegistryExportPackageError,
         RegistrySubmissionAttemptError,
     ) as exc:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_artifact_safely(
-                artifact_path_to_cleanup
-            )
+        await _compensate_failed_registry_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+        )
 
         raise HTTPException(
             status_code=(
@@ -12713,17 +12944,28 @@ async def prepare_admin_registry_export_attempt(
             detail=str(exc),
         ) from exc
 
-    except Exception:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_artifact_safely(
-                artifact_path_to_cleanup
-            )
+    except Exception as exc:
+        await _compensate_failed_registry_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+        )
 
         raise
 
     return response_item
+
+
+def _reject_legacy_single_registry_export() -> None:
+    """Release 1.0 exports are batch-only; no configuration can bypass this guard."""
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={
+            "code": "registry.single_export.disabled",
+            "message": "Одиночная выгрузка отключена. Используйте пакетную выгрузку.",
+        },
+    )
 
 
 @router.post(
@@ -12745,15 +12987,17 @@ async def prepare_admin_frdo_portal_artifact(
         get_db
     ),
 ) -> AdminRegistrySubmissionAttemptItem:
+    _reject_legacy_single_registry_export()
     obligation = (
-        await get_admin_frdo_obligation_or_404(
+        await get_admin_registry_export_obligation_or_404(
             obligation_id,
             session,
-            for_update=True,
+            registry=REGISTRY_FRDO,
         )
     )
 
     artifact_path_to_cleanup: str | None = None
+    commit_attempted = False
 
     try:
         await validate_registry_approval_current(
@@ -12931,6 +13175,9 @@ async def prepare_admin_frdo_portal_artifact(
             request=request,
         )
 
+        # A failed commit may have reached PostgreSQL.
+        # Keep the artifact if commit outcome is unknown.
+        commit_attempted = True
         await session.commit()
 
     except (
@@ -12938,12 +13185,12 @@ async def prepare_admin_frdo_portal_artifact(
         RegistrySubmissionAttemptError,
         FrdoPoPortalArtifactError,
     ) as exc:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_artifact_safely(
-                artifact_path_to_cleanup
-            )
+        await _compensate_failed_registry_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+        )
 
         raise HTTPException(
             status_code=(
@@ -12954,13 +13201,13 @@ async def prepare_admin_frdo_portal_artifact(
             ),
         ) from exc
 
-    except Exception:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_artifact_safely(
-                artifact_path_to_cleanup
-            )
+    except Exception as exc:
+        await _compensate_failed_registry_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+        )
 
         raise
 
@@ -12986,11 +13233,12 @@ async def prepare_admin_frdo_registry_export(
         get_db
     ),
 ) -> AdminRegistrySubmissionAttemptItem:
+    _reject_legacy_single_registry_export()
     obligation = (
-        await get_admin_frdo_obligation_or_404(
+        await get_admin_registry_export_obligation_or_404(
             obligation_id,
             session,
-            for_update=True,
+            registry=REGISTRY_FRDO,
         )
     )
 
@@ -13218,17 +13466,18 @@ async def prepare_admin_mintrud_submission_batch(
     payload: AdminMintrudSubmissionBatchCreate,
     request: Request,
     current_user: User = Depends(
-        require_permission(
-            "mintrud.export"
-        )
+        require_registry_batch_user('mintrud')
     ),
-    session: AsyncSession = Depends(
-        get_db
-    ),
+    session: AsyncSession = Depends(get_registry_batch_db),
 ) -> AdminMintrudSubmissionBatchItem:
+    require_registry_batch_exports_enabled()
     artifact_path_to_cleanup: (
         str | None
     ) = None
+    commit_attempted = False
+    commit_fence_acquired = False
+    batch_id_for_recovery: str | None = None
+    artifact_sha256_for_recovery: str | None = None
 
     try:
         batch = (
@@ -13246,6 +13495,12 @@ async def prepare_admin_mintrud_submission_batch(
         artifact_path_to_cleanup = (
             batch.artifact_path
         )
+        batch_id_for_recovery = str(batch.id)
+        artifact_sha256_for_recovery = str(batch.artifact_sha256)
+        await acquire_batch_commit_fence(
+            session, batch_id=batch_id_for_recovery
+        )
+        commit_fence_acquired = True
 
         response_item = (
             build_admin_mintrud_submission_batch_item(
@@ -13298,31 +13553,40 @@ async def prepare_admin_mintrud_submission_batch(
             request=request,
         )
 
+        commit_attempted = True
         await session.commit()
 
-    except RegistrySubmissionBatchError as exc:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_submission_batch_artifact_safely(
-                artifact_path_to_cleanup
+    except asyncio.CancelledError as exc:
+        # Before the service returns, it owns the artifact and compensation.
+        if artifact_path_to_cleanup is not None:
+            await _compensate_failed_registry_batch_export(
+                session,
+                artifact_path_to_cleanup=artifact_path_to_cleanup,
+                commit_attempted=commit_attempted,
+                original_error=exc,
+                batch_id=batch_id_for_recovery,
+                artifact_sha256=artifact_sha256_for_recovery,
+                registry="mintrud",
+                commit_fence_acquired=commit_fence_acquired,
             )
+        raise
 
-        raise HTTPException(
-            status_code=(
-                status.HTTP_409_CONFLICT
-            ),
-            detail=str(exc),
-        ) from exc
-
-    except Exception:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_submission_batch_artifact_safely(
-                artifact_path_to_cleanup
-            )
-
+    except Exception as exc:
+        await _compensate_failed_registry_batch_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+            batch_id=batch_id_for_recovery,
+            artifact_sha256=artifact_sha256_for_recovery,
+            registry="mintrud",
+            commit_fence_acquired=commit_fence_acquired,
+        )
+        if isinstance(exc, RegistrySubmissionBatchError):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            ) from exc
         raise
 
     return response_item
@@ -13685,6 +13949,7 @@ async def download_admin_mintrud_submission_batch(
         get_db
     ),
 ):
+    require_registry_batch_exports_enabled()
     batch = await session.scalar(
         select(
             RegistrySubmissionBatch
@@ -13762,15 +14027,17 @@ async def prepare_admin_mintrud_portal_artifact(
         get_db
     ),
 ) -> AdminRegistrySubmissionAttemptItem:
+    _reject_legacy_single_registry_export()
     obligation = (
-        await get_admin_mintrud_obligation_or_404(
+        await get_admin_registry_export_obligation_or_404(
             obligation_id,
             session,
-            for_update=True,
+            registry=REGISTRY_MINTRUD,
         )
     )
 
     artifact_path_to_cleanup: str | None = None
+    commit_attempted = False
 
     try:
         contract = (
@@ -13923,6 +14190,9 @@ async def prepare_admin_mintrud_portal_artifact(
             request=request,
         )
 
+        # A failed commit may have reached PostgreSQL.
+        # Keep the artifact if commit outcome is unknown.
+        commit_attempted = True
         await session.commit()
 
     except (
@@ -13931,12 +14201,12 @@ async def prepare_admin_mintrud_portal_artifact(
         MintrudEisotXmlError,
         MintrudEisotXsdValidationError,
     ) as exc:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_artifact_safely(
-                artifact_path_to_cleanup
-            )
+        await _compensate_failed_registry_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+        )
 
         raise HTTPException(
             status_code=(
@@ -13945,13 +14215,13 @@ async def prepare_admin_mintrud_portal_artifact(
             detail=str(exc),
         ) from exc
 
-    except Exception:
-        await session.rollback()
-
-        if artifact_path_to_cleanup:
-            delete_registry_artifact_safely(
-                artifact_path_to_cleanup
-            )
+    except Exception as exc:
+        await _compensate_failed_registry_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+        )
 
         raise
 
@@ -13977,11 +14247,12 @@ async def prepare_admin_mintrud_registry_export(
         get_db
     ),
 ) -> AdminRegistrySubmissionAttemptItem:
+    _reject_legacy_single_registry_export()
     obligation = (
-        await get_admin_mintrud_obligation_or_404(
+        await get_admin_registry_export_obligation_or_404(
             obligation_id,
             session,
-            for_update=True,
+            registry=REGISTRY_MINTRUD,
         )
     )
 
@@ -14179,11 +14450,16 @@ async def prepare_admin_frdo_submission_batch(
     payload: AdminFrdoSubmissionBatchCreate,
     request: Request,
     current_user: User = Depends(
-        require_permission("frdo.export")
+        require_registry_batch_user('frdo')
     ),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_registry_batch_db),
 ) -> AdminFrdoSubmissionBatchItem:
+    require_registry_batch_exports_enabled()
     artifact_path_to_cleanup: str | None = None
+    commit_attempted = False
+    commit_fence_acquired = False
+    batch_id_for_recovery: str | None = None
+    artifact_sha256_for_recovery: str | None = None
 
     try:
         batch = await create_frdo_registry_submission_batch(
@@ -14193,6 +14469,12 @@ async def prepare_admin_frdo_submission_batch(
         )
 
         artifact_path_to_cleanup = batch.artifact_path
+        batch_id_for_recovery = str(batch.id)
+        artifact_sha256_for_recovery = str(batch.artifact_sha256)
+        await acquire_batch_commit_fence(
+            session, batch_id=batch_id_for_recovery
+        )
+        commit_fence_acquired = True
 
         response_item = (
             build_admin_frdo_submission_batch_item(
@@ -14221,31 +14503,40 @@ async def prepare_admin_frdo_submission_batch(
             request=request,
         )
 
+        commit_attempted = True
         await session.commit()
 
+    except asyncio.CancelledError as exc:
+        # Before the service returns, it owns the artifact and compensation.
+        if artifact_path_to_cleanup is not None:
+            await _compensate_failed_registry_batch_export(
+                session,
+                artifact_path_to_cleanup=artifact_path_to_cleanup,
+                commit_attempted=commit_attempted,
+                original_error=exc,
+                batch_id=batch_id_for_recovery,
+                artifact_sha256=artifact_sha256_for_recovery,
+                registry="frdo",
+                commit_fence_acquired=commit_fence_acquired,
+            )
+        raise
+
     except Exception as exc:
-        try:
-            await session.rollback()
-        finally:
-            if artifact_path_to_cleanup:
-                removed = (
-                    delete_registry_submission_batch_artifact_safely(
-                        artifact_path_to_cleanup
-                    )
-                )
-
-                if not removed:
-                    raise RuntimeError(
-                        "FRDO batch artifact cleanup "
-                        "could not be confirmed"
-                    ) from exc
-
+        await _compensate_failed_registry_batch_export(
+            session,
+            artifact_path_to_cleanup=artifact_path_to_cleanup,
+            commit_attempted=commit_attempted,
+            original_error=exc,
+            batch_id=batch_id_for_recovery,
+            artifact_sha256=artifact_sha256_for_recovery,
+            registry="frdo",
+            commit_fence_acquired=commit_fence_acquired,
+        )
         if isinstance(exc, RegistrySubmissionBatchError):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(exc),
             ) from exc
-
         raise
 
     return response_item
@@ -14377,6 +14668,7 @@ async def download_admin_frdo_submission_batch(
     _: User = Depends(require_permission("frdo.export")),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
+    require_registry_batch_exports_enabled()
     batch = await get_admin_frdo_submission_batch_or_404(
         batch_id,
         session,

@@ -3,6 +3,7 @@ const REAPPROVE = "Проверьте данные и нажмите «Повт�
 // Only fixed messages are displayed: API errors can include XML values or paths.
 export function formatMintrudError(error, readinessLabels = {}) {
   const detail = error?.payload?.detail;
+  if (detail?.code === "registry.batch_export.disabled") return "Пакетная выгрузка отключена в этой среде. История доступна для просмотра.";
   const issues = detail?.issues || detail?.readiness_errors || [];
   if (issues.length) {
     const labels = issues.map((item) => readinessLabels[item?.code]).filter(Boolean);

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from hashlib import sha256
 from pathlib import PurePosixPath
@@ -9,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.registry_obligation import RegistryObligation
+from app.services.registry_batch_replay import require_unexported_approval_events
 from app.models.registry_submission_batch import (
     RegistrySubmissionBatch,
     RegistrySubmissionBatchItem,
@@ -22,6 +24,7 @@ from app.services.compliance_registry_batches import (
     REGISTRY_SUBMISSION_BATCH_TRANSPORT_FILE,
     RegistrySubmissionBatchError,
     _freeze_batch_snapshot,
+    compensate_registry_batch_export,
     _normalize_generated_by_user_id,
     _validated_stored_fingerprint,
     delete_registry_submission_batch_artifact_safely,
@@ -35,6 +38,8 @@ from app.services.compliance_registry_contract import (
 )
 from app.services.document_storage import (
     normalize_relative_storage_path,
+    prepare_durable_artifact_directory,
+    sync_artifact_directory_chain,
     resolve_private_storage_path,
 )
 from app.services.frdo_po_portal_artifact import (
@@ -105,10 +110,7 @@ def write_frdo_batch_artifact_exclusive(
             "FRDO batch storage path is invalid"
         )
 
-    absolute_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    ancestor = prepare_durable_artifact_directory(absolute_path.parent)
 
     created = False
 
@@ -125,15 +127,18 @@ def write_frdo_batch_artifact_exclusive(
 
             handle.flush()
             os.fsync(handle.fileno())
+        sync_artifact_directory_chain(absolute_path.parent, ancestor)
 
-    except BaseException:
+    except (Exception, asyncio.CancelledError) as exc:
         if created:
             try:
                 absolute_path.unlink(missing_ok=True)
             except OSError as cleanup_exc:
-                raise RegistrySubmissionBatchError(
-                    "FRDO partial artifact cleanup failed"
-                ) from cleanup_exc
+                if not isinstance(exc, asyncio.CancelledError):
+                    raise RegistrySubmissionBatchError(
+                        "FRDO partial artifact cleanup failed"
+                    ) from cleanup_exc
+                exc.add_note(f"FRDO partial artifact cleanup failed: {cleanup_exc}")
 
         raise
 
@@ -146,6 +151,7 @@ async def _load_frdo_obligations_for_update(
     result = await session.execute(
         select(RegistryObligation)
         .where(RegistryObligation.id.in_(obligation_ids))
+        .order_by(RegistryObligation.id.asc())
         .with_for_update()
     )
 
@@ -191,6 +197,10 @@ async def create_frdo_registry_submission_batch(
     actor_id = _normalize_generated_by_user_id(
         generated_by_user_id
     )
+
+    from app.services.registry_batch_transaction import require_batch_transaction
+    await require_batch_transaction(session, registry='frdo', actor_id=actor_id,
+        obligation_ids=normalized_ids, error_type=RegistrySubmissionBatchError)
 
     obligations = await _load_frdo_obligations_for_update(
         session,
@@ -249,6 +259,13 @@ async def create_frdo_registry_submission_batch(
 
         frozen_snapshots.append(snapshot)
         fingerprints.append(fingerprint)
+
+    # Reject retries/overlaps before reading a template or writing an XLSX.
+    approval_event_ids = await require_unexported_approval_events(
+        session,
+        obligations=obligations,
+        error_type=RegistrySubmissionBatchError,
+    )
 
     try:
         template_bytes = read_verified_frdo_po_template_bytes(
@@ -314,6 +331,7 @@ async def create_frdo_registry_submission_batch(
                 position=position,
                 approval_snapshot_json=frozen_snapshots[position],
                 approval_fingerprint=fingerprints[position],
+                approval_event_id=approval_event_ids[position],
                 record_count=1,
             )
             for position, obligation in enumerate(obligations)
@@ -323,6 +341,16 @@ async def create_frdo_registry_submission_batch(
         session.add_all(items)
 
         await session.flush()
+
+    except asyncio.CancelledError as exc:
+        await compensate_registry_batch_export(
+            session,
+            artifact_path_to_cleanup=saved_path,
+            commit_attempted=False,
+            original_error=exc,
+            delete_artifact=delete_registry_submission_batch_artifact_safely,
+        )
+        raise
 
     except FileExistsError as exc:
         raise RegistrySubmissionBatchError(

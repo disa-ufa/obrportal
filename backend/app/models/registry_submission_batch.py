@@ -10,6 +10,8 @@ from sqlalchemy import (
     JSON,
     String,
     UniqueConstraint,
+    Index,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -192,6 +194,15 @@ class RegistrySubmissionBatchItem(
     __tablename__ = "registry_submission_batch_items"
 
     __table_args__ = (
+        # Legacy rows have NULL approval_event_id. This uniqueness rule is
+        # active only once P2 starts copying the actual approval event ID.
+        Index(
+            "uq_registry_batch_item_obligation_approval_event",
+            "obligation_id",
+            "approval_event_id",
+            unique=True,
+            postgresql_where=text("approval_event_id IS NOT NULL"),
+        ),
         UniqueConstraint(
             "batch_id",
             "obligation_id",
@@ -262,6 +273,13 @@ class RegistrySubmissionBatchItem(
     approval_fingerprint: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
+    )
+
+    # Frozen identity of the approval event exported by this item.
+    # P1 does not populate it; P2 must copy it before creating a new item.
+    approval_event_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
     )
 
     record_count: Mapped[int] = mapped_column(

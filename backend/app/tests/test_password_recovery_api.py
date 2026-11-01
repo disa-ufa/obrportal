@@ -1,3 +1,4 @@
+import secrets
 import asyncio
 import json
 import os
@@ -22,6 +23,11 @@ from app.services.user_password_tokens import (
     USER_PASSWORD_TOKEN_PURPOSE_PASSWORD_RESET,
     create_user_password_token,
 )
+
+
+# Generated once so setup and login assertions use the same test credentials.
+ORIGINAL_PASSWORD = secrets.token_urlsafe(24)
+RESET_PASSWORD = secrets.token_urlsafe(24)
 
 
 BASE_URL = os.getenv(
@@ -98,7 +104,7 @@ def create_user_with_token(
                     "Password recovery test user"
                 ),
                 hashed_password=get_password_hash(
-                    "OldPassword123!"
+                    ORIGINAL_PASSWORD
                 ),
                 is_active=is_active,
                 is_email_verified=(
@@ -319,7 +325,7 @@ def test_reset_password_changes_active_user_password() -> None:
         "/api/v1/auth/reset-password",
         {
             "token": created["raw_token"],
-            "password": "NewPassword123!",
+            "password": RESET_PASSWORD,
         },
     )
 
@@ -333,7 +339,7 @@ def test_reset_password_changes_active_user_password() -> None:
         "/api/v1/auth/login",
         {
             "email": email,
-            "password": "OldPassword123!",
+            "password": ORIGINAL_PASSWORD,
         },
     )
     new_status, new_payload = request_json(
@@ -341,7 +347,7 @@ def test_reset_password_changes_active_user_password() -> None:
         "/api/v1/auth/login",
         {
             "email": email,
-            "password": "NewPassword123!",
+            "password": RESET_PASSWORD,
         },
     )
 
@@ -370,7 +376,7 @@ def test_reset_password_token_is_single_use() -> None:
         "/api/v1/auth/reset-password",
         {
             "token": created["raw_token"],
-            "password": "NewPassword123!",
+            "password": RESET_PASSWORD,
         },
     )
     second_status, second_payload = request_json(
@@ -378,7 +384,7 @@ def test_reset_password_token_is_single_use() -> None:
         "/api/v1/auth/reset-password",
         {
             "token": created["raw_token"],
-            "password": "AnotherPassword123!",
+            "password": secrets.token_urlsafe(24),
         },
     )
 
@@ -408,7 +414,7 @@ def test_reset_password_rejects_initial_setup_token() -> None:
         "/api/v1/auth/reset-password",
         {
             "token": created["raw_token"],
-            "password": "NewPassword123!",
+            "password": RESET_PASSWORD,
         },
     )
 
@@ -437,7 +443,7 @@ def test_reset_password_rejects_inactive_user() -> None:
         "/api/v1/auth/reset-password",
         {
             "token": created["raw_token"],
-            "password": "NewPassword123!",
+            "password": RESET_PASSWORD,
         },
     )
 
@@ -453,10 +459,9 @@ def test_reset_password_rejects_invalid_token() -> None:
         "/api/v1/auth/reset-password",
         {
             "token": (
-                "invalid-password-reset-token-"
-                "1234567890"
+                secrets.token_urlsafe(24)
             ),
-            "password": "NewPassword123!",
+            "password": RESET_PASSWORD,
         },
     )
 

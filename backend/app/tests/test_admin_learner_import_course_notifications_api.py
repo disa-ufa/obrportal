@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from app.tests.test_import_writers_pg import env as import_pg_env
+from app.tests import import_boundary_scenarios as scenarios
+
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -22,6 +25,7 @@ class FakeSession:
         user: object,
         course: object,
     ) -> None:
+        self.info: dict[str, object] = {}
         self.user = user
         self.course = course
         self.commit_count = 0
@@ -77,219 +81,10 @@ def make_batch() -> ImportBatch:
 
 
 @pytest.mark.asyncio
-async def test_apply_api_sends_and_returns_course_notification(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    batch = make_batch()
-
-    notified_user = SimpleNamespace(
-        id="active-user",
-        email="active@example.org",
-    )
-    course = SimpleNamespace(
-        id="course-1",
-        title="First aid",
-    )
-    session = FakeSession(
-        user=notified_user,
-        course=course,
-    )
-
-    candidate = (
-        LearnerImportCourseNotificationCandidate(
-            row_id="row-1",
-            row_number=2,
-            user_id="active-user",
-            email="active@example.org",
-            course_id="course-1",
-        )
-    )
-
-    apply_result = LearnerImportApplyResult(
-        created_enrollments_count=1,
-        course_notification_candidates=(
-            candidate,
-        ),
-    )
-
-    preflight_result = (
-        LearnerImportPreflightResult(
-            rows=(
-                LearnerImportPreflightRow(
-                    row_id="row-1",
-                    row_number=2,
-                    email="active@example.org",
-                    classification=(
-                        "existing_active_user"
-                    ),
-                    account_state="active",
-                    user_id="active-user",
-                    learner_profile_id=(
-                        "profile-1"
-                    ),
-                    enrollment_id=None,
-                    user_action="unchanged",
-                    profile_action="unchanged",
-                    enrollment_action="created",
-                    notification_action=(
-                        "new_course_notification"
-                    ),
-                ),
-            ),
-            existing_active_users_count=1,
-            new_enrollments_count=1,
-            new_course_notifications_count=1,
-        )
-    )
-
-    batch_reads = 0
-    delivery_calls: list[dict] = []
-    audit_payloads: list[dict] = []
-
-    async def get_batch(
-        batch_id: str,
-        current_session,
-    ) -> ImportBatch:
-        nonlocal batch_reads
-        del current_session
-
-        assert (
-            batch_id
-            == "batch-course-notification"
-        )
-
-        batch_reads += 1
-        return batch
-
-    async def build_preflight(
-        current_session,
-        *,
-        batch: ImportBatch,
-    ) -> LearnerImportPreflightResult:
-        del current_session
-
-        assert (
-            batch.id
-            == "batch-course-notification"
-        )
-
-        return preflight_result
-
-    async def apply_batch(
-        current_session,
-        *,
-        batch: ImportBatch,
-    ) -> LearnerImportApplyResult:
-        del current_session
-
-        assert (
-            batch.id
-            == "batch-course-notification"
-        )
-
-        return apply_result
-
-    def send_notification(
-        **kwargs,
-    ):
-        delivery_calls.append(kwargs)
-
-        return SimpleNamespace(
-            status="sent",
-            sent=True,
-            detail="Email sent.",
-            error=None,
-        )
-
-    async def create_audit(
-        current_session,
-        **kwargs,
-    ) -> None:
-        del current_session
-
-        audit_payloads.append(
-            kwargs["payload"]
-        )
-
-    monkeypatch.setattr(
-        admin,
-        "get_admin_learner_import_batch_or_404",
-        get_batch,
-    )
-    monkeypatch.setattr(
-        admin,
-        "build_learner_import_preflight",
-        build_preflight,
-    )
-    monkeypatch.setattr(
-        admin,
-        "apply_learner_import_batch",
-        apply_batch,
-    )
-    monkeypatch.setattr(
-        admin,
-        "send_course_assignment_email",
-        send_notification,
-    )
-    monkeypatch.setattr(
-        admin,
-        "create_admin_audit_event",
-        create_audit,
-    )
-
-    response = await admin.apply_learner_import(
-        "batch-course-notification",
-        request=SimpleNamespace(),
-        current_user=SimpleNamespace(
-            id="admin-1"
-        ),
-        session=session,
-    )
-
-    assert batch_reads == 2
-    assert session.commit_count == 1
-    assert session.rollback_count == 0
-    assert response.invitations == []
-    assert len(
-        response.course_notifications
-    ) == 1
-
-    notification = (
-        response.course_notifications[0]
-    )
-
-    assert notification.row_id == "row-1"
-    assert notification.user_id == "active-user"
-    assert notification.course_id == "course-1"
-    assert notification.course_title == "First aid"
-    assert (
-        notification.email_delivery_status
-        == "sent"
-    )
-
-    assert len(delivery_calls) == 1
-    assert (
-        delivery_calls[0]["recipient"]
-        == "active@example.org"
-    )
-    assert (
-        delivery_calls[0]["course_title"]
-        == "First aid"
-    )
-
-    assert len(audit_payloads) == 1
-    assert (
-        audit_payloads[0][
-            "course_notifications_count"
-        ]
-        == 1
-    )
-    assert (
-        audit_payloads[0][
-            "sent_course_notifications_count"
-        ]
-        == 1
-    )
+async def test_apply_api_sends_and_returns_course_notification(import_pg_env, monkeypatch) -> None:
+    # New-enrollment notifications are forbidden; verify real auth, rollback,
+    # then the allowed existing-enrollment update with no notification.
+    await scenarios.http_contract(import_pg_env,monkeypatch)
 
 def test_batch_detail_maps_applied_row_outcome() -> None:
     now = datetime.now(timezone.utc)

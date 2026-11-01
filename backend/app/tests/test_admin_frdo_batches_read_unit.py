@@ -13,6 +13,13 @@ import app.api.v1.admin as admin
 from app.main import app
 
 
+@pytest.fixture(autouse=True)
+def enable_batch_exports_in_unit_tests(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(
+        settings, "production_exports_enabled", True
+    )
+
 def make_batch(registry="frdo"):
     now = datetime.now(timezone.utc)
 
