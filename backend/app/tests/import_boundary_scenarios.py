@@ -39,24 +39,75 @@ async def apply(maker,bid,actor):
 
 
 async def reject_creation(env, *, inactive=False, identity=False):
-    from fastapi import HTTPException
-    e,maker,data=env
-    bid,actor,_=await batch_setup(maker,data)
+    # Legacy test entry point. RC2 now supports controlled creation.
+    e, maker, data = env
+    bid, actor, oid = await batch_setup(maker, data)
+    new_email = uuid4().hex + '@test.invalid' if identity else None
+    target_course = data[0][1] if identity else data[1][1]
+
     async with maker.begin() as s:
-        (await s.get(User,data[0][0])).is_active=not inactive
+        user = await s.get(User, data[0][0])
+        user.is_active = not inactive
         if identity:
-            row=await s.scalar(select(ImportRow).where(ImportRow.batch_id==bid))
-            row.normalized_data_json={'email':uuid4().hex+'@test.invalid'}
+            row = await s.scalar(
+                select(ImportRow).where(ImportRow.batch_id == bid)
+            )
+            row.normalized_data_json = {
+                'email': new_email, 'first_name': 'New',
+            }
         else:
-            (await s.get(ImportBatch,bid)).course_id=data[1][1]
-    before=await snapshot(maker)
-    import pytest
-    with pytest.raises(HTTPException) as caught:
-        async with tx() as s:
-            await prepare(s,bid,actor)
-    assert caught.value.status_code==409
-    assert caught.value.detail=='registry.import_new_'+('identity' if identity else 'enrollment')+'_not_supported'
-    assert await snapshot(maker)==before
+            (await s.get(ImportBatch, bid)).course_id = target_course
+
+    before = await snapshot(maker)
+    result = await apply(maker, bid, actor)
+
+    assert result.error_rows_count == 0
+    assert result.created_users_count == int(identity)
+    assert result.created_enrollments_count == 1
+    assert result.created_profiles_count == 1
+
+    needs_invitation = inactive or identity
+    invitations = result.invitation_candidates
+    notifications = result.course_notification_candidates
+
+    assert len(invitations) == int(needs_invitation)
+    assert len(notifications) == int(not needs_invitation)
+
+    actual = await rows(maker, bid)
+    assert len(actual) == 1
+    row = actual[0]
+    assert row.status == 'applied'
+    assert row.user_id and row.learner_profile_id and row.enrollment_id
+
+    async with maker() as s:
+        user = await s.get(User, row.user_id)
+        enrollment = await s.get(Enrollment, row.enrollment_id)
+        batch = await s.get(ImportBatch, bid)
+
+        assert batch.status == 'applied'
+        assert user is not None and enrollment is not None
+        assert enrollment.user_id == user.id
+        assert enrollment.course_id == target_course
+        assert enrollment.organization_id == oid
+        assert enrollment.status == 'assigned'
+        assert (await s.get(Enrollment, data[0][2])).status == 'completed'
+
+        if identity:
+            assert user.id != data[0][0]
+            assert user.email == new_email
+            assert user.is_active is False
+        else:
+            assert user.id == data[0][0]
+            assert user.is_active is (not inactive)
+
+    assert (await snapshot(maker))['document_records'] == (
+        before['document_records']
+    )
+
+    candidates = invitations if needs_invitation else notifications
+    assert len(candidates) == 1
+    assert candidates[0].user_id == row.user_id
+    assert candidates[0].course_id == target_course
 
 
 async def existing(env, *, inactive=False, course=True):
@@ -218,52 +269,141 @@ async def middle_name(env,monkeypatch):
         assert (await s.scalar(select(LearnerProfile).where(LearnerProfile.user_id==data[0][0]))).middle_name=='Ivanovich'
 
 
-async def http_contract(env,monkeypatch):
+async def http_contract(env, monkeypatch):
     import httpx
     from fastapi import FastAPI
     from app.api.v1 import admin
     from app.core.security import create_access_token
-    e,maker,data=env;bid,actor,oid=await batch_setup(maker,data)
-    app=FastAPI();app.add_api_route('/imports/{batch_id}/apply',admin.apply_learner_import,methods=['POST'])
-    mail=[]
-    def no_mail(**kw):
-        mail.append(True);raise AssertionError('Forbidden notification')
-    monkeypatch.setattr(admin,'send_password_setup_email',no_mail)
-    monkeypatch.setattr(admin,'send_course_assignment_email',no_mail)
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://synthetic') as c:
-        url='/imports/'+bid+'/apply';headers={'Authorization':'Bearer '+create_access_token(actor)}
-        before=await snapshot(maker)
-        assert (await c.post(url)).status_code==401
-        assert (await c.post(url,headers={'Authorization':'Bearer '+create_access_token(data[0][0])})).status_code==403
-        assert await snapshot(maker)==before
-        async with maker.begin() as s:(await s.get(ImportBatch,bid)).course_id=data[1][1]
-        before=await snapshot(maker)
-        denied=await c.post(url,headers=headers)
-        assert denied.status_code==409 and denied.json()['detail']=='registry.import_new_enrollment_not_supported'
-        assert await snapshot(maker)==before and mail==[]
-        async with maker.begin() as s:
-            (await s.get(ImportBatch,bid)).course_id=data[0][1]
-            row=await s.scalar(select(ImportRow).where(ImportRow.batch_id==bid))
-            original=row.normalized_data_json
-            row.normalized_data_json={'email':uuid4().hex+'@test.invalid'}
-        before=await snapshot(maker)
-        denied=await c.post(url,headers=headers)
-        assert denied.status_code==409 and denied.json()['detail']=='registry.import_new_identity_not_supported'
-        assert await snapshot(maker)==before and mail==[]
-        async with maker.begin() as s:
-            row=await s.scalar(select(ImportRow).where(ImportRow.batch_id==bid));row.normalized_data_json=original
-        before=await snapshot(maker)
-        accepted=await c.post(url,headers=headers)
-        assert accepted.status_code==200,accepted.text
-        payload=accepted.json()
-        assert payload['created_users_count']==payload['created_enrollments_count']==0
-        assert payload['invitations']==payload['course_notifications']==[] and mail==[]
-        after=await snapshot(maker)
-        assert after['document_records']==before['document_records']
-        assert after['users']==before['users']
+    from app.services.email_delivery import EmailDeliveryResult
+
+    e, maker, data = env
+    bid, actor, oid = await batch_setup(maker, data)
+
+    app = FastAPI()
+    app.add_api_route(
+        '/imports/{batch_id}/apply',
+        admin.apply_learner_import,
+        methods=['POST'],
+    )
+
+    deliveries = []
+
+    def simulated_mail(kind, **kwargs):
+        assert kwargs['recipient'] == kwargs['user_email']
+        deliveries.append((kind, kwargs['recipient']))
+        return EmailDeliveryResult(
+            status='skipped',
+            recipient=kwargs['recipient'],
+            subject='Synthetic notification',
+            detail='No external email sent.',
+        )
+
+    monkeypatch.setattr(
+        admin, 'send_password_setup_email',
+        lambda **kw: simulated_mail('setup', **kw),
+    )
+    monkeypatch.setattr(
+        admin, 'send_course_assignment_email',
+        lambda **kw: simulated_mail('course', **kw),
+    )
+
     async with maker() as s:
-        assert (await s.get(ImportBatch,bid)).status=='applied'
-        assert (await s.get(Enrollment,data[0][2])).organization_id==oid
+        existing_email = (await s.get(User, data[0][0])).email
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url='http://synthetic',
+    ) as client:
+        url = '/imports/' + bid + '/apply'
+        headers = {
+            'Authorization': 'Bearer ' + create_access_token(actor)
+        }
+
+        before = await snapshot(maker)
+        assert (await client.post(url)).status_code == 401
+        assert (
+            await client.post(
+                url,
+                headers={
+                    'Authorization': 'Bearer '
+                    + create_access_token(data[0][0])
+                },
+            )
+        ).status_code == 403
+        assert await snapshot(maker) == before
+        assert deliveries == []
+
+        # Existing active learner receives a NEW course.
+        async with maker.begin() as s:
+            (await s.get(ImportBatch, bid)).course_id = data[1][1]
+
+        response = await client.post(url, headers=headers)
+        assert response.status_code == 200, response.text
+        payload = response.json()
+
+        assert payload['created_users_count'] == 0
+        assert payload['created_enrollments_count'] == 1
+        assert payload['invitations'] == []
+        assert len(payload['course_notifications']) == 1
+        assert payload['course_notifications'][0]['course_id'] == data[1][1]
+        assert deliveries == [('course', existing_email)]
+
+        async with maker() as s:
+            enrollment = await s.scalar(
+                select(Enrollment).where(
+                    Enrollment.user_id == data[0][0],
+                    Enrollment.course_id == data[1][1],
+                )
+            )
+            assert enrollment is not None
+            assert enrollment.status == 'assigned'
+            assert enrollment.organization_id == oid
+
+        # New learner is created inactive, with invitation.
+        fresh_bid, _, fresh_org = await batch_setup(maker, data)
+        fresh_email = uuid4().hex + '@test.invalid'
+
+        async with maker.begin() as s:
+            row = await s.scalar(
+                select(ImportRow).where(ImportRow.batch_id == fresh_bid)
+            )
+            row.normalized_data_json = {
+                'email': fresh_email,
+                'first_name': 'New',
+            }
+
+        fresh_response = await client.post(
+            '/imports/' + fresh_bid + '/apply',
+            headers=headers,
+        )
+        assert fresh_response.status_code == 200, fresh_response.text
+        fresh = fresh_response.json()
+
+        assert fresh['created_users_count'] == 1
+        assert fresh['created_enrollments_count'] == 1
+        assert fresh['course_notifications'] == []
+        assert len(fresh['invitations']) == 1
+        assert deliveries == [
+            ('course', existing_email),
+            ('setup', fresh_email),
+        ]
+
+        async with maker() as s:
+            user = await s.scalar(
+                select(User).where(User.email == fresh_email)
+            )
+            assert user is not None
+            assert user.is_active is False
+            enrollment = await s.scalar(
+                select(Enrollment).where(
+                    Enrollment.user_id == user.id,
+                    Enrollment.course_id == data[0][1],
+                )
+            )
+            assert enrollment is not None
+            assert enrollment.organization_id == fresh_org
+
+    assert len(deliveries) == 2
 
 
 def live_snapshot():
