@@ -523,9 +523,50 @@ def main() -> int:
         f"/api/v1/admin/learner-imports/{learner_import['id']}/apply",
         token=admin_token,
     )
-    assert_status(status, 400, "admin learner import repeat apply")
+    # The transaction guard rejects an applied batch before any import writes.
+    assert_status(status, 409, "admin learner import repeat apply")
     assert isinstance(repeated_learner_import_apply, dict)
-    checks.append("admin learner import repeat apply returns 400")
+    assert repeated_learner_import_apply.get("detail") == "registry.import_batch_not_parsed"
+    checks.append("admin learner import repeat apply returns 409")
+
+    status, learner_import_after_repeat = request_json(
+        "GET",
+        f"/api/v1/admin/learner-imports/{learner_import['id']}",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin learner import detail after repeat apply")
+    assert isinstance(learner_import_after_repeat, dict)
+    for key in (
+        "id", "status", "total_rows", "valid_rows", "invalid_rows",
+        "created_users_count", "updated_users_count",
+        "created_profiles_count", "updated_profiles_count",
+        "created_enrollments_count",
+    ):
+        assert learner_import_after_repeat[key] == applied_learner_import[key], key
+
+    # Compare persisted links; apply-only invitation/outcome fields differ on GET.
+    row_keys = ("id", "row_number", "status", "user_id", "learner_profile_id", "enrollment_id")
+    assert sorted(
+        tuple(row[key] for key in row_keys)
+        for row in learner_import_after_repeat["rows"]
+    ) == sorted(
+        tuple(row[key] for key in row_keys)
+        for row in applied_learner_import_rows
+    )
+
+    status, imported_users_after_repeat = request_json(
+        "GET",
+        "/api/v1/admin/users?q=smoke-import-learner@mail.ru",
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin imported learner user search after repeat apply")
+    assert isinstance(imported_users_after_repeat, list)
+    assert [
+        item["id"]
+        for item in imported_users_after_repeat
+        if item.get("email") == "smoke-import-learner@mail.ru"
+    ] == [imported_user_matches[0]["id"]]
+    checks.append("admin learner import repeat apply preserves counts and record links")
 
     status, admin_dashboard_summary = request_json(
         "GET",
