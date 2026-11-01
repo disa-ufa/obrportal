@@ -10,6 +10,8 @@ from app.services.registry_applicability_preview import (
     read_registry_applicability_preview,
 )
 
+from app.services.registry_queue_preview import read_legacy_registry_queue_preview
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
@@ -36,4 +38,24 @@ async def preview_mintrud_applicability(
 ):
     return await read_registry_applicability_preview(
         session=session, registry="mintrud", scope=scope, limit=limit, offset=offset
+    )
+
+
+@router.get("/frdo/queue-triage-preview")
+async def preview_frdo_legacy_queue(
+    _: User = Depends(require_permission("frdo.read")),
+    session: AsyncSession = Depends(get_db),
+):
+    return await read_legacy_registry_queue_preview(
+        session=session, registry="frdo"
+    )
+
+
+@router.get("/mintrud/queue-triage-preview")
+async def preview_mintrud_legacy_queue(
+    _: User = Depends(require_permission("mintrud.read")),
+    session: AsyncSession = Depends(get_db),
+):
+    return await read_legacy_registry_queue_preview(
+        session=session, registry="mintrud"
     )
