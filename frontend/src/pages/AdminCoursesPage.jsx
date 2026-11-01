@@ -905,6 +905,7 @@ function MintrudProgramMappingState({
     programSearch,
     setProgramSearch,
   ] = useState("");
+  const [showAllMintrudPrograms, setShowAllMintrudPrograms] = useState(false);
 
   const normalizedProgramSearch =
     programSearch
@@ -933,6 +934,13 @@ function MintrudProgramMappingState({
         })
       : sortedCatalog;
 
+  const visibleCatalog =
+    normalizedProgramSearch || showAllMintrudPrograms
+      ? filteredCatalog
+      : filteredCatalog.filter((program) =>
+          normalizedSelectedProgramIds.includes(program.id)
+        );
+
 
   const hasHistoricalAssignment =
     isExistingCourse
@@ -953,7 +961,20 @@ function MintrudProgramMappingState({
     requirementState === "not_required"
     && !hasHistoricalAssignment
   ) {
-    return null;
+    return (
+      <div
+        data-testid={`${prefix}course-mintrud-not-required`}
+        className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+      >
+        <div className="text-sm font-bold text-slate-800">
+          Минтруд: не требуется
+        </div>
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          По текущей классификации и настройкам курса передача сведений
+          в Минтруд не требуется. Дополнительный справочник скрыт.
+        </p>
+      </div>
+    );
   }
 
   if (requirementState === "undetermined") {
@@ -1094,11 +1115,31 @@ function MintrudProgramMappingState({
                 MINTRUD_MAPPING_TEXT.searchPlaceholder
               }
               data-testid={`${prefix}course-mintrud-program-search`}
-              className={INPUT}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition focus-visible:outline-none focus-visible:border-blue-400 focus-visible:ring-4 focus-visible:ring-blue-100"
             />
           </div>
 
-          {filteredCatalog.length === 0 ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">
+              {normalizedProgramSearch
+                ? "Результаты поиска по справочнику"
+                : showAllMintrudPrograms
+                  ? "Показаны все доступные программы"
+                  : "Показаны выбранные программы. Для добавления используйте поиск или откройте справочник."}
+            </p>
+            <button
+              type="button"
+              data-testid={`${prefix}course-mintrud-show-all-programs`}
+              onClick={() => setShowAllMintrudPrograms((current) => !current)}
+              className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"
+            >
+              {showAllMintrudPrograms
+                ? "Свернуть справочник"
+                : `Показать весь справочник (${normalizedCatalog.length})`}
+            </button>
+          </div>
+
+          {normalizedProgramSearch && filteredCatalog.length === 0 ? (
             <div
               data-testid={`${prefix}course-mintrud-program-search-empty`}
               className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600 ring-1 ring-slate-200"
@@ -1108,7 +1149,7 @@ function MintrudProgramMappingState({
           ) : null}
 
           <div className="mt-3 grid gap-2">
-            {filteredCatalog.map((program) => {
+            {visibleCatalog.map((program) => {
               const checked =
                 normalizedSelectedProgramIds.includes(
                   program.id
@@ -1192,7 +1233,34 @@ function MintrudProgramMappingState({
         </div>
       ) : null}
 
-      {isExistingCourse ? (
+      {historicalOnly && hasHistoricalAssignment ? (
+        <details
+          data-testid={`${prefix}course-mintrud-historical-details`}
+          className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"
+        >
+          <summary className="cursor-pointer text-xs font-bold text-slate-700">
+            Исторические привязки ({normalizedAssigned.length}) — показать
+          </summary>
+          <p className="mt-3 text-xs text-slate-500">
+            Привязки сохранены для истории. Изменение режима Минтруда
+            не удаляет ранее созданные сведения.
+          </p>
+          <div className="mt-3 space-y-2">
+            {normalizedAssigned.map((program) => (
+              <div
+                key={program.id}
+                className="rounded-lg bg-white p-3 text-xs text-slate-700 ring-1 ring-slate-200"
+              >
+                {program.learn_program_id}.{" "}
+                {program.title || program.code || program.id}
+                {program.is_active === false ? " (архивная)" : ""}
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
+
+      {isExistingCourse && !historicalOnly ? (
         <div className="mt-4 border-t border-slate-100 pt-4">
           <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
             {MINTRUD_MAPPING_TEXT.currentAssignment}

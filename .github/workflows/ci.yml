@@ -301,6 +301,7 @@ jobs:
           python scripts/smoke_frontend_hooks_layout.py
           python scripts/smoke_frontend_api_client.py
           python scripts/smoke_frontend_admin_pages.py
+          python scripts/smoke_admin_courses_page.py
           python scripts/smoke_frontend_admin_detail_components.py
           python scripts/smoke_frontend_document_account_flows.py
           python scripts/smoke_frontend_ui_primitives.py
@@ -317,6 +318,7 @@ jobs:
         run: |
           node --test frontend/src/utils/adminEnrollmentsCsv.test.js
           node --test frontend/src/utils/mintrudWorkflow.test.js
+          node --test frontend/tests/course_mintrud_ui_contract.test.mjs
 
       - name: Run frontend bundle text encoding guard
         run: |
