@@ -5,6 +5,7 @@ import pytest
 from app.tests.test_registry_catalog_policy_fence_unit import FakeSession
 from app.services.registry_catalog_policy_fence import begin_registry_catalog_policy_fence as begin
 from app.services.registry_import_transaction import ImportScope, KEY, require_import_scope, _TOKEN
+from app.services.registry_import_identity_keys import identity_lock_key
 from app.services.learner_import_batches import apply_learner_import_batch
 
 @pytest.mark.asyncio
@@ -27,12 +28,12 @@ async def test_reject_before_sql(state):
 @pytest.mark.asyncio
 async def test_scope_clean_and_expansion():
     s=FakeSession();s.info={};b=NS(id='batch',course_id=None,organization_id=None,learning_group_id=None);f=await begin(session=s,mode='shared')
-    lease=ImportScope(s,f,'batch',frozenset({'u'}),frozenset({'e'}),(None,None,None),_token=_TOKEN);s.info[KEY]=lease
+    lease=ImportScope(s,f,'batch',frozenset({'u'}),frozenset({'e'}),(None,None,None),_token=_TOKEN,planned_identity_keys=frozenset({identity_lock_key('email','planned@example.invalid')}));s.info[KEY]=lease
     assert require_import_scope(s,b) is lease
     identity=NS(users_by_email={'x':NS(id='foreign')},users_by_phone={},enrollments_by_user_id={})
     with pytest.raises(Exception,match='expanded'):lease.verify_lookups(NS(identity=identity))
-    with pytest.raises(Exception,match='new_identity'):lease.require_user(None)
-    with pytest.raises(Exception,match='new_enrollment'):lease.require_enrollment(None)
+    with pytest.raises(Exception,match='unplanned_identity'):lease.require_user(None,email='unplanned@example.invalid',phone=None,snils=None)
+    with pytest.raises(Exception,match='unplanned_enrollment'):lease.require_enrollment(None,user=None,course_id=None,created_user=False,email='planned@example.invalid',phone=None,snils=None)
     b.organization_id='another'
     with pytest.raises(Exception,match='parent_scope_changed'):lease.require(s,b)
 
