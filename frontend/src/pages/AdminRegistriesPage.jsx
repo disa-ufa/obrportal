@@ -13,9 +13,12 @@ import {
   reopenAdminMintrudObligation,
   downloadAdminFrdoSubmissionAttempt,
   downloadAdminMintrudSubmissionAttempt,
+  getAdminCourses,
+  getAdminCourseDetail,
   getAdminFrdoObligations,
   getAdminFrdoSubmissionAttempts,
   getAdminMintrudObligations,
+  getAdminMintrudLinkedProtocols,
   getAdminMintrudSubmissionAttempts,
   markAdminFrdoSubmissionAttemptSubmitted,
   markAdminMintrudSubmissionAttemptSubmitted,
@@ -29,7 +32,11 @@ import {
 } from "../api/client";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { FrdoPoContextForm } from "../components/admin/FrdoPoContextForm";
+import { AdminRegistryLearnerProfileForm } from "../components/admin/AdminRegistryLearnerProfileForm";
 import { FrdoPoBatchesPanel } from "../components/admin/FrdoPoBatchesPanel";
+import { MintrudProtocolCandidatesPanel } from "../components/admin/MintrudProtocolCandidatesPanel";
+import { MintrudProtocolDraftsPanel } from "../components/admin/MintrudProtocolDraftsPanel";
+import { MintrudLinkedProtocols } from "../components/admin/MintrudLinkedProtocols";
 import { formatMintrudError, prepareAndDownloadMintrudBatch } from "../utils/mintrudWorkflow";
 
 
@@ -601,6 +608,7 @@ function MintrudContextForm({
   busy,
   onSave,
   onCancel,
+  onOpenProtocol,
 }) {
   const context =
     obligation.mintrud_context || {};
@@ -622,6 +630,56 @@ function MintrudContextForm({
       context.protocol_number || "",
   });
 
+  // P3.4C: audit-provenance lock for fields already sourced from a
+  // recorded commission protocol. The server enforces this restriction too.
+  const [sourceState, setSourceState] = useState({ loading: true, error: "", protocols: [] });
+  useEffect(() => {
+    let current = true;
+    setSourceState({ loading: true, error: "", protocols: [] });
+    getAdminMintrudLinkedProtocols(obligation.id)
+      .then((value) => {
+        if (current) setSourceState({
+          loading: false, error: "",
+          protocols: Array.isArray(value?.protocols) ? value.protocols : [],
+        });
+      })
+      .catch((error) => {
+        if (current) setSourceState({ loading: false, error: error?.message || "Нет данных об источнике", protocols: [] });
+      });
+    return () => { current = false; };
+  }, [obligation.id]);
+  const sourceProtocol = sourceState.protocols.find((item) => item.sync_provenance?.ever_synced);
+  const authoritativeProtocol = sourceState.protocols.find((item) => item.sync_provenance?.applied);
+  const protocolSourceKeys = ["protocol_number", "knowledge_check_date", "knowledge_check_result"];
+
+  // P3.4E: only *display* a unique, non-conflicting source protocol when all
+  // three registry values are still empty. Never put preview values into form
+  // state: submit() must send only the saved registry context, not a draft.
+  const soleLinkedProtocol = sourceState.protocols.length === 1
+    ? sourceState.protocols[0] : null;
+  const candidateFields = soleLinkedProtocol?.fields || {};
+  const hasAllProposedFields = protocolSourceKeys.every((key) => {
+    const value = candidateFields[key]?.source;
+    return value !== null && value !== undefined && String(value).trim() !== "";
+  });
+  const hasAnyStoredCheckField = protocolSourceKeys.some((key) => Boolean(form[key]));
+  const previewProtocol = !sourceState.loading && !sourceState.error &&
+    !sourceProtocol && !hasAnyStoredCheckField &&
+    soleLinkedProtocol && hasAllProposedFields &&
+    (soleLinkedProtocol.status === "draft" ||
+      (soleLinkedProtocol.status === "recorded" && soleLinkedProtocol.recorded_snapshot_verified === true)) &&
+    (soleLinkedProtocol.conflict_fields || []).length === 0 &&
+    (soleLinkedProtocol.history_reasons || []).length === 0 &&
+    (soleLinkedProtocol.structural_issues || []).length === 0
+      ? soleLinkedProtocol : null;
+  const previewValues = previewProtocol ? {
+    protocol_number: String(candidateFields.protocol_number.source),
+    knowledge_check_date: String(candidateFields.knowledge_check_date.source).slice(0, 10),
+    knowledge_check_result: String(candidateFields.knowledge_check_result.source),
+  } : null;
+  const sourceFieldsLocked = sourceState.loading || Boolean(sourceState.error) ||
+    Boolean(sourceProtocol) || Boolean(previewValues);
+
   const isExternalProvider =
     form.reporting_scenario
     === "external_training_provider";
@@ -641,7 +699,9 @@ function MintrudContextForm({
     event.preventDefault();
 
     const payload = Object.fromEntries(
-      Object.entries(form).map(
+      Object.entries(form).filter(([key]) => (
+        !sourceFieldsLocked || !protocolSourceKeys.includes(key)
+      )).map(
         ([key, value]) => [
           key,
           value.trim() || null,
@@ -676,6 +736,51 @@ function MintrudContextForm({
         </p>
       </div>
 
+      {authoritativeProtocol ? (
+        <p data-testid="mintrud-context-audit-provenance" className="mt-3 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-900">
+          Номер, дата и результат заполнены из протокола № {authoritativeProtocol.protocol_number}.
+          Эти три поля доступны только для просмотра. Должность и сведения работодателя можно уточнять отдельно.
+        </p>
+      ) : sourceProtocol ? (
+        <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+          Есть история синхронизации протокола № {sourceProtocol.protocol_number}, но значения расходятся или требуют проверки.
+          Ручная замена реквизитов проверки запрещена; необходима отдельная процедура сверки.
+        </p>
+      ) : sourceState.error ? (
+        <p role="alert" className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+          Не удалось проверить происхождение реквизитов: {sourceState.error}. Поля проверки временно заблокированы.
+        </p>
+      ) : sourceState.loading ? (
+        <p className="mt-3 text-xs text-slate-600">Проверяем источник реквизитов протокола…</p>
+      ) : previewProtocol ? (
+        <div data-testid="mintrud-draft-preview-not-saved" role="note" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
+          <p className="font-semibold">
+            Предварительное отображение из {previewProtocol.status === "draft" ? "черновика" : "зафиксированного протокола"} № {previewProtocol.protocol_number}.
+          </p>
+          <p className="mt-1">
+            Номер, дата и результат показаны ниже только для просмотра. В реестре Минтруда они пока пустые.
+            Кнопка «Сохранить» не перенесёт эти три значения в PostgreSQL.
+          </p>
+          <p className="mt-1">
+            {previewProtocol.status === "draft"
+              ? "Сначала необходимо провести проверку знаний и зафиксировать фактическое решение комиссии."
+              : "Результаты комиссии зафиксированы. Для переноса нужна отдельная сверка и подтверждённая синхронизация."}
+          </p>
+          <button type="button" className="mt-2 rounded-lg border border-amber-500 bg-white px-3 py-1.5 font-semibold"
+            onClick={() => onOpenProtocol?.(previewProtocol)}>
+            {previewProtocol.status === "draft"
+              ? "Открыть протокол для оформления комиссии"
+              : "Перейти к сверке и разрешённой синхронизации"}
+          </button>
+        </div>
+      ) : (
+        <p className="mt-3 text-xs text-slate-600">
+          Нет подтверждённой синхронизации с протоколом комиссии.
+          {sourceState.protocols.length > 1
+            ? " Связано несколько протоколов — выберите правильный вручную, предпросмотр в полях отключён."
+            : " Значения из черновика не записываются в реестр автоматически."}
+        </p>
+      )}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
           <span>
@@ -733,7 +838,8 @@ function MintrudContextForm({
 
           <select
             className={INPUT}
-            value={form.knowledge_check_result}
+            value={previewValues?.knowledge_check_result ?? form.knowledge_check_result}
+            disabled={sourceFieldsLocked}
             onChange={(event) =>
               update(
                 "knowledge_check_result",
@@ -766,7 +872,8 @@ function MintrudContextForm({
           <input
             type="date"
             className={INPUT}
-            value={form.knowledge_check_date}
+            value={previewValues?.knowledge_check_date ?? form.knowledge_check_date}
+            disabled={sourceFieldsLocked}
             onChange={(event) =>
               update(
                 "knowledge_check_date",
@@ -783,7 +890,8 @@ function MintrudContextForm({
 
           <input
             className={INPUT}
-            value={form.protocol_number}
+            value={previewValues?.protocol_number ?? form.protocol_number}
+            disabled={sourceFieldsLocked}
             onChange={(event) =>
               update(
                 "protocol_number",
@@ -1213,8 +1321,165 @@ function AttemptList({
   );
 }
 
+// Pilot-only presentation filter. It does not change registry obligations or history.
+// Explicit course-level "not_required" excludes a learner from every registry view.
+function pilotCourseItems(payload) {
+  if (Array.isArray(payload)) return payload;
+  for (const key of ["items", "courses", "results", "data"]) {
+    if (Array.isArray(payload?.[key])) return payload[key];
+  }
+  throw new Error("Не удалось прочитать список курсов для фильтра Госреестров.");
+}
+
+function pilotCourseId(value) {
+  return String(value?.course_id || value?.course?.id || "").trim();
+}
+
+function pilotCourseTitle(value) {
+  return String(
+    value?.course_title || value?.course?.title || value?.title || ""
+  ).trim().toLocaleLowerCase("ru-RU");
+}
+
+function pilotCourseMode(course, field) {
+  return String(course?.[field] ?? course?.course?.[field] ?? "")
+    .trim().toLowerCase();
+}
+
+async function pilotVisibleObligations(rows, registry) {
+  if (!rows.length) return rows;
+
+  const field = registry === "frdo"
+    ? "frdo_requirement_mode"
+    : "mintrud_requirement_mode";
+
+  // The obligation response may already contain the course setting.
+  const unresolved = rows.filter((row) => !pilotCourseMode(row, field));
+  let courses = [];
+
+  if (unresolved.length) {
+    try {
+      courses = pilotCourseItems(await getAdminCourses());
+    } catch {
+      // A per-course detail lookup is still possible when the catalog is unavailable.
+      courses = [];
+    }
+  }
+
+  const byId = new Map();
+  const byTitle = new Map();
+
+  function remember(course) {
+    const id = String(course?.id || course?.course_id || "").trim();
+    if (id) byId.set(id, course);
+    const title = pilotCourseTitle(course);
+    if (title) {
+      // Avoid mixing two courses with the same title; allow details to replace
+      // their own earlier catalog entry.
+      const previous = byTitle.get(title);
+      if (!byTitle.has(title)
+          || (previous && String(previous.id || previous.course_id) === id)) {
+        byTitle.set(title, course);
+      } else {
+        byTitle.set(title, null);
+      }
+    }
+  }
+
+  courses.forEach(remember);
+
+  const missingIds = [...new Set(unresolved
+    .map((row) => {
+      const id = pilotCourseId(row);
+      if (id) return id;
+      // Some obligation responses expose only a course title.
+      return String(byTitle.get(pilotCourseTitle(row))?.id || "").trim();
+    })
+    .filter((id) => id && !pilotCourseMode(byId.get(id), field)))];
+
+  // Resolve only distinct courses present on the current page (maximum 100 rows).
+  // No database writes: these are existing GET endpoints.
+  await Promise.all(missingIds.map(async (courseId) => {
+    try {
+      const detail = await getAdminCourseDetail(courseId);
+      remember(detail?.course || detail);
+    } catch {
+      // Unknown settings are handled below by withholding the work list.
+    }
+  }));
+
+  const visible = [];
+  let unknownSettings = 0;
+
+  for (const row of rows) {
+    const id = pilotCourseId(row);
+    const byName = byTitle.get(pilotCourseTitle(row));
+    const course = (id && byId.get(id))
+      || (!id || String(byName?.id || "") === id ? byName : null);
+    const mode = pilotCourseMode(row, field) || pilotCourseMode(course, field);
+
+    if (!mode) {
+      unknownSettings += 1;
+    } else if (mode !== "not_required") {
+      visible.push(row);
+    }
+  }
+
+  if (unknownSettings > 0) {
+    // Fail closed: do not show potentially excluded learners or allow selection.
+    throw new Error(
+      "Не удалось определить настройки реестра для части курсов. " +
+      "Рабочий список скрыт; проверьте доступ к данным курсов."
+    );
+  }
+
+  return visible;
+}
+
+// F1 pilot facets: only IDs explicitly supplied by registry rows are used.
+// Do not infer an organization/group from a learner's name or course title.
+function pilotRegistryFacet(row, facet) {
+  const source = facet === "organization"
+    ? [
+        [row?.enrollment_organization_id, row?.enrollment_organization_name],
+        [row?.organization_id, row?.organization_name],
+        [row?.organization?.id, row?.organization?.name],
+        [row?.enrollment?.organization_id, row?.enrollment?.organization_name],
+      ]
+    : [
+        [row?.learning_group_id, row?.learning_group_name],
+        [row?.group_id, row?.group_name],
+        [row?.learning_group?.id, row?.learning_group?.name],
+        [row?.group?.id, row?.group?.name],
+        [row?.enrollment?.group_id, row?.enrollment?.group_name],
+      ];
+  for (const [rawId, rawName] of source) {
+    const id = String(rawId ?? "").trim();
+    if (!id) continue;
+    const name = String(rawName ?? "").trim();
+    return {
+      id,
+      label: name || (facet === "organization" ? "Организация " : "Группа ") + id.slice(0, 8),
+    };
+  }
+  return null;
+}
+
+function pilotRegistryFacetOptions(rows, facet) {
+  const values = new Map();
+  for (const row of rows) {
+    const item = pilotRegistryFacet(row, facet);
+    if (item && !values.has(item.id)) values.set(item.id, item);
+  }
+  return [...values.values()].sort((a, b) =>
+    a.label.localeCompare(b.label, "ru-RU")
+  );
+}
+
 export function AdminRegistriesPage() {
   const [activeRegistry, setActiveRegistry] = useState("frdo");
+  const [frdoScope, setFrdoScope] = useState("work");
+  const latestLoadRef = useRef(0);
 
   const [filters, setFilters] = useState({
     q: "",
@@ -1227,12 +1492,89 @@ export function AdminRegistriesPage() {
   });
 
   const [obligations, setObligations] = useState([]);
+  const [pilotCourseFilter, setPilotCourseFilter] = useState("");
+  const [pilotOrganizationFilter, setPilotOrganizationFilter] = useState("");
+  const [pilotGroupFilter, setPilotGroupFilter] = useState("");
+  const [pilotCourseCatalog, setPilotCourseCatalog] = useState([]);
+  const [focusedProtocol, setFocusedProtocol] = useState(null);
+
+  useEffect(() => {
+    let current = true;
+    getAdminCourses()
+      .then((payload) => {
+        if (current) setPilotCourseCatalog(pilotCourseItems(payload));
+      })
+      .catch(() => {
+        // Keep the registry list usable if the course catalog is inaccessible.
+      });
+    return () => { current = false; };
+  }, []);
+
+  const pilotCourseOptions = useMemo(() => {
+    const byId = new Map();
+    for (const course of pilotCourseCatalog) {
+      const id = String(course?.id ?? course?.course_id ?? "").trim();
+      if (!id) continue;
+      const title = String(course?.title ?? course?.name ?? "").trim();
+      byId.set(id, {id, label: title || `Курс ${id.slice(0, 8)}`});
+    }
+    for (const row of obligations) {
+      const id = pilotCourseId(row);
+      if (id && !byId.has(id)) {
+        byId.set(id, {id, label: String(row.course_title || `Курс ${id.slice(0, 8)}`)});
+      }
+    }
+    return [...byId.values()].sort((a, b) =>
+      a.label.localeCompare(b.label, "ru-RU")
+    );
+  }, [pilotCourseCatalog, obligations]);
+
+  const pilotOrganizationOptions = useMemo(() =>
+    pilotRegistryFacetOptions(obligations, "organization"), [obligations]
+  );
+
+  const pilotGroupOptions = useMemo(() =>
+    pilotRegistryFacetOptions(
+      obligations.filter((row) =>
+        !pilotOrganizationFilter ||
+        pilotRegistryFacet(row, "organization")?.id === pilotOrganizationFilter
+      ),
+      "group"
+    ),
+    [obligations, pilotOrganizationFilter]
+  );
+
+  const filteredObligations = useMemo(() => obligations.filter((row) => {
+    if (pilotOrganizationFilter &&
+        pilotRegistryFacet(row, "organization")?.id !== pilotOrganizationFilter) {
+      return false;
+    }
+    if (pilotGroupFilter &&
+        pilotRegistryFacet(row, "group")?.id !== pilotGroupFilter) {
+      return false;
+    }
+    return true;
+  }), [obligations, pilotOrganizationFilter, pilotGroupFilter]);
+  function openLinkedProtocol(protocol) {
+    if (protocol?.course_id) {
+      setPilotCourseFilter(String(protocol.course_id));
+      setPilotOrganizationFilter("");
+      setPilotGroupFilter("");
+    }
+    setFocusedProtocol({
+      id: String(protocol.id),
+      course_id: String(protocol.course_id),
+      request: Date.now(),
+    });
+  }
+
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState("");
   const [error, setError] = useState("");
 
   const [expandedId, setExpandedId] = useState("");
   const [editingContextId, setEditingContextId] = useState("");
+  const [editingProfileId, setEditingProfileId] = useState("");
   const [attemptsById, setAttemptsById] = useState({});
   const [
     selectedMintrudIds,
@@ -1286,18 +1628,18 @@ export function AdminRegistriesPage() {
   );
 
   const selectableMintrudIds = useMemo(
-    () => obligations
+    () => filteredObligations
       .filter((obligation) => (
         obligation.status === "approved"
       ))
       .map((obligation) => (
         obligation.id
       )),
-    [obligations]
+    [filteredObligations]
   );
 
   const selectedMintrudIdsInVisibleOrder = useMemo(
-    () => obligations
+    () => filteredObligations
       .filter((obligation) => (
         obligation.status === "approved"
         && selectedMintrudIdSet.has(
@@ -1308,7 +1650,7 @@ export function AdminRegistriesPage() {
         obligation.id
       )),
     [
-      obligations,
+      filteredObligations,
       selectedMintrudIdSet,
     ]
   );
@@ -1354,6 +1696,7 @@ export function AdminRegistriesPage() {
   }, [activeRegistry]);
 
   const load = useCallback(async () => {
+    const requestId = ++latestLoadRef.current;
     setLoading(true);
     setError("");
 
@@ -1361,14 +1704,26 @@ export function AdminRegistriesPage() {
       const result = await api.list({
         q: appliedFilters.q,
         status: appliedFilters.status,
+        course_id: pilotCourseFilter || undefined,
         limit: 100,
+        ...(activeRegistry === "frdo"
+          ? { applicability_scope: frdoScope }
+          : {}),
       });
 
-      setObligations(
-        Array.isArray(result)
-          ? result
-          : []
-      );
+      if (requestId !== latestLoadRef.current) return;
+
+      const rows = Array.isArray(result) ? result : [];
+      // The course-level exclusion applies to work, review and history alike.
+      const visible = await pilotVisibleObligations(rows, activeRegistry);
+
+      if (requestId !== latestLoadRef.current) return;
+      setObligations(visible);
+      if (activeRegistry === "mintrud") {
+        setSelectedMintrudIds((current) => current.filter(
+          (id) => visible.some((item) => item.id === id)
+        ));
+      }
 
       if (
         activeRegistry === "mintrud"
@@ -1376,6 +1731,8 @@ export function AdminRegistriesPage() {
         const batches = await (
           getAdminMintrudSubmissionBatches()
         );
+
+        if (requestId !== latestLoadRef.current) return;
 
         setMintrudBatches(
           Array.isArray(batches)
@@ -1386,27 +1743,41 @@ export function AdminRegistriesPage() {
         setMintrudBatches([]);
       }
     } catch (err) {
-      setError(formatApiError(err, activeRegistry));
+      if (requestId === latestLoadRef.current) {
+        setObligations([]);
+        setSelectedMintrudIds([]);
+        setError(formatApiError(err, activeRegistry));
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestLoadRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     api,
     activeRegistry,
     appliedFilters.q,
     appliedFilters.status,
+    pilotCourseFilter,
+    frdoScope,
   ]);
 
   useEffect(() => {
     setExpandedId("");
     setEditingContextId("");
+    setEditingProfileId("");
     setAttemptsById({});
     setMintrudBatchSubmitId("");
     setMintrudBatchSubmitReference("");
     setMintrudBatchResultId("");
     setMintrudBatchDetail(null);
     setMintrudBatchResultForms({});
+    setObligations([]);
     load();
+
+    return () => {
+      latestLoadRef.current += 1;
+    };
   }, [
     activeRegistry,
     load,
@@ -2134,7 +2505,14 @@ export function AdminRegistriesPage() {
                 : SECONDARY
             }
             onClick={() => {
+              if (activeRegistry === "frdo") return;
+              latestLoadRef.current += 1;
+              setObligations([]);
+              setLoading(true);
               setSelectedMintrudIds([]);
+              setPilotCourseFilter("");
+              setPilotOrganizationFilter("");
+              setPilotGroupFilter("");
               setActiveRegistry("frdo");
             }}
           >
@@ -2150,7 +2528,14 @@ export function AdminRegistriesPage() {
                 : SECONDARY
             }
             onClick={() => {
+              if (activeRegistry === "mintrud") return;
+              latestLoadRef.current += 1;
+              setObligations([]);
+              setLoading(true);
               setSelectedMintrudIds([]);
+              setPilotCourseFilter("");
+              setPilotOrganizationFilter("");
+              setPilotGroupFilter("");
               setActiveRegistry("mintrud");
             }}
           >
@@ -2158,6 +2543,53 @@ export function AdminRegistriesPage() {
           </button>
         </div>
 
+        {activeRegistry === "frdo" ? (
+          <div
+            data-testid="admin-registries-frdo-scopes"
+            role="group"
+            aria-label="Применимость ФРДО"
+            className="mt-4 flex flex-wrap gap-2"
+          >
+            {[
+              ["work", "В работе"],
+              ["review", "На проверке"],
+              ["history", "История"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                data-testid={`admin-registries-frdo-scope-${value}`}
+                aria-pressed={frdoScope === value}
+                className={frdoScope === value ? BLUE : SECONDARY}
+                disabled={Boolean(busyKey)}
+                onClick={() => {
+                  if (frdoScope === value) return;
+                  latestLoadRef.current += 1;
+                  setObligations([]);
+                  setExpandedId("");
+                  setEditingContextId("");
+                  setAttemptsById({});
+                  setSelectedMintrudIds([]);
+                  setLoading(true);
+                  setFrdoScope(value);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {activeRegistry === "frdo" && frdoScope !== "work" ? (
+          <p
+            data-testid="admin-registries-frdo-scope-notice"
+            className="mt-3 text-sm text-slate-600"
+          >
+            {frdoScope === "history"
+              ? "История решений о применимости ФРДО. Курсы с настройкой «Не требуется» скрыты. Только просмотр."
+              : "Записи, требующие определения применимости. Курсы с настройкой «Не требуется» скрыты. Утверждение и экспорт недоступны."}
+          </p>
+        ) : null}
         <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200">
           {activeRegistry === "mintrud"
             ? T.mintrudWarning
@@ -2193,8 +2625,121 @@ export function AdminRegistriesPage() {
         )}
       </section>
 
+      <section
+        data-testid="admin-registries-pilot-facets"
+        className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-slate-950">Отбор записей для обработки</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              Курс отбирается на сервере. Организация и группа — по загруженным строкам, если API передаёт их привязки.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={SECONDARY}
+            onClick={() => {
+              setSelectedMintrudIds([]);
+              setPilotCourseFilter("");
+              setPilotOrganizationFilter("");
+              setPilotGroupFilter("");
+            }}
+          >
+            Сбросить отбор
+          </button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="grid gap-1 text-xs font-semibold text-slate-700">
+            Организация
+            <select
+              data-testid="admin-registries-filter-organization"
+              className={INPUT}
+              value={pilotOrganizationFilter}
+              disabled={!pilotOrganizationOptions.length || Boolean(busyKey)}
+              onChange={(event) => {
+                setPilotOrganizationFilter(event.target.value);
+                setPilotGroupFilter("");
+                setSelectedMintrudIds([]);
+              }}
+            >
+              <option value="">Все организации</option>
+              {pilotOrganizationOptions.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-slate-700">
+            Курс
+            <select
+              data-testid="admin-registries-filter-course"
+              className={INPUT}
+              value={pilotCourseFilter}
+              disabled={Boolean(busyKey)}
+              onChange={(event) => {
+                setPilotCourseFilter(event.target.value);
+                setPilotOrganizationFilter("");
+                setPilotGroupFilter("");
+                setSelectedMintrudIds([]);
+              }}
+            >
+              <option value="">Все курсы</option>
+              {pilotCourseOptions.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-slate-700">
+            Группа
+            <select
+              data-testid="admin-registries-filter-group"
+              className={INPUT}
+              value={pilotGroupFilter}
+              disabled={!pilotGroupOptions.length || Boolean(busyKey)}
+              onChange={(event) => {
+                setPilotGroupFilter(event.target.value);
+                setSelectedMintrudIds([]);
+              }}
+            >
+              <option value="">Все группы</option>
+              {pilotGroupOptions.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p data-testid="admin-registries-filter-count" className="mt-3 text-xs text-slate-600">
+          Показано {filteredObligations.length} из {obligations.length} загруженных записей.
+          {(!pilotOrganizationOptions.length || !pilotGroupOptions.length)
+            ? " Фильтры организации/группы станут доступны, когда список реестра будет передавать соответствующие идентификаторы."
+            : ""}
+          {" "}Это пилотный отбор: максимум 100 записей в одной загрузке, не полный список всех подходящих записей.
+        </p>
+      </section>
+
       {activeRegistry === "frdo" ? (
-        <FrdoPoBatchesPanel obligations={obligations} onRefresh={load} />
+        <FrdoPoBatchesPanel
+          obligations={frdoScope === "work" ? filteredObligations : []}
+          onRefresh={load}
+          readOnly={frdoScope !== "work"}
+        />
+      ) : null}
+
+      {activeRegistry === "mintrud" ? (
+        <MintrudProtocolCandidatesPanel
+          courseId={pilotCourseFilter}
+          organizationId={pilotOrganizationFilter}
+          groupId={pilotGroupFilter}
+        />
+      ) : null}
+
+      {activeRegistry === "mintrud" ? (
+        <MintrudProtocolDraftsPanel
+          focusProtocol={focusedProtocol}
+          courseId={pilotCourseFilter}
+          organizationId={pilotOrganizationFilter}
+          groupId={pilotGroupFilter}
+        />
       ) : null}
 
       {activeRegistry === "mintrud" ? (
@@ -2812,7 +3357,7 @@ export function AdminRegistriesPage() {
                 </tr>
               ) : null}
 
-              {!loading && obligations.length === 0 ? (
+              {!loading && filteredObligations.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
@@ -2824,11 +3369,16 @@ export function AdminRegistriesPage() {
               ) : null}
 
               {!loading
-                ? obligations.map((obligation) => {
+                ? filteredObligations.map((obligation) => {
                     const attempts =
                       attemptsById[obligation.id] || [];
 
-                    const canValidate = [
+                    const canChange = (
+                      activeRegistry !== "frdo"
+                      || frdoScope === "work"
+                    );
+
+                    const canValidate = canChange && [
                       "pending_data",
                       "ready",
                       "needs_approval",
@@ -2836,7 +3386,7 @@ export function AdminRegistriesPage() {
                       obligation.status
                     );
 
-                    const canApprove = [
+                    const canApprove = canChange && [
                       "ready",
                       "needs_approval",
                     ].includes(
@@ -2846,7 +3396,7 @@ export function AdminRegistriesPage() {
                     const canExport =
                       obligation.status === "approved";
 
-                    const canReopen = [
+                    const canReopen = canChange && [
                       "rejected",
                       "correction_required",
                     ].includes(
@@ -2992,6 +3542,22 @@ export function AdminRegistriesPage() {
                                   </button>
                                 ) : null}
 
+                                {canChange && obligation.user_id ? (
+                                  <button
+                                    type="button"
+                                    className={SECONDARY}
+                                    disabled={Boolean(busyKey)}
+                                    onClick={() => {
+                                      setEditingProfileId(
+                                        editingProfileId === obligation.id ? "" : obligation.id
+                                      );
+                                      setEditingContextId("");
+                                    }}
+                                  >
+                                    Исправить данные
+                                  </button>
+                                ) : null}
+
                                 {canValidate
                                   && (
                                     activeRegistry === "mintrud"
@@ -3019,7 +3585,7 @@ export function AdminRegistriesPage() {
                                 <button
                                   type="button"
                                   className={SECONDARY}
-                                  disabled={Boolean(busyKey)}
+                                  disabled={Boolean(busyKey) || !canChange}
                                   onClick={() => toggleAttempts(obligation)}
                                 >
                                   {T.attempts}
@@ -3028,13 +3594,60 @@ export function AdminRegistriesPage() {
                             </div>
                           </div>
 
-                          {editingContextId === obligation.id ? (
+                          {editingProfileId === obligation.id && canChange ? (
+                            <div className="border-t border-slate-100 px-4 pb-4">
+                              <AdminRegistryLearnerProfileForm
+                                userId={obligation.user_id}
+                                onCancel={() => setEditingProfileId("")}
+                                onSaved={load}
+                              />
+                              {activeRegistry === "mintrud" ? (
+                                <MintrudLinkedProtocols
+                                  obligationId={obligation.id}
+                                  onOpenProtocol={openLinkedProtocol}
+                                />
+                              ) : null}
+                              {canValidate && (
+                                activeRegistry === "mintrud"
+                                || obligation.regulatory_program_type === FRDO_PO_PROGRAM_TYPE
+                              ) ? (
+                                activeRegistry === "mintrud" ? (
+                                  <MintrudContextForm
+                                    key={`${obligation.id}-mintrud-context-${obligation.mintrud_context?.protocol_number || ""}-${obligation.mintrud_context?.knowledge_check_date || ""}-${obligation.mintrud_context?.knowledge_check_result || ""}`}
+                                    obligation={obligation}
+                                    busy={Boolean(busyKey)}
+                                    onCancel={() => setEditingProfileId("")}
+                                    onOpenProtocol={openLinkedProtocol}
+                                    onSave={(payload) => saveContext(obligation, payload)}
+                                  />
+                                ) : (
+                                  <FrdoPoContextForm
+                                    key={`${obligation.id}-frdo-context`}
+                                    obligation={obligation}
+                                    busy={Boolean(busyKey)}
+                                    onCancel={() => setEditingProfileId("")}
+                                    onSave={(payload) => saveContext(obligation, payload)}
+                                  />
+                                )
+                              ) : null}
+                            </div>
+                          ) : null}
+
+                          {editingContextId === obligation.id && canChange ? (
                             <div className="border-t border-slate-100 px-4 pb-4">
                               {activeRegistry === "mintrud" ? (
+                                <MintrudLinkedProtocols
+                                  obligationId={obligation.id}
+                                  onOpenProtocol={openLinkedProtocol}
+                                />
+                              ) : null}
+                              {activeRegistry === "mintrud" ? (
                                 <MintrudContextForm
+                                  key={`${obligation.id}-mintrud-context-${obligation.mintrud_context?.protocol_number || ""}-${obligation.mintrud_context?.knowledge_check_date || ""}-${obligation.mintrud_context?.knowledge_check_result || ""}`}
                                   obligation={obligation}
                                   busy={Boolean(busyKey)}
                                   onCancel={() => setEditingContextId("")}
+                                  onOpenProtocol={openLinkedProtocol}
                                   onSave={(payload) => saveContext(
                                     obligation,
                                     payload
@@ -3054,7 +3667,7 @@ export function AdminRegistriesPage() {
                             </div>
                           ) : null}
 
-                          {expandedId === obligation.id ? (
+                          {expandedId === obligation.id && canChange ? (
                             <div className="border-t border-slate-100 p-4">
                               <AttemptList
                                 registry={activeRegistry}

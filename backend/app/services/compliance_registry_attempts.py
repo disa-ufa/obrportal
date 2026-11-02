@@ -164,13 +164,22 @@ def normalize_registry_artifact_kind(
     return normalized
 
 
-async def require_registry_attempt_read_committed(session: AsyncSession) -> None:
-    """Check the opt-in transaction contract before any obligation row lock.
+async def require_registry_attempt_read_committed(
+    session: AsyncSession,
+    *,
+    enforce: bool = False,
+) -> None:
+    """Verify READ COMMITTED for applicability-veto operations.
 
-    Does not start, finish or change the caller's transaction. Flag-off callers
-    retain the legacy SQL sequence and do not query transaction isolation.
+    Does not start, finish or change the caller's transaction.
+    Legacy flag-on callers check before locking the obligation.
+    FRDO flag-off callers enforce the check after the obligation lock
+    but before reading its applicability decision.
     """
-    if not settings.registry_attempt_applicability_veto_enabled:
+    if not (
+        settings.registry_attempt_applicability_veto_enabled
+        or enforce
+    ):
         return
     isolation = str((await session.execute(
         text("SHOW transaction_isolation")
@@ -252,7 +261,25 @@ async def create_registry_submission_attempt(
             "Registry obligation was not found"
         )
 
-    if settings.registry_attempt_applicability_veto_enabled:
+    # An explicit negative/pending FRDO decision must veto new attempts
+    # even while the legacy applicability feature flag is disabled.
+    # Other registry behavior remains controlled by the existing flag.
+    if (
+        obligation.registry == "frdo"
+        or settings.registry_attempt_applicability_veto_enabled
+    ):
+        # FRDO must never read applicability from a stale transaction
+        # snapshot when the legacy veto feature flag is disabled.
+        # The obligation row is already locked at this point.
+        if (
+            obligation.registry == "frdo"
+            and not settings.registry_attempt_applicability_veto_enabled
+        ):
+            await require_registry_attempt_read_committed(
+                session,
+                enforce=True,
+            )
+
         # The obligation lock is shared with persist_registry_applicability.
         # Do NOT acquire its advisory lock here: that would invert lock order.
         # READ COMMITTED gives the decision SELECT a fresh snapshot after a

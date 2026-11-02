@@ -404,6 +404,18 @@ export async function getAdminUsers(filters = {}) {
   return request(`/api/v1/admin/users${query}`);
 }
 
+// Pilot D1-D3: administrative learner profile, not the login account.
+export async function getAdminLearnerProfile(userId) {
+  return request(`/api/v1/admin/users/${encodeURIComponent(userId)}/learner-profile`);
+}
+
+export async function updateAdminLearnerProfile(userId, payload) {
+  return request(`/api/v1/admin/users/${encodeURIComponent(userId)}/learner-profile`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getAdminUserDetail(userId) {
   return request(`/api/v1/admin/users/${userId}`);
 }
@@ -1205,6 +1217,7 @@ function buildAdminRegistryObligationsPath(
     "status",
     "q",
     "limit",
+    ...(registry === "frdo" ? ["applicability_scope"] : []),
   ].forEach((key) => {
     const value = filters?.[key];
 
@@ -1453,6 +1466,20 @@ export async function recordAdminFrdoSubmissionAttemptResult(
   );
 }
 
+
+
+
+// Preliminary list only; no creation or submission of protocols.
+export async function getAdminMintrudProtocolCandidates(filters = {}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && `${value}`.trim()) {
+      params.set(key, String(value));
+    }
+  }
+  const query = params.toString();
+  return request(`/api/v1/admin/mintrud/protocol-candidates${query ? `?${query}` : ""}`);
+}
 
 export async function getAdminMintrudObligations(
   filters = {}
@@ -1803,4 +1830,68 @@ export async function downloadAdminFrdoSubmissionBatch(batchId) {
   } finally {
     window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
   }
+}
+
+// P3.3D.3: linked protocol information for a single Mintrud obligation.
+// READ ONLY: a draft never populates or authorizes registry context.
+export async function getAdminMintrudLinkedProtocols(obligationId) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/by-obligation/${encodeURIComponent(obligationId)}`);
+}
+
+// Draft-only protocol planning. Does not approve/export or confirm a commission check.
+export async function listAdminMintrudProtocolDrafts(courseId = "") {
+  const params = new URLSearchParams();
+  if (courseId) params.set("course_id", courseId);
+  const query = params.toString();
+  return request(`/api/v1/admin/mintrud/protocol-drafts${query ? `?${query}` : ""}`);
+}
+
+export async function createAdminMintrudProtocolDraft(payload) {
+  return request("/api/v1/admin/mintrud/protocol-drafts", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+
+// Update unsigned drafts only. Manually entered preliminary results are never exported.
+export async function updateAdminMintrudProtocolDraft(draftId, payload) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(draftId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+// Read-only snapshot of the saved project; does not sign or export any data.
+export async function getAdminMintrudProtocolDraftPrintPreview(draftId) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(draftId)}/print-preview`);
+}
+
+
+// Server-authoritative completeness check; unlike the client-only preliminary check.
+export async function getAdminMintrudProtocolRecordingReadiness(protocolId) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(protocolId)}/recording-readiness`);
+}
+
+// Explicit human attestation. Does NOT sign a protocol or publish registry records.
+export async function recordAdminMintrudProtocolCommissionCheck(protocolId, payload) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(protocolId)}/record-check`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// P3.3C: read-only comparison. No Mintrud context mutations or exports.
+export async function getAdminMintrudProtocolRegistryReconciliation(protocolId) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(protocolId)}/registry-reconciliation`);
+}
+
+
+// P3.3D: guarded filling of missing context fields from a recorded protocol.
+// It does not approve, generate XML, or submit anything to EISOT.
+export async function syncAdminMintrudProtocolRegistryFields(protocolId, payload) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(protocolId)}/registry-sync`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
