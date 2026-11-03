@@ -104,7 +104,7 @@ export function AdminRegistryLearnerProfileForm({ userId, onCancel, onSaved }) {
                   type={type}
                   className={textClass}
                   value={form[name]}
-                  placeholder={name === "snils" ? "XXX-XXX-XXX XX" : undefined}
+                  placeholder={name === "snils" ? "___-___-___ __" : undefined}
                   inputMode={name === "snils" || name === "citizenship_country_code" ? "numeric" : undefined}
                   disabled={busy}
                   onChange={(e) => setForm((v) => ({ ...v, [name]: e.target.value }))}
