@@ -40,8 +40,8 @@ export function AdminRegistryLearnerProfileForm({ userId, onCancel, onSaved }) {
       const values = normalized(profile);
       setOriginal(values);
       setForm(values);
-    }).catch((err) => {
-      if (current) setError(`Не удалось открыть профиль: ${err.message}`);
+    }).catch(() => {
+      if (current) setError("Не удалось открыть профиль. Повторите попытку.");
     }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [userId]);
@@ -65,8 +65,8 @@ export function AdminRegistryLearnerProfileForm({ userId, onCancel, onSaved }) {
       setForm(values);
       setSuccess("Данные сохранены. Готовность реестров обновлена, если она зависит от изменённых полей. При необходимости нажмите «Проверить».");
       await onSaved?.();
-    } catch (err) {
-      setError(`Не удалось сохранить: ${err.message}`);
+    } catch {
+      setError("Не удалось сохранить данные. Повторите попытку.");
     } finally {
       setBusy(false);
     }
