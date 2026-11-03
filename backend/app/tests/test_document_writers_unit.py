@@ -20,11 +20,11 @@ async def test_boundary_rejects_unsafe_state(case):
     with pytest.raises(ValueError):require_document_boundary(s)
     assert len(s.sql)==count
 
-def test_only_document_endpoints_use_new_dependency():
+def test_only_document_and_learner_profile_endpoints_use_new_dependency():
     tree=ast.parse(Path('app/api/v1/admin.py').read_text(encoding='utf-8'))
     names={n.name for n in tree.body if isinstance(n,ast.AsyncFunctionDef)
            and 'Depends(get_registry_document_db)' in ast.unparse(n.args)}
-    assert names=={'create_admin_document','update_admin_document','delete_admin_document'}
+    assert names=={'create_admin_document','update_admin_document','delete_admin_document','update_admin_learner_profile'}
 
 def test_org_delete_has_unconditional_refusal_before_delete():
     tree=ast.parse(Path('app/api/v1/admin.py').read_text(encoding='utf-8'))
