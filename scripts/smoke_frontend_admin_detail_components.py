@@ -354,7 +354,11 @@ def main() -> None:
     require_contains(
         "frontend/src/components/admin/FrdoPoBatchesPanel.jsx",
         [
-            "export function FrdoPoBatchesPanel({ obligations, onRefresh })",
+            "export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })",
+            'data-testid="admin-registries-frdo-batches-readonly"',
+            "const canRecord = !readOnly && expanded",
+            "if (readOnly) return;",
+            '!readOnly && batch.status === "exported"',
             'data-testid="admin-registries-frdo-batches"',
             'data-testid="admin-registries-frdo-batch-create"',
             'data-testid="admin-registries-frdo-batch-results-form"',
