@@ -354,7 +354,11 @@ def main() -> None:
     require_contains(
         "frontend/src/components/admin/FrdoPoBatchesPanel.jsx",
         [
-            "export function FrdoPoBatchesPanel({ obligations, onRefresh })",
+            "export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })",
+            'data-testid="admin-registries-frdo-batches-readonly"',
+            "const canRecord = !readOnly && expanded",
+            "if (readOnly) return;",
+            '!readOnly && batch.status === "exported"',
             'data-testid="admin-registries-frdo-batches"',
             'data-testid="admin-registries-frdo-batch-create"',
             'data-testid="admin-registries-frdo-batch-results-form"',
@@ -401,6 +405,80 @@ def main() -> None:
             raise SystemExit("FRDO PO panel has forbidden pattern: " + forbidden)
 
     print("FRDO_PO_BATCH_PANEL_CONTRACT=PASS")
+
+    # Mintrud and learner profile smoke contracts.
+    require_contains(
+        'frontend/src/components/admin/AdminRegistryLearnerProfileForm.jsx',
+        [
+            'export function AdminRegistryLearnerProfileForm(',
+            'data-testid="admin-registries-learner-profile-form"',
+            'getAdminLearnerProfile(userId)',
+            'updateAdminLearnerProfile(userId, changes)',
+            'await onSaved?.();',
+        ],
+    )
+
+    require_contains(
+        'frontend/src/components/admin/MintrudLinkedProtocols.jsx',
+        [
+            'export function MintrudLinkedProtocols(',
+            'data-testid="mintrud-linked-protocols"',
+            'getAdminMintrudLinkedProtocols(obligationId)',
+            'const isDraft = protocol.status === "draft";',
+            'protected_history',
+        ],
+    )
+
+    require_contains(
+        'frontend/src/components/admin/MintrudProtocolCandidatesPanel.jsx',
+        [
+            'export function MintrudProtocolCandidatesPanel(',
+            'data-testid="mintrud-protocol-candidates"',
+            'data-testid="mintrud-protocol-candidates-toggle"',
+            'getAdminMintrudProtocolCandidates({',
+            'limit: 100',
+            'setRows(Array.isArray(response)',
+        ],
+    )
+
+    require_contains(
+        'frontend/src/components/admin/MintrudProtocolDraftsPanel.jsx',
+        [
+            'export function MintrudProtocolDraftsPanel(',
+            'data-testid="mintrud-protocol-drafts"',
+            'checkProtocolDraftCompleteness(saved)',
+            'getAdminMintrudProtocolRecordingReadiness',
+            'confirmed_actual_check: true',
+            'expected_plan_token: report.sync_plan_token',
+            'confirmed_sync: true',
+            'openProtocolDraftPrint',
+        ],
+    )
+
+    require_contains(
+        'frontend/src/lib/checkMintrudProtocolReadiness.js',
+        [
+            'export function checkProtocolDraftCompleteness(saved)',
+            'saved.document_kind !== "DRAFT_PREVIEW_ONLY"',
+            'saved.status !== "draft"',
+            'add("commission_size"',
+            'add("participant_count"',
+            'fieldsComplete: issues.length === 0',
+        ],
+    )
+
+    require_contains(
+        'frontend/src/lib/printMintrudProtocolDraft.js',
+        [
+            'export function buildProtocolDraftPrintHtml(draft)',
+            'export function openProtocolDraftPrint(popup, draft)',
+            'draft.document_kind !== "DRAFT_PREVIEW_ONLY"',
+            'htmlEscape',
+            'popup.document.write(page)',
+        ],
+    )
+
+    print("MINTRUD_FRONTEND_SMOKE_CONTRACT=PASS")
 
     print("Frontend admin detail components behavior smoke passed")
 

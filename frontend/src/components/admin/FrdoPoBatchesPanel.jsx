@@ -39,7 +39,7 @@ function pendingForm(item) {
   };
 }
 
-export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
+export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false }) {
   const [selected, setSelected] = useState([]);
   const [batches, setBatches] = useState([]);
   const [detail, setDetail] = useState(null);
@@ -84,6 +84,14 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
     setSelected((current) => current.filter((id) => approvedIds.has(id)));
   }, [approvedIds]);
 
+  useEffect(() => {
+    if (readOnly) {
+      setSelected([]);
+      setSubmissionId("");
+      setForms({});
+    }
+  }, [readOnly]);
+
   async function perform(callback) {
     setBusy(true);
     setError("");
@@ -99,6 +107,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
   }
 
   async function createBatch() {
+    if (readOnly) return;
     const ids = selectedVisible.map((item) => item.id);
     if (!ids.length || ids.length > 1001) return;
     await perform(async () => {
@@ -129,6 +138,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
 
   async function submitBatch(event, batch) {
     event.preventDefault();
+    if (readOnly) return;
     const completed = await perform(async () => {
       await markAdminFrdoSubmissionBatchSubmitted(batch.id, {
         external_reference: submissionReference.trim() || null,
@@ -148,6 +158,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
   }
 
   function updateForm(obligationId, key, value) {
+    if (readOnly) return;
     const item = (detail?.items || []).find(
       (row) => row.obligation_id === obligationId
     );
@@ -164,6 +175,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
 
   async function saveResults(event, batch) {
     event.preventDefault();
+    if (readOnly) return;
     if (!detail || detail.id !== batch.id || detail.reconciled_at) return;
     const items = (detail.items || [])
       .filter((item) => item.result_status == null && forms[item.obligation_id]?.selected)
@@ -200,13 +212,15 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
     <section data-testid="admin-registries-frdo-batches" className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-base font-bold text-slate-950">Пакеты ФРДО ПО (XLSX)</h2>
       <p className="mt-2 text-xs leading-5 text-slate-600">
-        Выберите утверждённые записи, сформируйте XLSX и загрузите его во ФРДО вручную.
-        После загрузки отдельно подтвердите отправку и внесите фактические результаты.
-        Система не отправляет сведения во внешний реестр автоматически.
+        {readOnly
+          ? "История ранее сформированных партий ФРДО. Доступны просмотр деталей и скачивание XLSX. Изменение данных отключено."
+          : "Выберите утверждённые записи, сформируйте XLSX и загрузите его во ФРДО вручную. После загрузки отдельно подтвердите отправку и внесите фактические результаты. Система не отправляет сведения во внешний реестр автоматически."}
       </p>
       {error ? (
         <div role="alert" data-testid="admin-registries-frdo-batch-error" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</div>
       ) : null}
+      {!readOnly ? (
+        <>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="text-sm text-slate-700">Выбрано: {selectedVisible.length} / 1001</span>
         <button type="button" className={SECONDARY} disabled={busy || !approved.length}
@@ -237,6 +251,25 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
           ))}
         </div>
       ) : <p className="mt-3 text-xs text-slate-500">На текущей странице нет утверждённых записей профессионального обучения (ПО).</p>}
+        </>
+      ) : (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <p
+            data-testid="admin-registries-frdo-batches-readonly"
+            className="text-xs text-slate-600"
+          >
+            Режим только для просмотра. Создание партий и изменение результатов недоступны.
+          </p>
+          <button
+            type="button"
+            className={SECONDARY}
+            disabled={busy}
+            onClick={() => perform(reload)}
+          >
+            Обновить историю
+          </button>
+        </div>
+      )}
 
       <h3 className="mt-6 text-sm font-bold text-slate-900">История пакетов</h3>
       {loading ? <p className="mt-2 text-xs">Загрузка пакетов...</p> : null}
@@ -244,7 +277,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
       <div className="mt-3 grid gap-3">
         {batches.map((batch) => {
           const expanded = detail?.id === batch.id;
-          const canRecord = expanded && batch.status === "submitted" && !detail.reconciled_at;
+          const canRecord = !readOnly && expanded && batch.status === "submitted" && !detail.reconciled_at;
           return (
             <article key={batch.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200"
               data-testid={`admin-registries-frdo-batch-${batch.id}`}>
@@ -263,7 +296,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
               <div className="mt-3 flex flex-wrap gap-2">
                 {batch.has_artifact ? <button type="button" className={SECONDARY} disabled={busy}
                   onClick={() => perform(() => downloadAdminFrdoSubmissionBatch(batch.id))}>Скачать XLSX</button> : null}
-                {batch.status === "exported" ? <button type="button" className={PRIMARY} disabled={busy}
+                {!readOnly && batch.status === "exported" ? <button type="button" className={PRIMARY} disabled={busy}
                   onClick={() => { setSubmissionId(batch.id); setSubmissionReference(""); setDetail(null); }}>
                   Зафиксировать отправку
                 </button> : null}
@@ -271,7 +304,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh }) {
                   {expanded ? "Скрыть детали" : "Детали и результаты"}
                 </button>
               </div>
-              {submissionId === batch.id && batch.status === "exported" ? (
+              {!readOnly && submissionId === batch.id && batch.status === "exported" ? (
                 <form onSubmit={(event) => submitBatch(event, batch)} className="mt-3 grid gap-2">
                   <label className="text-xs">Внешний номер отправки (необязательно)
                     <input className={INPUT} maxLength={255} value={submissionReference}

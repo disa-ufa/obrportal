@@ -10,6 +10,7 @@ from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.learner_profile import LearnerProfile
 from app.models.mintrud_registry_context import MintrudRegistryContext
+from app.models.mintrud_knowledge_protocol import (MintrudKnowledgeProtocol, MintrudKnowledgeProtocolMember)
 from app.models.mintrud_learn_program import (
     CourseMintrudLearnProgram,
     MintrudLearnProgram,
@@ -45,6 +46,8 @@ __all__ = [
     "LearningGroupMember",
     "LearnerProfile",
     "MintrudRegistryContext",
+    "MintrudKnowledgeProtocol",
+    "MintrudKnowledgeProtocolMember",
     "MintrudLearnProgram",
     "CourseMintrudLearnProgram",
     "LessonProgress",

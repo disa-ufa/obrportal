@@ -26,7 +26,25 @@ from app.core.security import get_password_hash
 from app.db.session import get_db
 from app.services.registry_document_transaction import (
     get_registry_document_db, require_registry_document_user,
-    lock_document_sources, recheck_document_permission,
+    lock_document_sources, lock_profile_sources, recheck_document_permission,
+)
+from app.models.learner_profile import LearnerProfile
+from app.schemas.account import (
+    AccountLearnerProfileResponse,
+    AccountLearnerProfileUpdateRequest,
+)
+from app.api.v1.account import (
+    build_account_learner_profile_response,
+    load_account_learner_profile,
+    normalize_account_learner_profile_update_data,
+)
+from app.services.compliance_registry_readiness_propagation import (
+    LEARNER_PROFILE_READINESS_FIELDS,
+    refresh_registry_readiness_for_user,
+)
+from app.services.compliance_registry_approval_invalidation import (
+    invalidate_registry_approvals_for_learner_profile,
+    lock_registry_approvals_for_learner_profile,
 )
 from app.services.registry_batch_commit_outcome import (
     BatchCommitOutcome,
@@ -43,6 +61,7 @@ from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
 from app.models.import_batch import ImportBatch, ImportRow
+from app.services.mintrud_protocol_candidates import summarize_protocol_candidate
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_group import LearningGroup, LearningGroupMember
 from app.models.organization import Organization
@@ -106,6 +125,7 @@ from app.services.compliance_registry_export import (
 from app.models.frdo_registry_context import (
     FrdoRegistryContext,
 )
+from app.models.registry_applicability import RegistryApplicabilityRecord
 from app.models.mintrud_registry_context import (
     MINTRUD_KNOWLEDGE_CHECK_RESULTS,
     MINTRUD_REPORTING_SCENARIOS,
@@ -1962,6 +1982,127 @@ async def get_user_detail(
     roles = await get_user_roles(str(user.id), session)
 
     return build_admin_user_detail(user, roles)
+
+
+# Pilot D1-D3: edit verified learner profile fields from the registry desk.
+# This is deliberately NOT the generic /users/{user_id} account patch.
+@router.get(
+    "/users/{user_id}/learner-profile",
+    response_model=AccountLearnerProfileResponse,
+)
+async def get_admin_learner_profile(
+    user_id: str,
+    _: User = Depends(require_permission("admin.users.write")),
+    session: AsyncSession = Depends(get_db),
+) -> AccountLearnerProfileResponse:
+    learner = await get_admin_user_or_404(user_id, session)
+    profile = await load_account_learner_profile(
+        session, user_id=str(learner.id)
+    )
+    return build_account_learner_profile_response(learner, profile)
+
+
+@router.patch(
+    "/users/{user_id}/learner-profile",
+    response_model=AccountLearnerProfileResponse,
+)
+async def update_admin_learner_profile(
+    user_id: str,
+    payload: AccountLearnerProfileUpdateRequest,
+    request: Request,
+    current_user: User = Depends(require_registry_document_user),
+    session: AsyncSession = Depends(get_registry_document_db),
+) -> AccountLearnerProfileResponse:
+    # The dependency checks admin.users.write with a shared catalog fence.
+    # Lock the LEARNER, not the admin actor, before touching profile sources.
+    learner = await get_admin_user_or_404(user_id, session)
+    await lock_profile_sources(session=session, user=learner)
+    profile = await load_account_learner_profile(
+        session, user_id=str(learner.id)
+    )
+    changes = normalize_account_learner_profile_update_data(
+        payload.model_dump(exclude_unset=True)
+    )
+    if not changes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No learner profile fields to update",
+        )
+
+    if changes.get("snils"):
+        duplicate = await session.scalar(
+            select(LearnerProfile.id).where(
+                LearnerProfile.snils == changes["snils"],
+                LearnerProfile.user_id != str(learner.id),
+            )
+        )
+        if duplicate is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Learner profile with this SNILS already exists",
+            )
+
+    changed_fields = sorted(
+        field for field, value in changes.items()
+        if (
+            (profile is None and value is not None)
+            or (profile is not None and getattr(profile, field) != value)
+        )
+    )
+    if not changed_fields:
+        return build_account_learner_profile_response(learner, profile)
+
+    await lock_registry_approvals_for_learner_profile(
+        session, user_id=str(learner.id), changed_fields=changed_fields
+    )
+    created = profile is None
+    if created:
+        profile = LearnerProfile(user_id=str(learner.id), source="admin")
+        session.add(profile)
+    for field in changed_fields:
+        setattr(profile, field, changes[field])
+
+    try:
+        await session.flush()
+        await invalidate_registry_approvals_for_learner_profile(
+            session,
+            user_id=str(learner.id),
+            changed_fields=changed_fields,
+            invalidated_at=datetime.now(timezone.utc),
+        )
+        if set(changed_fields).intersection(LEARNER_PROFILE_READINESS_FIELDS):
+            await refresh_registry_readiness_for_user(
+                session, user_id=str(learner.id)
+            )
+        await create_admin_audit_event(
+            session,
+            actor_user=current_user,
+            action=(
+                "admin.learner_profile_created" if created
+                else "admin.learner_profile_updated"
+            ),
+            entity_type="learner_profile",
+            entity_id=str(profile.id),
+            # Log field NAMES only; never put SNILS/PII in the audit payload.
+            payload={
+                "target_user_id": str(learner.id),
+                "changed_fields": changed_fields,
+                "profile_created": created,
+            },
+            request=request,
+        )
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        if "snils" in changed_fields:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Learner profile with this SNILS already exists",
+            ) from exc
+        raise
+
+    await session.refresh(profile)
+    return build_account_learner_profile_response(learner, profile)
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserDetail)
@@ -9819,6 +9960,10 @@ async def list_admin_frdo_obligations(
         alias="status",
         max_length=32,
     ),
+    applicability_scope: str | None = Query(
+        default=None,
+        pattern="^(work|review|history)$",
+    ),
     q: str | None = Query(
         default=None,
         max_length=255,
@@ -9839,6 +9984,34 @@ async def list_admin_frdo_obligations(
         build_admin_frdo_obligation_query()
     )
 
+    # Opt-in list projection only. Not an approval/export authorization.
+    # A missing persisted decision cannot enter the work queue.
+    if applicability_scope is not None:
+        from app.models.registry_applicability import RegistryApplicabilityRecord
+
+        persisted_decision = (
+            select(RegistryApplicabilityRecord.decision)
+            .where(
+                RegistryApplicabilityRecord.enrollment_id
+                == RegistryObligation.enrollment_id,
+                RegistryApplicabilityRecord.registry
+                == RegistryObligation.registry,
+            )
+            .correlate(RegistryObligation)
+            .scalar_subquery()
+        )
+
+        if applicability_scope == "work":
+            query = query.where(persisted_decision == "required")
+        elif applicability_scope == "history":
+            query = query.where(persisted_decision == "not_required")
+        else:
+            query = query.where(
+                or_(
+                    persisted_decision.is_(None),
+                    persisted_decision == "needs_review",
+                )
+            )
     if status_filter:
         normalized_status = (
             status_filter.strip()
@@ -10451,6 +10624,107 @@ async def get_admin_mintrud_obligation_or_404(
     return obligation
 
 
+
+
+@router.get(
+    "/mintrud/protocol-candidates",
+    response_model=list[dict],
+)
+async def list_admin_mintrud_protocol_candidates(
+    course_id: str | None = Query(default=None, max_length=64),
+    organization_id: str | None = Query(default=None, max_length=64),
+    learning_group_id: str | None = Query(default=None, max_length=64),
+    limit: int = Query(default=100, ge=1, le=200),
+    _: User = Depends(require_permission("mintrud.read")),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Read-only candidate preview, not an approved commission protocol.
+
+    Uses course completion and individual quiz-block attempts as hints only.
+    Never derives a legal knowledge-check event from enrollment.completed_at
+    or QuizAttempt.passed; the commission must verify the actual evidence.
+    """
+    attempts = (
+        select(
+            QuizAttempt.enrollment_id.label("enrollment_id"),
+            func.count(QuizAttempt.id).label("attempt_count"),
+            func.sum(
+                case((QuizAttempt.passed.is_(True), 1), else_=0)
+            ).label("passed_count"),
+            func.max(
+                case(
+                    (QuizAttempt.passed.is_(True), QuizAttempt.submitted_at),
+                    else_=None,
+                )
+            ).label("last_passed_at"),
+        )
+        .where(QuizAttempt.status == "submitted")
+        .group_by(QuizAttempt.enrollment_id)
+        .subquery()
+    )
+    query = (
+        select(
+            RegistryObligation.id.label("obligation_id"),
+            Enrollment.id.label("enrollment_id"),
+            Enrollment.course_id.label("course_id"),
+            Enrollment.organization_id.label("organization_id"),
+            Enrollment.learning_group_id.label("learning_group_id"),
+            Enrollment.completed_at.label("completed_at"),
+            User.full_name.label("learner_name"),
+            Course.title.label("course_title"),
+            MintrudRegistryContext.knowledge_check_date.label("entered_check_date"),
+            MintrudRegistryContext.protocol_number.label("entered_protocol_number"),
+            RegistryApplicabilityRecord.decision.label("applicability_decision"),
+            func.coalesce(attempts.c.attempt_count, 0).label("quiz_attempts"),
+            func.coalesce(attempts.c.passed_count, 0).label("passed_quiz_attempts"),
+            attempts.c.last_passed_at.label("last_passed_at"),
+        )
+        .join(Enrollment, Enrollment.id == RegistryObligation.enrollment_id)
+        .join(Course, Course.id == Enrollment.course_id)
+        .join(User, User.id == Enrollment.user_id)
+        .outerjoin(
+            MintrudRegistryContext,
+            MintrudRegistryContext.obligation_id == RegistryObligation.id,
+        )
+        .outerjoin(
+            RegistryApplicabilityRecord,
+            (RegistryApplicabilityRecord.enrollment_id == Enrollment.id)
+            & (RegistryApplicabilityRecord.registry == "mintrud"),
+        )
+        .outerjoin(attempts, attempts.c.enrollment_id == Enrollment.id)
+        .where(
+            RegistryObligation.registry == "mintrud",
+            Enrollment.status == "completed",
+            Course.mintrud_requirement_mode != "not_required",
+            (RegistryApplicabilityRecord.id.is_(None))
+            | (RegistryApplicabilityRecord.decision != "not_required"),
+        )
+    )
+    if course_id:
+        query = query.where(Enrollment.course_id == course_id.strip())
+    if organization_id:
+        query = query.where(Enrollment.organization_id == organization_id.strip())
+    if learning_group_id:
+        query = query.where(Enrollment.learning_group_id == learning_group_id.strip())
+    query = query.order_by(
+        Enrollment.completed_at.desc(),
+        RegistryObligation.id,
+    ).limit(limit)
+
+    result = await session.execute(query)
+    output: list[dict] = []
+    for item in result.mappings():
+        summary = summarize_protocol_candidate(
+            quiz_attempts=int(item["quiz_attempts"]),
+            passed_quiz_attempts=int(item["passed_quiz_attempts"]),
+            knowledge_check_date=item["entered_check_date"],
+            protocol_number=item["entered_protocol_number"],
+            applicability_decision=item["applicability_decision"],
+        )
+        output.append({**dict(item), **summary})
+    return output
+
+
 @router.get(
     "/mintrud/obligations",
     response_model=list[
@@ -11061,6 +11335,34 @@ async def update_admin_mintrud_obligation_context(
         session.add(
             mintrud_context
         )
+
+    # P3.4C: only the explicit protocol-sync transaction may change
+    # commission-derived registry fields after they have been synchronized.
+    # This check runs under the obligation FOR UPDATE lock above, shared with
+    # guarded synchronization. Other context fields remain editable.
+    sync_fields = ("protocol_number", "knowledge_check_date", "knowledge_check_result")
+
+    def _same_source_value(field, requested):
+        current = getattr(mintrud_context, field, None)
+        if field == "knowledge_check_date":
+            current = current.isoformat() if current is not None and hasattr(current, "isoformat") else current
+            requested = requested.isoformat() if requested is not None and hasattr(requested, "isoformat") else requested
+        return (current or None) == (requested or None)
+
+    if any(
+        field in data and not _same_source_value(field, data[field])
+        for field in sync_fields
+    ):
+        from app.services.mintrud_protocol_provenance import has_mintrud_protocol_sync_evidence
+
+        if await has_mintrud_protocol_sync_evidence(session, str(obligation.id)):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "Registry knowledge-check fields were synchronized from a recorded "
+                    "commission protocol. Use a separate audited correction workflow."
+                ),
+            )
 
     for field, value in data.items():
         setattr(
@@ -14881,3 +15183,6 @@ async def record_admin_frdo_submission_batch_results(
         raise
 
     return response_item
+
+from app.api.v1.mintrud_protocol_drafts import router as mintrud_protocol_drafts_router
+router.include_router(mintrud_protocol_drafts_router)

@@ -1427,6 +1427,11 @@ async def delete_org_group_enrollment(
     current_user: User = Depends(require_permission("org.groups.write")),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
+    from app.services.registry_action_lockset import RegistryActionLockError
+    from app.services.registry_enrollment_delete_guard import (
+        RegistryEnrollmentDeleteConflict,
+        acquire_registry_enrollment_deletion_guard,
+    )
     allowed_organization_ids = await get_organization_scope_for_permission(
         current_user,
         "org.groups.write",
@@ -1452,6 +1457,25 @@ async def delete_org_group_enrollment(
             detail="Enrollment not found",
         )
 
+    # Canonical source/decision fences before any delete.
+    try:
+        enrollment = await acquire_registry_enrollment_deletion_guard(
+            session=session, enrollment_id=str(enrollment.id),
+        )
+    except (RegistryActionLockError, RegistryEnrollmentDeleteConflict) as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    # The earlier unlocked lookup cannot authorize a changed relationship.
+    if str(enrollment.learning_group_id) != str(group.id):
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Enrollment group changed during deletion",
+        )
     if enrollment.status != "assigned":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

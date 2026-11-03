@@ -45,12 +45,12 @@ def test_veto_is_disabled_unless_explicitly_configured(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_disabled_veto_does_not_query_new_schema(monkeypatch):
+async def test_disabled_veto_does_not_query_new_schema_for_mintrud(monkeypatch):
     monkeypatch.setattr(settings, "registry_attempt_applicability_veto_enabled", False)
-    session, _ = _session(enabled=False)
+    session, _ = _session(registry="mintrud", enabled=False)
     attempt = await _attempt(session)
     assert attempt.attempt_no == 1
-    assert session.execute.await_count == 1  # Only the legacy obligation query.
+    assert session.execute.await_count == 1  # Mintrud retains the legacy obligation-only query.
     session.flush.assert_awaited_once()
     session.commit.assert_not_awaited()
 
