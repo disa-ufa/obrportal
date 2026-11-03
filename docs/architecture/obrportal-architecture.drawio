@@ -1,0 +1,1315 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" compressed="false" pages="9">
+  <diagram id="overview" name="00 Обзор">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="overview-title" value="OBRPORTAL  /  00 Обзор" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="overview-subtitle" value="Карта текущей реализации: один React-интерфейс и модульный backend FastAPI. Нажмите блок или вкладку, чтобы открыть детали." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="overview-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="overview-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="overview-source-0" label="↗ backend/app/api/v1/router.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/router.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-source-1" label="↗ frontend/src/routes/PublicRoutes.jsx" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/frontend/src/routes/PublicRoutes.jsx">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-source-2" label="↗ docs/adr/0001-architecture.md" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/docs/adr/0001-architecture.md">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="overview-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="overview-clients" label="Браузер&#10;Публичный портал&#10;Слушатель • организация • ведомство&#10;Административный контур" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="280" height="170" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-frontend" label="React / Vite&#10;Маршруты, страницы, hooks&#10;frontend/src/api/client.js" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/frontend/src/api/client.js">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="460" width="280" height="140" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-api" label="FastAPI  /api/v1&#10;auth • public • account • org • admin&#10;RBAC и проверки области доступа" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="410" y="210" width="560" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-learning" label="Курсы и обучение&#10;Уроки, тесты, задания&#10;Группы, назначения, импорт →" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="410" y="390" width="250" height="120" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-documents" label="Документы&#10;Завершение → PDF → публикация&#10;Скачивание и проверка →" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="720" y="390" width="250" height="120" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-registry" label="Контур реестров&#10;Применимость → готовность → утверждение&#10;Минтруд XML / ФРДО ПО XLSX →" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="410" y="610" width="560" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-db" label="PostgreSQL&#10;SQLAlchemy + Alembic&#10;Модель данных →" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1080" y="210" width="280" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-files" label="Приватные файлы&#10;PDF, вложения, артефакты&#10;Файловая система" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1080" y="390" width="280" height="120" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-infra" label="Инфраструктура →&#10;Redis • MinIO • SMTP&#10;CI и границы развёртывания" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1080" y="610" width="280" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="overview-operators" label="Операторы реестров&#10;Ручная загрузка файлов&#10;и фиксация результатов" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="650" width="280" height="100" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="overview-edge-1" value="UI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-clients" target="overview-frontend">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-edge-2" value="HTTP / JSON" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-frontend" target="overview-api">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="360" y="530" />
+              <mxPoint x="360" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="overview-edge-3" value="вызовы" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-api" target="overview-learning">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-edge-4" value="завершение" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-learning" target="overview-documents">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-edge-5" value="обязательства" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-documents" target="overview-registry">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-edge-6" value="ORM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-api" target="overview-db">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-edge-7" value="PDF" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="overview-documents" target="overview-files">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-edge-8" value="файлы" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;dashed=1;" edge="1" parent="1" source="overview-registry" target="overview-operators">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="overview-boundary" value="Блоки внутри backend — логические модули общего приложения. Стрелки обозначают основные связи; детали показаны на следующих страницах." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=13;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="752" width="1320" height="28" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="access" name="01 Роли и интерфейсы">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="access-title" value="OBRPORTAL  /  01 Роли и интерфейсы" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="access-subtitle" value="Доступ определяется backend-разрешениями и областью организации. Видимость раздела интерфейса сама по себе не даёт разрешение." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="access-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="access-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="access-source-0" label="↗ backend/app/api/v1/rbac.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/rbac.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-source-1" label="↗ backend/app/db/seed.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/db/seed.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="access-source-2" label="↗ frontend/src/routes/PublicRoutes.jsx" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/frontend/src/routes/PublicRoutes.jsx">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="access-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <mxCell id="access-guest" value="Гость" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="205" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-guest-ui" value="Каталог, сведения, проверка документа" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="520" y="205" width="360" height="82" />
+        </mxCell>
+        <mxCell id="access-guest-api" value="/public" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=19;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1030" y="205" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-guest" target="access-guest-ui">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-edge-2" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-guest-ui" target="access-guest-api">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-learner" value="learner_fl / learner_org" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="320" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-learner-ui" value="Личный кабинет и обучение" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="520" y="320" width="360" height="82" />
+        </mxCell>
+        <mxCell id="access-learner-api" value="/account" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=19;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1030" y="320" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-learner" target="access-learner-ui">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-edge-4" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-learner-ui" target="access-learner-api">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-org" value="org_rep / ministry_admin" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="435" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-org-ui" value="/organization; /ministry — просмотр профилей" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="520" y="435" width="360" height="82" />
+        </mxCell>
+        <mxCell id="access-org-api" value="/org" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=19;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1030" y="435" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-org" target="access-org-ui">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-edge-6" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-org-ui" target="access-org-api">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-admin" value="admin / операторы реестров" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="550" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-admin-ui" value="/admin; mintrud.* / frdo.*" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="520" y="550" width="360" height="82" />
+        </mxCell>
+        <mxCell id="access-admin-api" value="/admin" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=19;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1030" y="550" width="330" height="82" />
+        </mxCell>
+        <mxCell id="access-edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-admin" target="access-admin-ui">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="access-edge-8" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="access-admin-ui" target="access-admin-api">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <UserObject id="access-auth" label="/auth: регистрация под флагом → установка пароля / вход → JWT&#10;Redis ограничивает запросы; email_delivery отправляет приглашения и восстановление при включённом SMTP." link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/auth.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=15;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="680" width="840" height="80" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="access-scope" value="UserRole → RolePermission → Permission&#10;Для mintrud.* и frdo.* нужны глобальные назначения ролей." style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=14;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1030" y="680" width="330" height="80" />
+        </mxCell>
+        <mxCell id="access-seednote" value="В seed также есть teacher, methodist, finance_operator, edo_operator и другие роли. Название роли не означает, что отдельный кабинет, платежи или ЭДО уже реализованы." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=13;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="645" width="1320" height="30" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="learning" name="02 Обучение">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="learning-title" value="OBRPORTAL  /  02 Обучение" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="learning-subtitle" value="Сквозной путь: подготовка курса → назначение → прохождение → завершение. Это обзор процесса, а не полная машина состояний." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="learning-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="learning-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="learning-source-0" label="↗ backend/app/api/v1/account.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/account.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-source-1" label="↗ backend/app/services/enrollment_completion.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/enrollment_completion.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-source-2" label="↗ backend/app/services/learner_import_batches.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/learner_import_batches.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="learning-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="learning-course" label="Курс → модули → уроки → блоки&#10;Конструктор и публикация&#10;/admin/courses, lesson studio" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/frontend/src/pages/LessonStudioPage.jsx">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-enroll" label="Назначение Enrollment&#10;Слушатель + курс&#10;Организация / группа при наличии" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/enrollment.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-content" label="Прохождение в /account&#10;Доступ к урокам и содержимому&#10;LessonProgress" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/account.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-assess" label="Проверка освоения&#10;QuizAttempt / AssignmentSubmission&#10;Проверки готовности уроков" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/lesson_readiness.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-complete" label="Завершение назначения&#10;ensure_enrollment_completed&#10;Транзакцией управляет вызывающий код" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/enrollment_completion.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-handoff" label="DocumentRecord (draft) + PDF&#10;Обязательства по реестрам&#10;Перейти к документам →" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="learning-edge-1" value="назначить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="learning-course" target="learning-enroll">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="learning-edge-2" value="открыть" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="learning-enroll" target="learning-content">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="learning-edge-3" value="результаты" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="learning-content" target="learning-assess">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="learning-edge-4" value="условия выполнены" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="learning-assess" target="learning-complete">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="learning-edge-5" value="создать / обеспечить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="learning-complete" target="learning-handoff">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <UserObject id="learning-import" label="Импорт слушателей CSV / XLSX&#10;Разбор → предварительная проверка → применение&#10;Профили, назначения, уведомления; защита повторного применения" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/learner_import_batches.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="650" width="620" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="learning-org" label="Организации и группы&#10;Группы / участники / назначения&#10;Корпоративный обзор прогресса и документов" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/org.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="740" y="650" width="620" height="100" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="documents" name="03 Документы">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="documents-title" value="OBRPORTAL  /  03 Документы" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="documents-subtitle" value="Завершение курса создаёт черновик документа. Доступность скачивания и публичная проверка учитывают отдельный жизненный цикл документа." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="documents-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="documents-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="documents-source-0" label="↗ backend/app/services/completion_documents.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/completion_documents.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-source-1" label="↗ backend/app/api/v1/public.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/public.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-source-2" label="↗ backend/app/services/completion_pdf_transaction_boundary.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/completion_pdf_transaction_boundary.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="documents-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="documents-complete" label="Завершённое назначение&#10;Данные слушателя, курса&#10;и организации" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-draft" label="DocumentRecord: draft&#10;Шаблон → PDF&#10;DocumentGenerationEvent" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/completion_documents.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-storage" label="Приватное файловое хранилище&#10;storage_path + метаданные&#10;Контроль принадлежности / компенсация" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/document_storage.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-publish" label="Администратор&#10;Проверка и публикация&#10;status = available" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/admin.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-download" label="Слушатель: скачивание&#10;Свой документ + available&#10;Проверка наличия файла" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/account.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="documents-edge-1" value="обеспечить документ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="documents-complete" target="documents-draft">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="documents-edge-2" value="сохранить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="documents-draft" target="documents-storage">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="documents-edge-3" value="после проверки" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="documents-storage" target="documents-publish">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="documents-edge-4" value="выдать доступ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="documents-publish" target="documents-download">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <UserObject id="documents-verify" label="Публичная проверка по коду&#10;/verify/:code → /public&#10;Отзыв: status = revoked" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/public.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="documents-edge-5" value="проверка статуса по коду" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=1;" edge="1" parent="1" source="documents-publish" target="documents-verify">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="1180" y="600" />
+              <mxPoint x="220" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <UserObject id="documents-registry" label="Изменения исходных данных и документов&#10;могут влиять на готовность / утверждение реестров →" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="650" width="620" height="95" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="documents-transaction" label="PDF и транзакция БД&#10;Границы записи, учёт созданного файла и компенсация ошибок&#10;Это не единая транзакция PostgreSQL + файловой системы." link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/completion_pdf_ownership.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=15;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="740" y="650" width="620" height="95" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="registry" name="04 Контур реестров">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="registry-title" value="OBRPORTAL  /  04 Контур реестров" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="registry-subtitle" value="Применимость, готовность данных и разрешение экспорта — отдельные проверки. Схема описывает программный процесс, не нормативное заключение." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="registry-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="registry-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="registry-source-0" label="↗ backend/app/services/compliance_registry_contract.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/compliance_registry_contract.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-source-1" label="↗ backend/app/services/registry_applicability_export_guard.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/registry_applicability_export_guard.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-source-2" label="↗ backend/app/services/registry_batch_transaction.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/registry_batch_transaction.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="registry-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="registry-sources" label="Исходные данные&#10;Enrollment + документ + профиль&#10;Контексты Минтруда / ФРДО" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-applicability" label="Применимость&#10;required / not_required / needs_review&#10;Снимок и актуальность решения" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/registry_applicability.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-readiness" label="Готовность и утверждение&#10;Проверка данных → approval&#10;Изменения могут сбросить утверждение" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/compliance_registry_approval.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-guard" label="Перед действием&#10;RBAC + scope + актуальность&#10;Блокировки и флаг пакетного экспорта" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/registry_release_gate.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-export" label="Попытка / пакет / артефакт&#10;Внутренний пакет ≠ файл портала&#10;Сохранение снимка и истории" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/compliance_registry_batches.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-result" label="Действия оператора&#10;Фиксация отправки и результата&#10;Принято / отклонено / исправление" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_batches.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="registry-edge-1" value="оценить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="registry-sources" target="registry-applicability">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="registry-edge-2" value="если требуется" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="registry-applicability" target="registry-readiness">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="registry-edge-3" value="для действия" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="registry-readiness" target="registry-guard">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="registry-edge-4" value="если разрешено" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="registry-guard" target="registry-export">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="registry-edge-5" value="ручной этап" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="registry-export" target="registry-result">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <UserObject id="registry-mintrud" label="Минтруд →&#10;Протоколы, контекст, XML ЕИСОТ 1.0.9" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="660" width="400" height="85" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="registry-frdo" label="ФРДО →&#10;ПО: рабочий XLSX-шаблон" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="500" y="660" width="400" height="85" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="registry-safety" value="Не изображена прямая API-отправка&#10;во внешние государственные системы:&#10;в проверенном коде такой транспорт не найден." style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=14;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="960" y="660" width="400" height="85" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="mintrud" name="05 Минтруд">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mintrud-title" value="OBRPORTAL  /  05 Минтруд" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="mintrud-subtitle" value="Новый контур протоколов подключён к /api/v1/admin/mintrud/protocol-drafts. Фиксация протокола, синхронизация и экспорт — отдельные операции." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="mintrud-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="mintrud-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="mintrud-source-0" label="↗ backend/app/api/v1/mintrud_protocol_drafts.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/mintrud_protocol_drafts.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-source-1" label="↗ backend/app/services/mintrud_protocol_sync.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/mintrud_protocol_sync.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-source-2" label="↗ backend/app/services/mintrud_eisot_xml.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/mintrud_eisot_xml.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="mintrud-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="mintrud-candidate" label="Завершённые назначения&#10;Кандидаты + программы обучения&#10;Контекст организации / работодателя" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/mintrud_protocol_candidates.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-draft" label="Черновик протокола&#10;Участники и данные проверки&#10;Предпросмотр печати" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/mintrud_protocol_drafts.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-record" label="record-check&#10;Проверка готовности → recorded&#10;Зафиксированный снимок" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/mintrud_knowledge_protocol.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-sync" label="Сверка → явный registry-sync&#10;Проверки конфликтов / происхождения&#10;Обновление контекста реестра" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/mintrud_protocol_sync.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-export" label="Готовность → approval → guards&#10;XML + проверка по XSD 1.0.9&#10;Попытки и пакеты" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/mintrud_eisot_xsd.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="mintrud-operator" label="Оператор и ЕИСОТ&#10;Скачать → загрузить вручную&#10;Зафиксировать результат в OBRPORTAL" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/docs/mintrud-eisot-recovery-runbook.md">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="mintrud-edge-1" value="сформировать" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mintrud-candidate" target="mintrud-draft">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="mintrud-edge-2" value="зафиксировать" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mintrud-draft" target="mintrud-record">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="mintrud-edge-3" value="сверить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mintrud-record" target="mintrud-sync">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="mintrud-edge-4" value="подготовить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mintrud-sync" target="mintrud-export">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="mintrud-edge-5" value="файл" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mintrud-export" target="mintrud-operator">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="mintrud-limits" value="Черновик и предпросмотр не подтверждают прохождение комиссии&#10;и не разрешают экспорт. recorded сам по себе не означает синхронизацию." style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="660" width="620" height="85" />
+        </mxCell>
+        <UserObject id="mintrud-back" label="Общие проверки реестров →&#10;Применимость, актуальность источников, RBAC, блокировки, release gate" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="740" y="660" width="620" height="85" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="frdo" name="06 ФРДО">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frdo-title" value="OBRPORTAL  /  06 ФРДО" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="frdo-subtitle" value="Реализован отдельный путь ФРДО для профессионального обучения (ПО). Рабочий шаблон XLSX имеет статус working_reference." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="frdo-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="frdo-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="frdo-source-0" label="↗ backend/app/services/frdo_po_portal_contract.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_portal_contract.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-source-1" label="↗ backend/app/services/frdo_po_portal_artifact.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_portal_artifact.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-source-2" label="↗ backend/app/services/frdo_po_batches.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_batches.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="frdo-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="frdo-context" label="Профиль + документ + курс&#10;FrdoRegistryContext&#10;Тип программы и данные выдачи" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/frdo_registry_context.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-decision" label="Применимость и готовность&#10;Ручные решения в допустимых рамках&#10;Утверждение данных" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_manual_applicability_policy.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-mapping" label="ПО: mapping → validator&#10;Поля, классификаторы, формат&#10;frdo_po_working_reference_v1.xlsx" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_portal_mapping.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="210" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-xlsx" label="Сформировать XLSX&#10;Снимок / пакет / контроль повторов&#10;Сохранить приватный артефакт" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_xlsx_formatter.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-operator" label="Оператор: ручная загрузка&#10;Внешний портал ФРДО&#10;Фиксация submitted" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/frdo_po_batches.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="frdo-result" label="Сверка результата&#10;Принято / отклонено / исправление&#10;История попыток и пакетов" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="430" width="360" height="130" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="frdo-edge-1" value="проверить" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="frdo-context" target="frdo-decision">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="frdo-edge-2" value="после разрешений" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="frdo-decision" target="frdo-mapping">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="frdo-edge-3" value="экспорт" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="frdo-mapping" target="frdo-xlsx">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="frdo-edge-4" value="скачать файл" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="frdo-xlsx" target="frdo-operator">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="frdo-edge-5" value="внести результат" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="frdo-operator" target="frdo-result">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="frdo-status" value="working_reference ≠ confirmed&#10;Карта не утверждает, что файл принят внешним порталом.&#10;Проверка внешнего приёма в этой задаче не выполнялась." style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="660" width="620" height="85" />
+        </mxCell>
+        <UserObject id="frdo-scope" label="Другие типы программ&#10;Общий контракт артефакта ФРДО остаётся unconfirmed.&#10;Не переносить готовность пути ПО на весь ФРДО." link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/compliance_registry_portal_artifacts.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="740" y="660" width="620" height="85" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="data" name="07 Данные">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="data-title" value="OBRPORTAL  /  07 Данные" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="data-subtitle" value="Сокращённая логическая модель PostgreSQL. Стрелки: родитель → связанная сущность; показаны основные связи, без полной кардинальности и всех FK." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="data-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="data-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="data-source-0" label="↗ backend/app/models/enrollment.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/enrollment.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-source-1" label="↗ backend/app/models/registry_obligation.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/registry_obligation.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-source-2" label="↗ backend/app/models/registry_submission_batch.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/registry_submission_batch.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="data-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <UserObject id="data-user" label="User / LearnerProfile&#10;Роли, разрешения, password tokens" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/user.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="210" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-course" label="Course → CourseModule&#10;→ CourseLesson → LessonBlock" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/course.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="210" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-org" label="Organization&#10;LearningGroup / участники" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/learning_group.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="210" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-progress" label="LessonProgress / QuizAttempt&#10;AssignmentSubmission" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/lesson_progress.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="410" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-enroll" label="Enrollment&#10;Связывает слушателя, курс,&#10;организацию и группу" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/enrollment.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="410" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-doc" label="DocumentRecord&#10;DocumentGenerationEvent" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/document_record.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="410" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-decision" label="RegistryApplicability + события&#10;Контексты Минтруда / ФРДО" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/registry_applicability.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="620" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-obligation" label="RegistryObligation&#10;SubmissionAttempt&#10;Протоколы Минтруда / участники" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/registry_obligation.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="520" y="620" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="data-batch" label="SubmissionBatch / BatchItem&#10;Снимки, результаты, артефакты" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/models/registry_submission_batch.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="620" width="360" height="115" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="data-edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.2;entryY=0;" edge="1" parent="1" source="data-user" target="data-enroll">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="220" y="360" />
+              <mxPoint x="590" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="data-edge-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="data-course" target="data-enroll">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="data-edge-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.8;entryY=0;" edge="1" parent="1" source="data-org" target="data-enroll">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="1180" y="360" />
+              <mxPoint x="810" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="data-edge-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="data-enroll" target="data-progress">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="data-edge-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="data-enroll" target="data-doc">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="data-edge-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="data-enroll" target="data-obligation">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="data-edge-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;exitX=0.2;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="data-enroll" target="data-decision">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="590" y="575" />
+              <mxPoint x="220" y="575" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="data-edge-8" value="через BatchItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="data-obligation" target="data-batch">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="data-extra" value="Дополнительно: ImportBatch / ImportRow, AuditEvent, справочник MintrudLearnProgram и связь с Course. Полная структура — в models и миграциях Alembic." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=13;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="747" width="1320" height="30" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="runtime" name="08 Инфраструктура">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="runtime-title" value="OBRPORTAL  /  08 Инфраструктура" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=28;spacing=12;align=center;verticalAlign=middle;arcSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1320" height="45" />
+        </mxCell>
+        <mxCell id="runtime-subtitle" value="Инфраструктура подтверждена исходниками и docker-compose.yml. Это не схема фактического production-развёртывания." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1320" height="48" />
+        </mxCell>
+        <UserObject id="runtime-nav-overview" label="00 Обзор" link="data:page/id,overview">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-access" label="01 Роли и интерфейсы" link="data:page/id,access">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="187" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-learning" label="02 Обучение" link="data:page/id,learning">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="334" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-documents" label="03 Документы" link="data:page/id,documents">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="481" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-registry" label="04 Контур реестров" link="data:page/id,registry">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="628" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-mintrud" label="05 Минтруд" link="data:page/id,mintrud">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="775" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-frdo" label="06 ФРДО" link="data:page/id,frdo">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="922" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-data" label="07 Данные" link="data:page/id,data">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1069" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-nav-runtime" label="08 Инфраструктура" link="data:page/id,runtime">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=11;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1216" y="132" width="140" height="30" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="runtime-legend" value="Синий: интерфейс / доступ     Зелёный: бизнес-логика     Фиолетовый: данные     Охра: внешнее / условное     ↗ источник     → направление зависимости или передачи" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="785" width="1320" height="28" />
+        </mxCell>
+        <UserObject id="runtime-source-0" label="↗ docker-compose.yml" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/docker-compose.yml">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-source-1" label="↗ backend/app/api/v1/system.py" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/system.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="480" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-source-2" label="↗ .github/workflows/ci.yml" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/.github/workflows/ci.yml">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#c6cfdc;fontColor=#1e293b;fontFamily=Arial;fontSize=10;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="920" y="825" width="430" height="28" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="runtime-snapshot" value="Срез исходного кода: 44a189c6581f • 03.11.2026 • Состояние production не проверялось" style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="862" width="1320" height="20" />
+        </mxCell>
+        <mxCell id="runtime-browser" value="Браузер&#10;React SPA" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=18;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="220" width="270" height="100" />
+        </mxCell>
+        <UserObject id="runtime-frontend" label="Frontend&#10;Vite dev / статическая сборка&#10;Способ отдачи зависит от среды" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/frontend/Dockerfile">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf2ff;strokeColor=#4575b4;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="430" y="220" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-backend" label="Backend FastAPI / Uvicorn&#10;/health и /api/v1/ready&#10;Общий процесс бизнес-модулей" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/main.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#eaf7ee;strokeColor=#4a8c63;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="220" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-pg" label="PostgreSQL 16&#10;SQLAlchemy async&#10;Alembic — миграции отдельно" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/db/session.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="430" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-files" label="Приватная файловая система&#10;PDF, учебные вложения, экспорт&#10;document_storage" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/document_storage.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="530" y="430" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-redis" label="Redis 7&#10;Ограничение запросов auth&#10;и readiness" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/public_registration_rate_limit.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0ebfa;strokeColor=#8264aa;fontColor=#1e293b;fontFamily=Arial;fontSize=17;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="430" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-minio" label="MinIO / S3-compatible&#10;Есть в Compose и readiness&#10;Не основной путь сохранения PDF" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/api/v1/system.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="40" y="650" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-smtp" label="SMTP (если включён)&#10;Приглашения / восстановление&#10;email_delivery" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/backend/app/services/email_delivery.py">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff4df;strokeColor=#b7852d;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="530" y="650" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <UserObject id="runtime-ci" label="GitHub → отдельная ветка → PR&#10;Test ObrPortal&#10;Deploy — отдельное действие" link="https://github.com/disa-ufa/obrportal/blob/44a189c6581fe1b6f0fcfe68dbda4d53b00ef7f8/docs/development-process-v2.md">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f0f3f7;strokeColor=#718096;fontColor=#1e293b;fontFamily=Arial;fontSize=16;spacing=12;align=center;verticalAlign=middle;arcSize=12;" vertex="1" parent="1">
+            <mxGeometry as="geometry" x="1000" y="650" width="360" height="100" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="runtime-edge-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="runtime-browser" target="runtime-frontend">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="runtime-edge-2" value="HTTP / JSON" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="runtime-frontend" target="runtime-backend">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="runtime-edge-3" value="ORM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="runtime-backend" target="runtime-pg">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="runtime-edge-4" value="файлы" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;exitX=0;exitY=0.8;entryX=0.5;entryY=0;" edge="1" parent="1" source="runtime-backend" target="runtime-files">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="950" y="300" />
+              <mxPoint x="950" y="390" />
+              <mxPoint x="710" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="runtime-edge-5" value="rate limit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#64748b;strokeWidth=1.5;fontFamily=Arial;fontSize=12;fontColor=#334155;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="runtime-backend" target="runtime-redis">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="930" y="270" />
+              <mxPoint x="930" y="355" />
+              <mxPoint x="220" y="355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="runtime-notworker" value="ADR-0001 предусматривает очередь / worker. Отдельный worker и транспорт прямой отправки в госреестры в проверенном коде и Compose не обнаружены." style="text;html=0;whiteSpace=wrap;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=15;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="580" width="1320" height="45" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
