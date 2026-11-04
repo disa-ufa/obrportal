@@ -23,7 +23,30 @@ function normalized(values) {
   ]));
 }
 
-export function AdminRegistryLearnerProfileForm({ userId, onCancel, onSaved }) {
+export function RegistryProfileCompletenessNotice({ profile, registry, onEdit }) {
+  if (!profile || String(profile.sex || "").trim()) return null;
+  return <div role="status" data-testid="registry-profile-sex-warning" className="mt-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-950">
+    <p>Не указан пол слушателя. Заполните это поле в персональных данных</p>
+    <p>{registry === "frdo" ? "Для ФРДО это обязательное поле." : "Это предупреждение о полноте профиля. Оно само по себе не блокирует XML Минтруда 1.0.9."}</p>
+    {onEdit ? <button type="button" className="mt-2 underline" onClick={onEdit}>Открыть персональные данные</button> : null}
+  </div>;
+}
+
+export function RegistryLearnerProfileWarning({ userId, registry, refreshKey, onEdit }) {
+  const [state, setState] = useState({ profile: null, error: false });
+  useEffect(() => {
+    let current = true;
+    setState({ profile: null, error: false });
+    if (userId) getAdminLearnerProfile(userId)
+      .then(profile => { if (current) setState({ profile: profile || {}, error: false }); })
+      .catch(() => { if (current) setState({ profile: null, error: true }); });
+    return () => { current = false; };
+  }, [userId, refreshKey]);
+  if (state.error) return <p role="status" className="mt-2 text-amber-800">Не удалось проверить полноту профиля. Обновите список и повторите попытку.</p>;
+  return <RegistryProfileCompletenessNotice profile={state.profile} registry={registry} onEdit={onEdit} />;
+}
+
+export function AdminRegistryLearnerProfileForm({ userId, registry, onCancel, onSaved }) {
   const [original, setOriginal] = useState(null);
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(true);
@@ -82,6 +105,7 @@ export function AdminRegistryLearnerProfileForm({ userId, onCancel, onSaved }) {
       <p className="mt-1 text-xs text-slate-600">
         СНИЛС и персональные сведения сохраняются в профиле слушателя. ИНН работодателя заполняется отдельно в данных Минтруда ниже.
       </p>
+      {!loading ? <RegistryProfileCompletenessNotice profile={original} registry={registry} /> : null}
       {loading ? <p className="mt-3 text-sm">Загрузка профиля…</p> : null}
       {!loading && original ? (
         <div className="mt-3 grid gap-3 md:grid-cols-2">

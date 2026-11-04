@@ -1,6 +1,6 @@
-"""P3.3D.1 — guarded transfer of recorded protocol results to Mintrud contexts.
+"""M4.4 — guarded transfer of signed protocol results to Mintrud contexts.
 
-Only three fields can be filled. Never approve, invalidate, export, submit, or
+Only three fields can be filled, and only for a signed source. Never approve, invalidate, export, submit, or
 change a protocol, enrollment, obligation or historical submission snapshot.
 """
 from __future__ import annotations
@@ -8,7 +8,7 @@ from __future__ import annotations
 from hashlib import sha256
 from datetime import date
 import json
-from uuid import UUID
+from uuid import UUID, NAMESPACE_URL, uuid5
 
 from fastapi import HTTPException
 from sqlalchemy import and_, func, select
@@ -27,6 +27,7 @@ from app.services.completion_documents import load_completion_document_context
 from app.services.mintrud_learn_programs import load_course_mintrud_learn_programs
 from app.services.mintrud_reporting_organization import resolve_mintrud_reporting_organization
 from app.services.mintrud_protocol_reconciliation import reconcile_mintrud_protocol
+from app.services.mintrud_protocol_signing import require_signed_protocol
 
 SOURCE_FIELDS = ("protocol_number", "knowledge_check_date", "knowledge_check_result")
 # A deliberately narrow first release: no automatically updated approved/validated rows.
@@ -37,9 +38,9 @@ def _digest(value: dict) -> str:
     return sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
-def _eligible(member: dict, status: str | None, recorded: bool) -> tuple[bool, str]:
-    if not recorded:
-        return False, "protocol_not_recorded"
+def _eligible(member: dict, status: str | None, signed: bool) -> tuple[bool, str]:
+    if not signed:
+        return False, "protocol_not_signed"
     if status not in PERMITTED_OBLIGATION_STATUSES:
         return False, "registry_status_not_pending_data"
     if member["structural_issues"]:
@@ -59,6 +60,11 @@ async def build_mintrud_sync_plan(session: AsyncSession, protocol_id: str) -> di
     """Read only. Plan hash binds source, current fields and protection signals."""
     comparison = await reconcile_mintrud_protocol(session, protocol_id)
     protocol = await session.scalar(select(MintrudKnowledgeProtocol).where(MintrudKnowledgeProtocol.id == protocol_id))
+    # Reconciliation remains readable before signature, but is not actionable.
+    # A forged/tampered attestation must fail closed even for a preview.
+    signed_source = None
+    if protocol is not None and protocol.signed_at is not None:
+        signed_source = require_signed_protocol(protocol)
     ids = sorted(m["obligation_id"] for m in comparison["members"])
     statuses = dict((await session.execute(
         select(RegistryObligation.id, RegistryObligation.status).where(RegistryObligation.id.in_(ids))
@@ -67,12 +73,14 @@ async def build_mintrud_sync_plan(session: AsyncSession, protocol_id: str) -> di
     members = []
     for m in comparison["members"]:
         status = statuses.get(m["obligation_id"])
-        allowed, reason = _eligible(m, status, comparison["protocol_status"] == "recorded")
+        allowed, reason = _eligible(m, status, signed_source is not None)
         members.append({**m, "registry_status": status, "sync_allowed": allowed, "sync_reason": reason})
     members.sort(key=lambda x: x["obligation_id"])
     token_inputs = {
         "protocol_id": protocol_id,
         "recorded_source_sha256": protocol.recorded_snapshot_sha256 if protocol else None,
+        "signed_source_sha256": signed_source,
+        "signed_on": protocol.signed_on.isoformat() if signed_source else None,
         "members": [{
             "enrollment_id": m["enrollment_id"],
             "obligation_id": m["obligation_id"],
@@ -89,6 +97,7 @@ async def build_mintrud_sync_plan(session: AsyncSession, protocol_id: str) -> di
         "sync_plan_token": _digest(token_inputs),
         "sync_eligible_obligation_ids": [m["obligation_id"] for m in members if m["sync_allowed"] and m["sync_reason"] == "can_fill_empty"],
         "sync_already_matching_ids": [m["obligation_id"] for m in members if m["sync_allowed"] and m["sync_reason"] == "already_matching"],
+        "is_signed": signed_source is not None,
         "sync_requires_explicit_confirmation": True,
         "sync_changes_only": list(SOURCE_FIELDS),
     }
@@ -176,8 +185,9 @@ async def apply_mintrud_protocol_sync(
     )
     if protocol is None:
         raise HTTPException(status_code=404, detail="Protocol not found")
-    if protocol.status != "recorded":
-        raise HTTPException(status_code=409, detail="Only recorded protocols can synchronize Mintrud data")
+    # Mandatory server-side guard: legacy /registry-sync must not circumvent
+    # signature attestation, even with a stale pre-signature plan token.
+    require_signed_protocol(protocol)
 
     # Idempotency is scoped to protocol and a client-provided UUID. Check under
     # the protocol row lock, before stale-plan validation after a previous write.
@@ -193,7 +203,8 @@ async def apply_mintrud_protocol_sync(
         info = previous.payload
         if (info.get("obligation_ids") != ids
                 or info.get("plan_token") != expected_plan_token
-                or info.get("source_sha256") != protocol.recorded_snapshot_sha256):
+                or info.get("source_sha256") != protocol.recorded_snapshot_sha256
+                or info.get("signed_source_sha256") != protocol.signed_source_sha256):
             raise HTTPException(status_code=409, detail="Idempotency key reused for a different operation")
         return {
             "status": "REPLAY_NO_WRITES", "replayed": True,
@@ -279,6 +290,7 @@ async def apply_mintrud_protocol_sync(
                 "request_id": request_key,
                 "plan_token": expected_plan_token,
                 "source_sha256": protocol.recorded_snapshot_sha256,
+                "signed_source_sha256": protocol.signed_source_sha256,
                 "obligation_ids": ids,
                 "changed_obligation_ids": changed,
                 "fields": list(SOURCE_FIELDS),
@@ -302,3 +314,75 @@ async def apply_mintrud_protocol_sync(
         "approved": False,
         "exported": False,
     }
+
+
+async def auto_sync_mintrud_after_signing(
+    session: AsyncSession, *, protocol_id: str, actor_user_id: str,
+    signing_request_id: str, request_ip: str | None,
+    user_agent: str | None,
+) -> dict:
+    """Attempt a guarded registry fill AFTER the signing commit.
+
+    A valid signing request can be replayed to retry a transient sync failure.
+    A previous successful automatic write returns its persisted receipt rather
+    than being incorrectly reported as blocked after readiness changed.
+    All real target writes use the existing atomic P3.3D transaction.
+    """
+    # A signed source is required even if there is no eligible target.
+    protocol = await session.scalar(
+        select(MintrudKnowledgeProtocol).where(MintrudKnowledgeProtocol.id == protocol_id)
+    )
+    if protocol is None:
+        raise HTTPException(status_code=404, detail="Protocol not found")
+    source_hash = require_signed_protocol(protocol)
+    if protocol.signing_request_id != signing_request_id:
+        raise HTTPException(status_code=409, detail="Signing request identity mismatch")
+
+    automatic_id = uuid5(
+        NAMESPACE_URL,
+        "obrportal:mintrud:signed-auto-sync:v1:" + str(protocol_id) + ":" + str(signing_request_id),
+    )
+    # On a replay, a previous automatic sync may have made obligations 'ready',
+    # which is intentionally not eligible for a NEW sync. Consult its receipt
+    # before calculating a fresh plan.
+    previous = await session.scalar(
+        select(AuditEvent).where(
+            AuditEvent.action == "admin.mintrud_protocol_registry_fields_synced",
+            AuditEvent.entity_type == "mintrud_knowledge_protocol",
+            AuditEvent.entity_id == protocol_id,
+            AuditEvent.payload["request_id"].as_string() == str(automatic_id),
+        ).order_by(AuditEvent.created_at.desc()).limit(1)
+    )
+    if previous is not None:
+        receipt = previous.payload
+        if (receipt.get("source_sha256") != source_hash
+                or receipt.get("signed_source_sha256") != source_hash):
+            raise HTTPException(status_code=409, detail="Previous automatic sync source mismatch")
+        return {
+            "status": "REPLAY_NO_WRITES", "replayed": True,
+            "protocol_id": protocol_id,
+            "changed_obligation_ids": receipt.get("changed_obligation_ids", []),
+            "readiness_results": receipt.get("readiness_results", []),
+            "blocked_obligations": [], "approved": False, "exported": False,
+        }
+
+    plan = await build_mintrud_sync_plan(session, protocol_id)
+    if not plan["is_signed"]:
+        raise HTTPException(status_code=409, detail="Paper protocol not signed")
+    blocked = [
+        {"obligation_id": m["obligation_id"], "reason": m["sync_reason"]}
+        for m in plan["members"] if not m["sync_allowed"]
+    ]
+    eligible = plan["sync_eligible_obligation_ids"]
+    if not eligible:
+        return {
+            "status": "REVIEW_REQUIRED" if blocked else "ALREADY_MATCHING_NO_WRITES",
+            "changed_obligation_ids": [], "readiness_results": [],
+            "blocked_obligations": blocked, "approved": False, "exported": False,
+        }
+    result = await apply_mintrud_protocol_sync(
+        session, protocol_id=protocol_id, actor_user_id=actor_user_id,
+        request_id=automatic_id, expected_plan_token=plan["sync_plan_token"],
+        obligation_ids=eligible, request_ip=request_ip, user_agent=user_agent,
+    )
+    return {**result, "blocked_obligations": blocked}

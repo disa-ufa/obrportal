@@ -23,20 +23,33 @@ export function getStoredToken() {
   );
 }
 
+function clearSignatureAttempts() {
+  for (let i = sessionStorage.length - 1; i >= 0; --i) {
+    const key = sessionStorage.key(i);
+    if (key?.startsWith("obrportal_signature_attempt_v1:")) sessionStorage.removeItem(key);
+  }
+}
 export function storeToken(token, { persist = false } = {}) {
+  invalidateAuthSession();
+  clearSignatureAttempts();
   if (persist) {
     localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
     sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    window.dispatchEvent(new Event("obrportal-auth-change"));
     return;
   }
 
   sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.dispatchEvent(new Event("obrportal-auth-change"));
 }
 
 export function clearToken() {
+  invalidateAuthSession();
+  clearSignatureAttempts();
   sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.dispatchEvent(new Event("obrportal-auth-change"));
 }
 
 async function request(path, options = {}) {
@@ -1894,4 +1907,68 @@ export async function syncAdminMintrudProtocolRegistryFields(protocolId, payload
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// Paper-original attestation and private, authenticated scan access.
+export const getAdminMintrudProtocol = id => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`);
+export const confirmAdminMintrudSignature = (id, payload) => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/confirm-signature`, { method: "POST", body: JSON.stringify(payload) });
+export function uploadAdminMintrudScan(id, file) {
+  const body = new FormData(); body.append("file", file);
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/signed-scan`, { method: "POST", body });
+}
+let authGeneration = 0;
+let observedAuthToken;
+let authEventsInstalled = false;
+const pendingPrivateDownloads = new Set();
+function invalidateAuthSession() {
+  ++authGeneration;
+  for (const cancel of [...pendingPrivateDownloads]) cancel();
+}
+export function captureAuthSession() {
+  if (!authEventsInstalled && typeof window !== "undefined") {
+    window.addEventListener("storage", () => { captureAuthSession(); });
+    authEventsInstalled = true;
+  }
+  const currentToken = (typeof sessionStorage === "undefined" ? "" : getStoredToken()) || "";
+  if (observedAuthToken !== currentToken) { observedAuthToken = currentToken; invalidateAuthSession(); }
+  return { generation: authGeneration, accessToken: currentToken };
+}
+export function isCurrentAuthSession(owner) {
+  const current = captureAuthSession();
+  return owner.generation === current.generation && owner.accessToken === current.accessToken;
+}
+export async function downloadAdminMintrudScan(id) {
+  const owner = captureAuthSession(), controller = new AbortController();
+  let objectUrl = null, link = null, clicked = false;
+  function release() {
+    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    link?.remove(); pendingPrivateDownloads.delete(cancel);
+  }
+  function cancel() { controller.abort(); release(); }
+  function ensureCurrent() {
+    if (controller.signal.aborted || !isCurrentAuthSession(owner)) {
+      cancel(); throw new DOMException("Download session changed", "AbortError");
+    }
+  }
+  pendingPrivateDownloads.add(cancel);
+  try {
+    ensureCurrent();
+    const response = await fetch(buildApiUrl(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/signed-scan`), {
+      signal: controller.signal, headers: { ...(owner.accessToken ? { Authorization: `Bearer ${owner.accessToken}` } : {}) },
+    });
+    ensureCurrent();
+    if (!response.ok) { const error = new Error("Не удалось скачать скан. Проверьте доступ и состояние хранилища."); error.status = response.status; throw error; }
+    const blob = await response.blob(); ensureCurrent();
+    const suffix = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png" }[blob.type] || "bin";
+    objectUrl = URL.createObjectURL(blob); ensureCurrent();
+    link = document.createElement("a"); link.href = objectUrl; link.download = `signed-protocol-${id}.${suffix}`;
+    document.body.appendChild(link); ensureCurrent(); link.click(); clicked = true;
+  } finally {
+    if (clicked) setTimeout(release, 1000); else release();
+  }
+}
+export async function getMintrudUiPermissions() {
+  const result = await request("/api/v1/auth/me/permissions", { cache: "no-store" });
+  return [result?.mintrud?.read === true ? "mintrud.read" : null,
+    result?.mintrud?.write === true ? "mintrud.write" : null].filter(Boolean);
 }

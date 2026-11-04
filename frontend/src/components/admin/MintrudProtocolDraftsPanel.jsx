@@ -1,3 +1,6 @@
+import { MintrudParticipantCards } from "./MintrudParticipantCards";
+import { MintrudSignaturePanel } from "./MintrudSignaturePanel";
+import { useMintrudPermissions } from "../../hooks/useMintrudPermissions";
 import { useEffect, useMemo, useState } from "react";
 import { openProtocolDraftPrint } from "../../lib/printMintrudProtocolDraft";
 import { checkProtocolDraftCompleteness } from "../../lib/checkMintrudProtocolReadiness";
@@ -15,7 +18,13 @@ import {
 
 const ctl = "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm";
 
-export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, focusProtocol }) {
+export function MintrudProtocolDraftsPanel(props) {
+  const { permissions, sessionKey, revision, canWriteNow } = useMintrudPermissions();
+  if (!permissions.includes("mintrud.read")) return <p role="status">Доступ к протоколам не подтверждён.</p>;
+  return <ProtocolDraftsForSession key={`${sessionKey}:${revision}`} {...props} permissions={permissions} canWriteNow={canWriteNow} />;
+}
+function ProtocolDraftsForSession({ courseId, organizationId, groupId, focusProtocol, permissions, canWriteNow }) {
+  const canWrite = permissions.includes("mintrud.write");
   const [expanded, setExpanded] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [drafts, setDrafts] = useState([]);
@@ -119,6 +128,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }, [candidates, drafts, editingId, editingDraft]);
 
   function beginEdit(d) {
+    if (!canWriteNow()) return;
     setError("");
     setNotice("");
     setEditingId(d.id);
@@ -177,6 +187,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }
 
   async function saveEdit() {
+    if (!canWriteNow()) return;
     setError(""); setNotice("");
     if (!editingId || !edit || !edit.selected.length || !edit.protocolNumber.trim() || !edit.protocolDate) {
       setError("Укажите номер, дату и хотя бы одного участника проекта.");
@@ -257,7 +268,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   async function applySelectedRegistrySync(draftId) {
     const report = reconciliationById[draftId]?.report;
     const chosen = syncSelectedById[draftId] || [];
-    if (!report || report.protocol_status !== "recorded" || !chosen.length || !syncConfirmedById[draftId]) return;
+    if (!canWriteNow() || !report || !report.is_signed || !permissions.includes("mintrud.write") || !chosen.length || !syncConfirmedById[draftId]) return;
     setSyncingId(draftId);
     setSyncOutcomeById(prev => ({ ...prev, [draftId]: null }));
     setError(""); setNotice("");
@@ -312,6 +323,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }
 
   async function recordSavedDraft(d) {
+    if (!canWriteNow()) return;
     if (d.status !== "draft" || !confirmRecordingById[d.id]) return;
     setError(""); setNotice("");
     setRecordingId(d.id);
@@ -355,6 +367,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }
 
   async function save() {
+    if (!canWriteNow()) return;
     setError("");
     setNotice("");
     if (!schemaReady || !courseId || !selected.length || !number.trim() || !protocolDate) {
@@ -390,7 +403,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
           <h2 className="text-sm font-bold text-slate-900">Проекты протоколов комиссии</h2>
           <p className="mt-1 text-xs text-slate-600">Проект — не подтверждение заседания комиссии и не основание автоматической выгрузки в ЕИСОТ.</p>
         </div>
-        <button type="button" className={ctl} onClick={() => setExpanded(v => !v)}>{expanded ? "Скрыть" : "Создать проект"}</button>
+        <button type="button" className={ctl} onClick={() => setExpanded(v => !v)}>{expanded ? "Скрыть" : canWrite ? "Создать проект" : "Просмотреть проекты"}</button>
       </div>
       {expanded && (
         <div className="mt-4 space-y-3">
@@ -400,7 +413,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
               <div className="flex items-center gap-3"><button type="button" className={ctl} disabled={loading || saving} onClick={reload}>Обновить список</button><span className="text-xs text-slate-600">Доступно на странице: {selectable.length} (максимум 100)</span></div>
               {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
               {notice && <p role="status" className="text-sm text-emerald-800">{notice}</p>}
-              {schemaReady && (
+              {schemaReady && canWrite && (
                 <>
                   <div className="max-h-60 space-y-1 overflow-auto rounded-xl border border-slate-200 p-3">
                     {selectable.length === 0 ? <p className="text-sm text-slate-600">Нет доступных слушателей. Убедитесь, что обучение завершено и записи не включены в другой проект.</p> : selectable.map(person => (
@@ -422,7 +435,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
               {drafts.length === 0 ? <p className="text-xs text-slate-600">Проектов пока нет.</p> : drafts.map(d => (
                 <div id={`mintrud-linked-protocol-${d.id}`} key={d.id} className="scroll-mt-36 rounded-xl border border-slate-200 p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span>№ {d.protocol_number} от {d.protocol_date} · {d.participant_count} участников · статус: {d.status === "recorded" ? "результаты зафиксированы (не подписан, не выгружен)" : "проект (не подписан)"}</span>
+                    <span>№ {d.protocol_number} от {d.protocol_date} · {d.participant_count} участников · статус: {d.is_signed ? "бумажный оригинал подписан" : d.status === "recorded" ? "результаты зафиксированы" : "проект (не подписан)"}</span>
                     <div className="flex flex-wrap items-center gap-2">
                       <button type="button" className={ctl} disabled={checkingId === d.id || d.status !== "draft"} onClick={() => checkSavedDraft(d.id)}>
                         {checkingId === d.id ? "Проверка…" : "Проверить готовность"}
@@ -431,11 +444,13 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                         {reconcilingId === d.id ? "Сверка…" : "Сверить с Минтрудом"}
                       </button>
                       <button type="button" className={ctl} disabled={d.status !== "draft"} onClick={() => printSavedDraft(d.id)} title="Печатная форма сохранённого проекта; не является подписанным протоколом">Печать проекта</button>
-                      <button type="button" className={ctl} disabled={d.status !== "draft"} onClick={() => editingId === d.id ? (setEditingId(""), setEdit(null)) : beginEdit(d)}>
+                      {canWrite && <button type="button" className={ctl} disabled={d.status !== "draft"} onClick={() => editingId === d.id ? (setEditingId(""), setEdit(null)) : beginEdit(d)}>
                         {editingId === d.id ? "Закрыть редактор" : "Редактировать проект"}
-                      </button>
+                      </button>}
                     </div>
                   </div>
+                  <MintrudSignaturePanel key={d.id} protocol={d} permissions={permissions} canWriteNow={canWriteNow} onChanged={p => setDrafts(items => items.map(item => item.id === p.id ? p : item))} />
+                  <MintrudParticipantCards protocol={d} permissions={permissions} />
                   {reconciliationById[d.id] && (
                     <div data-testid="mintrud-protocol-reconciliation" className="mt-3 space-y-3 rounded-xl border border-blue-200 bg-blue-50/40 p-3 text-xs">
                       {reconciliationById[d.id].error ? (
@@ -470,7 +485,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                               ))}</tbody>
                             </table>
                           </div>
-                          {reconciliationById[d.id].report.protocol_status === "recorded" && (
+                          {reconciliationById[d.id].report.is_signed && permissions.includes("mintrud.write") && (
                             <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 space-y-2">
                               <p className="font-semibold text-slate-900">Заполнение пустых реквизитов Минтруда из зафиксированного протокола</p>
                               {syncOutcomeById[d.id]?.error && <p role="alert" className="text-red-700">{syncOutcomeById[d.id].error}</p>}
@@ -551,7 +566,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                           {readinessById[d.id].report.advisories.map(note => (
                             <p key={note} className="text-slate-600">{note}</p>
                           ))}
-                          {readinessById[d.id].report.fieldsComplete && d.status === "draft" && (
+                          {canWrite && readinessById[d.id].report.fieldsComplete && d.status === "draft" && (
                             <div className="space-y-2 border-t border-slate-200 pt-3">
                               <label className="flex items-start gap-2 text-xs font-medium text-slate-800">
                                 <input type="checkbox" checked={Boolean(confirmRecordingById[d.id])} onChange={event => setConfirmRecordingById(prev => ({ ...prev, [d.id]: event.target.checked }))}/>
@@ -571,7 +586,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                   )}
                 </div>
               ))}
-              {editingDraft && edit && (
+              {canWrite && editingDraft && edit && (
                 <div data-testid="mintrud-protocol-draft-editor" className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Редактирование проекта № {editingDraft.protocol_number}</h3>

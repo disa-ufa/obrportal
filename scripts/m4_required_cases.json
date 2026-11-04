@@ -1,0 +1,290 @@
+[
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_unauthorized"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_effective_parity[both-True-True]"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_effective_parity[read-True-False]"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_effective_parity[none-False-False]"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_effective_parity[org-False-False]"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_effective_parity[write-False-True]"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_effective_parity[admin-False-False]"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_own_only_and_me_compatible"
+  },
+  {
+    "classname": "app.tests.test_own_permissions_m46b",
+    "name": "test_next_request_reflects_assignment_change"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_enospc[enospc_manifest_write]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_enospc[enospc_manifest_fsync]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_enospc[enospc_publish]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_enospc[enospc_scan_write]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_enospc[enospc_scan_fsync]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_enospc[enospc_scan_directory]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_failed_upload_retains_artifacts[write]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_failed_upload_retains_artifacts[scan_fsync]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_failed_upload_retains_artifacts[write_unlink]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_failed_upload_retains_artifacts[fsync_unlink]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_failed_upload_retains_artifacts[unlink_fsync]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_failed_upload_retains_artifacts[directory_fsync]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_identity_replacement_is_not_deleted"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_parent_symlink_cannot_write_outside[parent_symlink]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_parent_symlink_cannot_write_outside[parent_swap]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_foreign_collision_preserved[manifest_collision]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_foreign_collision_preserved[scan_collision]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_cleaned_resource_never_processed_again"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_commit_outcomes_preserve_artifacts[post_os]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_commit_outcomes_preserve_artifacts[post_integrity]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_commit_outcomes_preserve_artifacts[response_read]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_commit_outcomes_preserve_artifacts[commit_unknown]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_non_authoritative_source_never_confirms[False]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_non_authoritative_source_never_confirms[True]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_valid_temporary_is_not_published"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_actual_unpublished_complete_temporary_without_scan"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_read_errors_are_not_corruption"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_real_permission_denied_in_nonroot_process"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_missing_corrupt_invalid_and_mismatch_are_distinct"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_resource_guarantees_fail_closed[quota]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_resource_guarantees_fail_closed[disk_full]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_resource_guarantees_fail_closed[unsupported_fsync]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_resource_guarantees_fail_closed[unsupported_pinning]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_world_writable_namespace_rejected"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_faults_2f",
+    "name": "test_immediate_postgresql_rejection_preserves_evidence"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_sign_without_scan"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_upload_download_commit_audit[pdf]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_upload_download_commit_audit[jpeg]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_upload_download_commit_audit[png]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_bad_files[unsupported-extension]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_bad_files[content-mismatch]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_bad_files[oversize]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_unsigned_rejected"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_duplicate_and_concurrent_upload"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_integrity_and_private_access"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_storage_failure_no_metadata"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_commit_failure_no_uncontrolled_file"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_scan_has_no_registry_side_effects"
+  },
+  {
+    "classname": "app.tests.test_mintrud_protocol_scans_integration_m45",
+    "name": "test_unknown_commit_keeps_valid_file_and_recovery_manifest"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_2g",
+    "name": "test_os_denied_root"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_2g",
+    "name": "test_restart_discovery"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_2g",
+    "name": "test_restart_real_scan_attempt"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_2g",
+    "name": "test_limits"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_unit",
+    "name": "test_root_classification[ACCESS_DENIED]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_unit",
+    "name": "test_root_classification[STORAGE_UNAVAILABLE]"
+  },
+  {
+    "classname": "app.tests.test_mintrud_scan_recovery_unit",
+    "name": "test_root_classification[INVALID_PATH]"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_ordinary_mode_skips_before_parsing_or_connecting"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_opt_in_rejects_unsafe_configuration[]"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_opt_in_rejects_unsafe_configuration[postgresql+asyncpg://m45:synthetic@postgres:5432/m45]"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_opt_in_rejects_unsafe_configuration[postgresql+asyncpg://m45:synthetic@m45-0123456789-pg:5432/production]"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_opt_in_rejects_unsafe_configuration[postgresql+asyncpg://other:synthetic@m45-0123456789-pg:5432/m45]"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_opt_in_rejects_unsafe_configuration[postgresql+asyncpg://m45:synthetic@m45-0123456789-pg:5432/m45?host=production]"
+  },
+  {
+    "classname": "app.tests.test_m4_isolation_contract",
+    "name": "test_opt_in_accepts_only_dedicated_linux_root_runner"
+  }
+]
