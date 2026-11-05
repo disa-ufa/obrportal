@@ -69,7 +69,14 @@ async function request(path, options = {}) {
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data;
+  try { data = text ? JSON.parse(text) : null; }
+  catch (error) {
+    // Proxies can return an HTML 413 before the API sees the request.
+    // Preserve its definitive status for upload retry classification.
+    if (!response.ok) error.status = response.status;
+    throw error;
+  }
 
   if (!response.ok) {
     const message = data?.detail || `HTTP ${response.status}`;

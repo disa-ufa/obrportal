@@ -17,3 +17,35 @@ export async function confirmAndRead(api, id, payload) {
     catch { return { protocol: null, uncertain: true, readFailed: true, status: error.status }; }
   }
 }
+
+// A 413/415/422 response is a definitive rejection before persistence. Other
+// failures may leave a committed scan or recovery artifacts: absence in a GET
+// alone does not prove that creating another artifact would be safe.
+export async function uploadAndRead(api, id, file, isCurrent = () => true) {
+  if (!isCurrent()) return { stale: true };
+  let error = null, protocol = null;
+  try { await api.upload(id, file); } catch (exc) { error = exc; }
+  if (!isCurrent()) return { stale: true };
+  try { protocol = await api.read(id); } catch { /* A failed read cannot authorize a retry. */ }
+  if (!isCurrent()) return { stale: true };
+  const rejected = Boolean(error && [413, 415, 422].includes(error.status));
+  return { protocol, error, rejected, blocked: Boolean(error && !rejected) || (!error && !protocol?.signed_scan_available) };
+}
+
+const scanAttemptKey = id => `obrportal_scan_attempt_v1:${id}`;
+export function pendingScanAttempt(id, storage) {
+  try { storage ??= globalThis.localStorage; return storage?.getItem(scanAttemptKey(id)) === "pending"; }
+  catch { return true; }
+}
+export function beginScanAttempt(id, storage) {
+  try {
+    storage ??= globalThis.localStorage;
+    if (!storage || pendingScanAttempt(id, storage)) return false;
+    storage.setItem(scanAttemptKey(id), "pending");
+    return storage.getItem(scanAttemptKey(id)) === "pending";
+  } catch { return false; }
+}
+export function clearScanAttempt(id, storage) {
+  try { storage ??= globalThis.localStorage; storage?.removeItem(scanAttemptKey(id)); return !pendingScanAttempt(id, storage); }
+  catch { return false; }
+}

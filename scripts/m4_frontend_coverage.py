@@ -7,6 +7,7 @@ REQUIRED_TESTS = (
     'mintrud_participant.test.mjs', 'mintrud_signature.test.mjs',
     'own_permissions.test.mjs', 'registry_presentation.test.mjs',
     'session_download.test.mjs', 'admin_mintrud_access.test.mjs',
+    'mintrud_scan_retry.test.mjs',
 )
 M4_MODULES = (
     'components/admin/MintrudParticipantCards.jsx', 'components/admin/MintrudRegistryDetails.jsx',

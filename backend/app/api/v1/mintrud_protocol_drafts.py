@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.rbac import require_permission
+from app.api.signed_scan_upload_limit import SignedScanUploadLimitRoute
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
@@ -39,7 +40,7 @@ from app.services.mintrud_protocol_scans import (
     require_scan_storage_path, validated_download_content,
 )
 
-router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"])
+router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"], route_class=SignedScanUploadLimitRoute)
 _logger = logging.getLogger(__name__)
 
 
