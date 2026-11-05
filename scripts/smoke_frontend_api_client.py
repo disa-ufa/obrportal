@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,7 +83,6 @@ def main() -> None:
             "...options,",
             "headers,",
             "const text = await response.text();",
-            "const data = text ? JSON.parse(text) : null;",
             "if (!response.ok)",
             "const message = data?.detail || `HTTP ${response.status}`;",
             "const error = new Error(typeof message === \"string\" ? message : (message?.message || JSON.stringify(message)));",
@@ -372,6 +372,12 @@ def main() -> None:
     require_occurs(relative_path, "method: \"DELETE\"", 10)
     require_occurs(relative_path, "body: JSON.stringify(payload)", 15)
 
+    # Execute the actual client with synthetic fetch/storage. The contract also
+    # rejects deliberately broken handlers; comments cannot satisfy this gate.
+    subprocess.run(
+        ["node", "--test", str(ROOT / "scripts/test_frontend_api_response.mjs")],
+        cwd=ROOT, check=True,
+    )
     print("Frontend API client behavior smoke passed")
 
 

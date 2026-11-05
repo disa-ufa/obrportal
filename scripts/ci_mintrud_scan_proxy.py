@@ -16,6 +16,28 @@ ROOT = Path(__file__).resolve().parents[1]
 PREFIX = '/api/v1/admin/mintrud/protocol-drafts'
 
 
+def download_diagnostics(status, response_headers, original, downloaded):
+    """Only non-secret metadata; never serialize private file contents."""
+    normalized_headers = {name.lower(): value for name, value in response_headers.items()}
+    expected_sha = hashlib.sha256(original).hexdigest()
+    observed_sha = hashlib.sha256(downloaded).hexdigest()
+    cache = normalized_headers.get('cache-control')
+    disposition = normalized_headers.get('content-disposition')
+    checks = {
+        'http_status': status == 200,
+        'body_size': len(downloaded) == len(original),
+        'body_sha256': observed_sha == expected_sha,
+        'cache_control_present': cache is not None,
+        'cache_control_value': cache == 'private, no-store',
+        'content_disposition_present': disposition is not None,
+        'content_disposition_value': isinstance(disposition, str) and disposition.startswith('attachment;'),
+    }
+    return dict(http_status=status, original_size=len(original), downloaded_size=len(downloaded),
+                original_sha256=expected_sha, downloaded_sha256=observed_sha,
+                cache_control=cache, content_disposition=disposition, checks=checks,
+                failed_signals=[key for key, passed in checks.items() if not passed])
+
+
 def free_port():
     with socket.socket() as listener:
         listener.bind(('127.0.0.1', 0))
@@ -104,9 +126,11 @@ def main():
             status, _, content = request(proxy_port, 'POST', PREFIX+'/ten/signed-scan', body, headers)
             check('ten_mib_multipart_accepted', status==200 and json.loads(content)['size']==file_limit)
             status, response_headers, content = request(proxy_port, 'GET', PREFIX+'/ten/signed-scan', headers={'Authorization':'Bearer synthetic'})
-            check('download_exact_private_bytes', status==200 and hashlib.sha256(content).digest()==hashlib.sha256(data).digest()
-                  and response_headers.get('Cache-Control')=='private, no-store'
-                  and response_headers.get('Content-Disposition','').startswith('attachment;'))
+            diagnostics = download_diagnostics(status, response_headers, data, content)
+            (out/'download-diagnostics.json').write_text(json.dumps(diagnostics, indent=2))
+            if diagnostics['failed_signals']:
+                raise AssertionError('download_exact_private_bytes: '+', '.join(diagnostics['failed_signals']))
+            check('download_exact_private_bytes', True)
             recorded = [json.loads(line) for line in journal.read_text().splitlines()]
             check('proxy_uri_and_headers_preserved', recorded[0]==dict(path=PREFIX+'/ten/signed-scan',host='synthetic.test',proto='http',forwarded_for='127.0.0.1'))
             status, _, _ = request(proxy_port, 'POST', PREFIX+'/ten/signed-scan', start+pdf(1024)+end, headers)
