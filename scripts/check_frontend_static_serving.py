@@ -96,21 +96,28 @@ def require_api_proxy(nginx_text: str) -> None:
         raise SystemExit(f"frontend nginx config parse failed: {exc}") from exc
 
     api_scope = (("server",), ("location", "/api/"))
+    scan_scope = (("server",), ("location", "~", "^/api/v1/admin/mintrud/protocol-drafts/[^/]+/signed-scan$"))
+    allowed_scopes = (api_scope, scan_scope)
     proxies = [(scope, directive) for scope, directive in directives
                if directive[0] == "proxy_pass"]
     # No trailing slash: preserve the /api/ prefix on requests to the backend.
-    if blocks.count(api_scope) != 1 or proxies != [
-        (api_scope, ("proxy_pass", "http://backend:8000"))
-    ]:
-        raise SystemExit("frontend nginx requires exactly one internal /api/ proxy; other proxies are forbidden")
+    expected_proxies = {(scope, ("proxy_pass", "http://backend:8000")) for scope in allowed_scopes}
+    if (any(blocks.count(scope) != 1 for scope in allowed_scopes)
+            or len(proxies) != 2 or set(proxies) != expected_proxies):
+        raise SystemExit("frontend nginx requires exactly the internal API and signed-scan proxies; other proxies are forbidden")
 
-    for header, value in [("Host", "$host"), ("X-Forwarded-Proto", "$scheme"),
-                          ("X-Forwarded-For", "$proxy_add_x_forwarded_for")]:
-        expected = (api_scope, ("proxy_set_header", header, value))
-        actual = [(scope, directive) for scope, directive in directives
-                  if scope == api_scope and directive[:2] == ("proxy_set_header", header)]
-        if actual != [expected]:
-            raise SystemExit(f"frontend nginx /api/ requires one correct {header} header")
+    limits = [(scope, directive) for scope, directive in directives if directive[0] == "client_max_body_size"]
+    if limits != [(scan_scope, ("client_max_body_size", "10551296"))]:
+        raise SystemExit("frontend nginx requires the fixed 10 MiB plus 64 KiB limit only on signed-scan")
+
+    for allowed_scope in allowed_scopes:
+        for header, value in [("Host", "$host"), ("X-Forwarded-Proto", "$scheme"),
+                              ("X-Forwarded-For", "$proxy_add_x_forwarded_for")]:
+            expected = (allowed_scope, ("proxy_set_header", header, value))
+            actual = [(scope, directive) for scope, directive in directives
+                      if scope == allowed_scope and directive[:2] == ("proxy_set_header", header)]
+            if actual != [expected]:
+                raise SystemExit(f"frontend nginx API proxy requires one correct {header} header")
 
 
 def main() -> None:

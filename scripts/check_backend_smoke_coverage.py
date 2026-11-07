@@ -204,9 +204,35 @@ def has_explicit_coverage_hint(relative_path: str, coverage_text: str) -> bool:
     return any(hint in coverage_text for hint in hints)
 
 
+
+def has_module_execution(module_path: str, sources=None) -> bool:
+    """Recognize executable subprocess argv, never comments or source strings."""
+    import ast
+    if sources is None:
+        sources = [read_text(p) for p in (BACKEND_ROOT / "tests").glob("test_*.py")]
+    for source in sources:
+        try: tree = ast.parse(source)
+        except SyntaxError: continue
+        for function in ast.walk(tree):
+            if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)) or not function.name.startswith("test_"):
+                continue
+            for call in ast.walk(function):
+                if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Attribute): continue
+                if not isinstance(call.func.value, ast.Name) or call.func.value.id != "subprocess" or call.func.attr not in {"run", "check_output", "check_call", "Popen"}: continue
+                if not call.args or not isinstance(call.args[0], (ast.List, ast.Tuple)): continue
+                argv = call.args[0].elts
+                if len(argv) < 3: continue
+                executable = argv[0]
+                trusted = (isinstance(executable, ast.Attribute) and isinstance(executable.value, ast.Name) and executable.value.id == "sys" and executable.attr == "executable") or (isinstance(executable, ast.Constant) and executable.value in {"python", "python3"})
+                if trusted and isinstance(argv[1], ast.Constant) and argv[1].value == "-m" and isinstance(argv[2], ast.Constant) and argv[2].value == module_path:
+                    return True
+    return False
+
 def is_likely_covered(path: Path, coverage_text: str) -> bool:
     relative_path = path.relative_to(ROOT).as_posix()
     module_path = app_module_path(path)
+    if module_path == "app.mintrud_scan_inventory_cli":
+        return has_module_execution(module_path)
 
     return (
         relative_path in coverage_text

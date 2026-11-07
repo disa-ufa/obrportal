@@ -1476,6 +1476,44 @@ def main() -> None:
         ],
     )
 
+    # M4.UI.1-3: new protocol UI contract checks.
+    require_contains(
+        "frontend/src/pages/AdminKnowledgeProtocolsPage.jsx",
+        [
+            "export function AdminKnowledgeProtocolsPage({ pathname })",
+            'permissions.includes("mintrud.read")',
+            'permissions.includes("mintrud.write")',
+            'mode === "detail" ? getAdminMintrudProtocol(route.id)',
+            "listAdminMintrudProtocolDrafts(courseId)",
+            'data-testid="knowledge-protocols-page"',
+            "buildAdminKnowledgeProtocolPath(p.id)",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/components/admin/KnowledgeProtocolOverview.jsx",
+        [
+            "export function KnowledgeProtocolOverview({ protocol, canWrite, onStep })",
+            "const state = protocolPresentation(protocol);",
+            "protocolSteps.map((label, index)",
+            'aria-label="Этапы протокола"',
+            "onClick={() => onStep(index)}",
+            "!canWrite &&",
+        ],
+    )
+
+    require_contains(
+        "frontend/src/utils/knowledgeProtocolPresentation.js",
+        [
+            "export function protocolPresentation(protocol)",
+            'const signed = p.status === "recorded" && p.is_signed === true;',
+            "p.signed_scan_available === true",
+            'if (p.status === "recorded")',
+            'if (p.status !== "draft")',
+            "export function protocolMatches(",
+        ],
+    )
+
     require_occurs("frontend/src/pages/UsersPage.jsx", "useMemo(", 3)
     require_occurs("frontend/src/pages/OrganizationsPage.jsx", "useMemo(", 2)
     require_occurs("frontend/src/pages/GroupsPage.jsx", "useMemo(", 4)

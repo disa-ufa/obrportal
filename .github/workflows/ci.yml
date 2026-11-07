@@ -32,6 +32,11 @@ jobs:
           python scripts/test_secret_scan.py
           python scripts/secret_scan.py
 
+      - name: Run M4 coverage guard regressions
+        run: |
+          python scripts/test_m4_coverage_guards.py
+          python scripts/test_ci_m4_results.py
+
       - name: Run text encoding guard
         run: |
           python scripts/check_text_encoding.py
@@ -319,6 +324,7 @@ jobs:
           node --test frontend/src/utils/adminEnrollmentsCsv.test.js
           node --test frontend/src/utils/mintrudWorkflow.test.js
           node --test frontend/tests/course_mintrud_ui_contract.test.mjs
+          docker compose exec -T frontend node --test tests/mintrud_participant.test.mjs tests/mintrud_signature.test.mjs tests/own_permissions.test.mjs tests/registry_presentation.test.mjs tests/session_download.test.mjs tests/admin_mintrud_access.test.mjs tests/mintrud_scan_retry.test.mjs
 
       - name: Run frontend bundle text encoding guard
         run: |
@@ -337,3 +343,21 @@ jobs:
         run: |
           touch .env
           docker compose down -v || true
+
+  m4-disposable:
+    name: M4 isolated HTTP PostgreSQL fault recovery
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run sequential M4 disposable regression
+        run: python scripts/ci_m4_disposable.py --evidence runner-evidence/m4
+      - name: Ensure only owned M4 resources are removed
+        if: always()
+        run: python scripts/ci_m4_disposable.py --evidence runner-evidence/m4 --cleanup-only
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-disposable-evidence
+          path: runner-evidence/m4

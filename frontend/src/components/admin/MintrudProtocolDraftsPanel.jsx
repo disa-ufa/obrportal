@@ -1,7 +1,12 @@
+import { KnowledgeProtocolOverview } from "./KnowledgeProtocolOverview";
+import { MintrudParticipantCards } from "./MintrudParticipantCards";
+import { MintrudSignaturePanel } from "./MintrudSignaturePanel";
+import { useMintrudPermissions } from "../../hooks/useMintrudPermissions";
 import { useEffect, useMemo, useState } from "react";
 import { openProtocolDraftPrint } from "../../lib/printMintrudProtocolDraft";
 import { checkProtocolDraftCompleteness } from "../../lib/checkMintrudProtocolReadiness";
 import {
+  getAdminMintrudProtocol,
   createAdminMintrudProtocolDraft,
   getAdminMintrudProtocolCandidates,
   listAdminMintrudProtocolDrafts,
@@ -15,10 +20,17 @@ import {
 
 const ctl = "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm";
 
-export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, focusProtocol }) {
-  const [expanded, setExpanded] = useState(false);
+export function MintrudProtocolDraftsPanel(props) {
+  const { permissions, sessionKey, canWriteNow } = useMintrudPermissions();
+  if (!permissions.includes("mintrud.read")) return <p role="status">Доступ к протоколам не подтверждён.</p>;
+  return <ProtocolDraftsForSession key={sessionKey} {...props} permissions={permissions} canWriteNow={canWriteNow} />;
+}
+function ProtocolDraftsForSession({ courseId, organizationId, groupId, focusProtocol, permissions, canWriteNow, mode = "legacy", protocolId, onCreated }) {
+  const canWrite = permissions.includes("mintrud.write");
+  const [expanded, setExpanded] = useState(mode !== "legacy");
   const [candidates, setCandidates] = useState([]);
   const [drafts, setDrafts] = useState([]);
+  const [candidateSearch, setCandidateSearch] = useState("");
   const [selected, setSelected] = useState([]);
   const [number, setNumber] = useState("");
   const [protocolDate, setProtocolDate] = useState("");
@@ -52,10 +64,16 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
       const filters = { course_id: courseId, limit: 100 };
       if (organizationId) filters.organization_id = organizationId;
       if (groupId) filters.learning_group_id = groupId;
-      const [people, existing] = await Promise.all([
-        getAdminMintrudProtocolCandidates(filters),
+      const [people, existing, detail] = await Promise.all([
+        canWrite ? getAdminMintrudProtocolCandidates(filters) : Promise.resolve([]),
         listAdminMintrudProtocolDrafts(courseId),
+        mode === "detail" ? getAdminMintrudProtocol(protocolId) : Promise.resolve(null),
       ]);
+      // Direct links must work even when this protocol is outside the list's 100-row limit.
+      if (detail && Array.isArray(existing)) {
+        const index = existing.findIndex(p => p.id === detail.id);
+        if (index < 0) existing.push(detail); else existing[index] = detail;
+      }
       setCandidates(Array.isArray(people) ? people : []);
       setDrafts(Array.isArray(existing) ? existing : []);
       setSchemaReady(true);
@@ -68,6 +86,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
       setSyncOutcomeById({});
     } catch (exc) {
       setSchemaReady(false);
+      if (mode !== "legacy") setDrafts([]);
       setError(exc?.message || "Не удалось получить проекты протоколов. Проверьте схему и доступ к API.");
     } finally {
       setLoading(false);
@@ -119,6 +138,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }, [candidates, drafts, editingId, editingDraft]);
 
   function beginEdit(d) {
+    if (!canWriteNow()) return;
     setError("");
     setNotice("");
     setEditingId(d.id);
@@ -177,6 +197,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }
 
   async function saveEdit() {
+    if (!canWriteNow()) return;
     setError(""); setNotice("");
     if (!editingId || !edit || !edit.selected.length || !edit.protocolNumber.trim() || !edit.protocolDate) {
       setError("Укажите номер, дату и хотя бы одного участника проекта.");
@@ -257,7 +278,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   async function applySelectedRegistrySync(draftId) {
     const report = reconciliationById[draftId]?.report;
     const chosen = syncSelectedById[draftId] || [];
-    if (!report || report.protocol_status !== "recorded" || !chosen.length || !syncConfirmedById[draftId]) return;
+    if (!canWriteNow() || !report || !report.is_signed || !permissions.includes("mintrud.write") || !chosen.length || !syncConfirmedById[draftId]) return;
     setSyncingId(draftId);
     setSyncOutcomeById(prev => ({ ...prev, [draftId]: null }));
     setError(""); setNotice("");
@@ -312,6 +333,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }
 
   async function recordSavedDraft(d) {
+    if (!canWriteNow()) return;
     if (d.status !== "draft" || !confirmRecordingById[d.id]) return;
     setError(""); setNotice("");
     setRecordingId(d.id);
@@ -355,6 +377,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   }
 
   async function save() {
+    if (!canWriteNow()) return;
     setError("");
     setNotice("");
     if (!schemaReady || !courseId || !selected.length || !number.trim() || !protocolDate) {
@@ -376,6 +399,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
       setProtocolDate("");
       setChair("");
       await reload();
+      onCreated?.(result);
     } catch (exc) {
       setError(exc?.message || "Не удалось сохранить проект протокола");
     } finally {
@@ -383,27 +407,44 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
     }
   }
 
+  const displayedDrafts = mode === "create" ? [] : mode === "detail" ? drafts.filter(d => d.id === protocolId) : drafts;
+  function openStep(d, step) {
+    if (step === null) { reload(); return; }
+    if (step < 3 && d.status === "draft" && canWrite && editingId !== d.id) beginEdit(d);
+    if (step === 3 && d.status === "draft") checkSavedDraft(d.id);
+    if (step === 5) checkRegistryComparison(d.id);
+    window.requestAnimationFrame(() => {
+      const target = step < 3 && d.status === "draft" && canWrite ? "protocol-editor" : step === 4 ? "protocol-signature" : step === 5 ? "protocol-registry" : step === 3 ? "protocol-readiness" : "protocol-participants";
+      const node = document.getElementById(target);
+      node?.scrollIntoView({ behavior: "smooth", block: "start" });
+      node?.focus({ preventScroll: true });
+    });
+  }
+
   return (
     <section data-testid="mintrud-protocol-drafts" className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {mode === "legacy" && <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-slate-900">Проекты протоколов комиссии</h2>
           <p className="mt-1 text-xs text-slate-600">Проект — не подтверждение заседания комиссии и не основание автоматической выгрузки в ЕИСОТ.</p>
         </div>
-        <button type="button" className={ctl} onClick={() => setExpanded(v => !v)}>{expanded ? "Скрыть" : "Создать проект"}</button>
-      </div>
+        <button type="button" className={ctl} onClick={() => setExpanded(v => !v)}>{expanded ? "Скрыть" : canWrite ? "Создать проект" : "Просмотреть проекты"}</button>
+      </div>}
       {expanded && (
         <div className="mt-4 space-y-3">
           {!courseId && <p className="text-sm text-amber-800">Сначала выберите конкретный курс в фильтре выше. Для протокола допускается несколько слушателей одного курса, но из разных учебных групп.</p>}
           {courseId && (
             <>
-              <div className="flex items-center gap-3"><button type="button" className={ctl} disabled={loading || saving} onClick={reload}>Обновить список</button><span className="text-xs text-slate-600">Доступно на странице: {selectable.length} (максимум 100)</span></div>
+              <div className="flex items-center gap-3"><button type="button" className={ctl} disabled={loading || saving} onClick={reload}>{mode === "detail" ? "Обновить протокол" : "Обновить список"}</button>{mode !== "detail" && <span className="text-xs text-slate-600">Доступно на странице: {selectable.length} (максимум 100)</span>}</div>
               {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
               {notice && <p role="status" className="text-sm text-emerald-800">{notice}</p>}
-              {schemaReady && (
+              {loading && <p role="status">Загрузка протокола…</p>}
+              {schemaReady && canWrite && mode !== "detail" && (
                 <>
+                  <label className="grid gap-1 text-sm">Поиск слушателя<input className={ctl} value={candidateSearch} onChange={e => setCandidateSearch(e.target.value)} /></label>
+                  <p className="text-sm">Выбрано: {selected.length}. {selectable.filter(p => selected.includes(p.enrollment_id)).map(p => p.learner_name).join(", ")}</p>
                   <div className="max-h-60 space-y-1 overflow-auto rounded-xl border border-slate-200 p-3">
-                    {selectable.length === 0 ? <p className="text-sm text-slate-600">Нет доступных слушателей. Убедитесь, что обучение завершено и записи не включены в другой проект.</p> : selectable.map(person => (
+                    {selectable.length === 0 ? <p className="text-sm text-slate-600">Нет доступных слушателей. Убедитесь, что обучение завершено и записи не включены в другой проект.</p> : selectable.filter(person => !candidateSearch.trim() || (person.learner_name || "").toLocaleLowerCase("ru").includes(candidateSearch.trim().toLocaleLowerCase("ru"))).map(person => (
                       <label className="flex items-start gap-2 py-1 text-sm" key={person.enrollment_id}>
                         <input type="checkbox" className="mt-1" checked={selected.includes(person.enrollment_id)} onChange={e => setSelected(prev => e.target.checked ? [...prev, person.enrollment_id] : prev.filter(x => x !== person.enrollment_id))}/>
                         <span>{person.learner_name || "Слушатель"} <span className="text-xs text-slate-500">(курс завершён: {person.completed_at ? new Date(person.completed_at).toLocaleDateString("ru-RU") : "не указано"})</span></span>
@@ -418,11 +459,12 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                   <button type="button" disabled={saving || !selected.length || !number.trim() || !protocolDate} onClick={save} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Сохранить проект на {selected.length} участников</button>
                 </>
               )}
-              <h3 className="text-sm font-semibold">Ранее сохранённые проекты</h3>
-              {drafts.length === 0 ? <p className="text-xs text-slate-600">Проектов пока нет.</p> : drafts.map(d => (
+              {mode === "legacy" && <h3 className="text-sm font-semibold">Ранее сохранённые проекты</h3>}
+              {mode === "legacy" && drafts.length === 0 ? <p className="text-xs text-slate-600">Проектов пока нет.</p> : displayedDrafts.map(d => (
                 <div id={`mintrud-linked-protocol-${d.id}`} key={d.id} className="scroll-mt-36 rounded-xl border border-slate-200 p-3 text-sm">
+                  {mode === "detail" && <KnowledgeProtocolOverview protocol={d} canWrite={canWrite} onStep={step => openStep(d, step)} />}
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span>№ {d.protocol_number} от {d.protocol_date} · {d.participant_count} участников · статус: {d.status === "recorded" ? "результаты зафиксированы (не подписан, не выгружен)" : "проект (не подписан)"}</span>
+                    {mode === "legacy" && <span>№ {d.protocol_number} от {d.protocol_date} · {d.participant_count} участников · статус: {d.is_signed ? "бумажный оригинал подписан" : d.status === "recorded" ? "результаты зафиксированы" : "проект (не подписан)"}</span>}
                     <div className="flex flex-wrap items-center gap-2">
                       <button type="button" className={ctl} disabled={checkingId === d.id || d.status !== "draft"} onClick={() => checkSavedDraft(d.id)}>
                         {checkingId === d.id ? "Проверка…" : "Проверить готовность"}
@@ -431,11 +473,21 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                         {reconcilingId === d.id ? "Сверка…" : "Сверить с Минтрудом"}
                       </button>
                       <button type="button" className={ctl} disabled={d.status !== "draft"} onClick={() => printSavedDraft(d.id)} title="Печатная форма сохранённого проекта; не является подписанным протоколом">Печать проекта</button>
-                      <button type="button" className={ctl} disabled={d.status !== "draft"} onClick={() => editingId === d.id ? (setEditingId(""), setEdit(null)) : beginEdit(d)}>
+                      {canWrite && <button type="button" className={ctl} disabled={d.status !== "draft"} onClick={() => editingId === d.id ? (setEditingId(""), setEdit(null)) : beginEdit(d)}>
                         {editingId === d.id ? "Закрыть редактор" : "Редактировать проект"}
-                      </button>
+                      </button>}
                     </div>
                   </div>
+                  <div id={mode === "detail" ? "protocol-signature" : undefined} tabIndex={-1} className="scroll-mt-8">
+                  {mode === "detail" && <h2 className="mt-4 font-bold">Подписание и скан</h2>}
+                  <MintrudSignaturePanel key={d.id} protocol={d} permissions={permissions} canWriteNow={canWriteNow} onChanged={p => setDrafts(items => items.map(item => item.id === p.id ? p : item))} />
+                  </div>
+                  <div id={mode === "detail" ? "protocol-participants" : undefined} tabIndex={-1} className="scroll-mt-8">
+                    {mode === "detail" && <section className="mt-4 text-sm"><h2 className="font-bold">Комиссия</h2><p>Приказ: {d.commission_order_number || "Не указан"} · {d.commission_order_date || "Дата не указана"}</p><p>Председатель: {d.commission_chair || "Не указан"}</p><p>Члены комиссии: {(d.commission_members || []).join(", ") || "Не указаны"}</p></section>}
+                    <MintrudParticipantCards protocol={d} permissions={permissions} compact={mode === "detail"} />
+                  </div>
+                  <div id={mode === "detail" ? "protocol-registry" : undefined} tabIndex={-1} className="scroll-mt-8">
+                  {mode === "detail" && <p className="mt-4 text-sm">Минтруд: <a className="text-blue-700 underline" href="/admin/registries">перейти к Госреестрам</a>. XML ЕИСОТ и XLSX ФРДО оформляются в разделе Госреестров.</p>}
                   {reconciliationById[d.id] && (
                     <div data-testid="mintrud-protocol-reconciliation" className="mt-3 space-y-3 rounded-xl border border-blue-200 bg-blue-50/40 p-3 text-xs">
                       {reconciliationById[d.id].error ? (
@@ -470,7 +522,7 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                               ))}</tbody>
                             </table>
                           </div>
-                          {reconciliationById[d.id].report.protocol_status === "recorded" && (
+                          {reconciliationById[d.id].report.is_signed && permissions.includes("mintrud.write") && (
                             <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 space-y-2">
                               <p className="font-semibold text-slate-900">Заполнение пустых реквизитов Минтруда из зафиксированного протокола</p>
                               {syncOutcomeById[d.id]?.error && <p role="alert" className="text-red-700">{syncOutcomeById[d.id].error}</p>}
@@ -528,6 +580,10 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                       )}
                     </div>
                   )}
+                  </div>
+                  <div id={mode === "detail" ? "protocol-readiness" : undefined} tabIndex={-1} className="scroll-mt-8">
+                  {mode === "detail" && <h2 className="mt-4 font-bold">Фиксация результатов</h2>}
+                  {mode === "detail" && !readinessById[d.id] && <p className="text-sm">{d.status === "draft" ? "Выполните проверку перед фиксацией. Точные причины блокировки определяет сервер." : "Результаты уже зафиксированы; повторная фиксация недоступна."}</p>}
                   {readinessById[d.id] && (
                     <div data-testid="mintrud-protocol-readiness" role="status" className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
                       {readinessById[d.id].error ? (
@@ -544,14 +600,20 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                           {readinessById[d.id].report.issues.length > 0 && (
                             <ul className="list-disc space-y-1 pl-5">
                               {readinessById[d.id].report.issues.map(issue => (
-                                <li key={issue.code} className="text-slate-800">{issue.message}</li>
+                                <li key={issue.code} className="text-slate-800"><span>{issue.message}</span>
+                                  {canWrite && d.status === "draft" && /^(protocol_number|protocol_date|protocol_future|order_number|order_date|order_date_after|chair|commission_size|result:|date:|later_than_protocol:|future_check:|check_before_completion:)/.test(issue.code) && <button type="button" className="ml-2 underline" onClick={() => {
+                                    if (editingId !== d.id) beginEdit(d);
+                                    requestAnimationFrame(() => document.getElementById("protocol-editor")?.scrollIntoView({ block: "start" }));
+                                  }}>Исправить в редакторе</button>}
+                                  {/^(position:|workplace:|scenario:)/.test(issue.code) && <a className="ml-2 underline" href={`/admin/registries#participant=${encodeURIComponent(d.id)}:${encodeURIComponent(issue.code.split(":")[1])}`} target="_blank" rel="noreferrer">Открыть данные Минтруда</a>}
+                                </li>
                               ))}
                             </ul>
                           )}
                           {readinessById[d.id].report.advisories.map(note => (
                             <p key={note} className="text-slate-600">{note}</p>
                           ))}
-                          {readinessById[d.id].report.fieldsComplete && d.status === "draft" && (
+                          {canWrite && readinessById[d.id].report.fieldsComplete && d.status === "draft" && (
                             <div className="space-y-2 border-t border-slate-200 pt-3">
                               <label className="flex items-start gap-2 text-xs font-medium text-slate-800">
                                 <input type="checkbox" checked={Boolean(confirmRecordingById[d.id])} onChange={event => setConfirmRecordingById(prev => ({ ...prev, [d.id]: event.target.checked }))}/>
@@ -569,10 +631,11 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               ))}
-              {editingDraft && edit && (
-                <div data-testid="mintrud-protocol-draft-editor" className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
+              {canWrite && editingDraft && edit && (
+                <div id={mode === "detail" ? "protocol-editor" : undefined} tabIndex={-1} data-testid="mintrud-protocol-draft-editor" className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Редактирование проекта № {editingDraft.protocol_number}</h3>
                     <p className="mt-1 text-xs text-amber-800">Все сведения ниже остаются черновыми. Ввод результата не подтверждает решение комиссии, не подписывает протокол и не передаёт данные в Минтруд.</p>

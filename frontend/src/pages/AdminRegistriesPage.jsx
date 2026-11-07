@@ -30,6 +30,9 @@ import {
   validateAdminFrdoObligation,
   validateAdminMintrudObligation,
 } from "../api/client";
+import { MintrudProtocolDetails, SavedMintrudFields } from "../components/admin/MintrudRegistryDetails";
+import { RegistryLearnerProfileWarning } from "../components/admin/AdminRegistryLearnerProfileForm";
+import { buildMintrudContextPayload, draftTransferMessage } from "../utils/registryPresentation";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { FrdoPoContextForm } from "../components/admin/FrdoPoContextForm";
 import { AdminRegistryLearnerProfileForm } from "../components/admin/AdminRegistryLearnerProfileForm";
@@ -649,12 +652,11 @@ function MintrudContextForm({
     return () => { current = false; };
   }, [obligation.id]);
   const sourceProtocol = sourceState.protocols.find((item) => item.sync_provenance?.ever_synced);
-  const authoritativeProtocol = sourceState.protocols.find((item) => item.sync_provenance?.applied);
   const protocolSourceKeys = ["protocol_number", "knowledge_check_date", "knowledge_check_result"];
 
-  // P3.4E: only *display* a unique, non-conflicting source protocol when all
-  // three registry values are still empty. Never put preview values into form
-  // state: submit() must send only the saved registry context, not a draft.
+  // Preserve the existing lock for a unique, non-conflicting proposed source.
+  // Protocol details are rendered separately; never copy preview values into
+  // form state or the save payload.
   const soleLinkedProtocol = sourceState.protocols.length === 1
     ? sourceState.protocols[0] : null;
   const candidateFields = soleLinkedProtocol?.fields || {};
@@ -698,24 +700,7 @@ function MintrudContextForm({
   async function submit(event) {
     event.preventDefault();
 
-    const payload = Object.fromEntries(
-      Object.entries(form).filter(([key]) => (
-        !sourceFieldsLocked || !protocolSourceKeys.includes(key)
-      )).map(
-        ([key, value]) => [
-          key,
-          value.trim() || null,
-        ]
-      )
-    );
-
-    if (
-      payload.reporting_scenario
-      === "employer_self_training"
-    ) {
-      payload.employer_name = null;
-      payload.employer_inn = null;
-    }
+    const payload = buildMintrudContextPayload(form, sourceFieldsLocked);
 
     await onSave(payload);
   }
@@ -736,51 +721,11 @@ function MintrudContextForm({
         </p>
       </div>
 
-      {authoritativeProtocol ? (
-        <p data-testid="mintrud-context-audit-provenance" className="mt-3 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-900">
-          Номер, дата и результат заполнены из протокола № {authoritativeProtocol.protocol_number}.
-          Эти три поля доступны только для просмотра. Должность и сведения работодателя можно уточнять отдельно.
-        </p>
-      ) : sourceProtocol ? (
-        <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
-          Есть история синхронизации протокола № {sourceProtocol.protocol_number}, но значения расходятся или требуют проверки.
-          Ручная замена реквизитов проверки запрещена; необходима отдельная процедура сверки.
-        </p>
-      ) : sourceState.error ? (
-        <p role="alert" className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
-          Не удалось проверить происхождение реквизитов: {sourceState.error}. Поля проверки временно заблокированы.
-        </p>
-      ) : sourceState.loading ? (
-        <p className="mt-3 text-xs text-slate-600">Проверяем источник реквизитов протокола…</p>
-      ) : previewProtocol ? (
-        <div data-testid="mintrud-draft-preview-not-saved" role="note" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
-          <p className="font-semibold">
-            Предварительное отображение из {previewProtocol.status === "draft" ? "черновика" : "зафиксированного протокола"} № {previewProtocol.protocol_number}.
-          </p>
-          <p className="mt-1">
-            Номер, дата и результат показаны ниже только для просмотра. В реестре Минтруда они пока пустые.
-            Кнопка «Сохранить» не перенесёт эти три значения в PostgreSQL.
-          </p>
-          <p className="mt-1">
-            {previewProtocol.status === "draft"
-              ? "Сначала необходимо провести проверку знаний и зафиксировать фактическое решение комиссии."
-              : "Результаты комиссии зафиксированы. Для переноса нужна отдельная сверка и подтверждённая синхронизация."}
-          </p>
-          <button type="button" className="mt-2 rounded-lg border border-amber-500 bg-white px-3 py-1.5 font-semibold"
-            onClick={() => onOpenProtocol?.(previewProtocol)}>
-            {previewProtocol.status === "draft"
-              ? "Открыть протокол для оформления комиссии"
-              : "Перейти к сверке и разрешённой синхронизации"}
-          </button>
-        </div>
-      ) : (
-        <p className="mt-3 text-xs text-slate-600">
-          Нет подтверждённой синхронизации с протоколом комиссии.
-          {sourceState.protocols.length > 1
-            ? " Связано несколько протоколов — выберите правильный вручную, предпросмотр в полях отключён."
-            : " Значения из черновика не записываются в реестр автоматически."}
-        </p>
-      )}
+      <MintrudProtocolDetails protocols={sourceState.protocols} onOpenProtocol={onOpenProtocol} />
+      {sourceState.loading ? <p role="status">Проверяем источник реквизитов…</p> : null}
+      {sourceState.error ? <p role="alert">Не удалось проверить источник реквизитов. Повторно откройте форму.</p> : null}
+      <SavedMintrudFields context={context} />
+      <p className="mt-3 text-xs text-slate-600">Поля ниже — редактирование данных реестра. Изменения сохраняются кнопкой «Сохранить». Значения протокола сюда не подставляются.</p>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
           <span>
@@ -838,7 +783,7 @@ function MintrudContextForm({
 
           <select
             className={INPUT}
-            value={previewValues?.knowledge_check_result ?? form.knowledge_check_result}
+            value={form.knowledge_check_result}
             disabled={sourceFieldsLocked}
             onChange={(event) =>
               update(
@@ -848,7 +793,7 @@ function MintrudContextForm({
             }
           >
             <option value="">
-              {MINTRUD_CONTEXT_TEXT.chooseKnowledgeResult}
+              Не заполнено
             </option>
 
             {Object.entries(
@@ -872,7 +817,8 @@ function MintrudContextForm({
           <input
             type="date"
             className={INPUT}
-            value={previewValues?.knowledge_check_date ?? form.knowledge_check_date}
+            value={form.knowledge_check_date}
+            placeholder="Не заполнено"
             disabled={sourceFieldsLocked}
             onChange={(event) =>
               update(
@@ -890,7 +836,8 @@ function MintrudContextForm({
 
           <input
             className={INPUT}
-            value={previewValues?.protocol_number ?? form.protocol_number}
+            value={form.protocol_number}
+            placeholder="Не заполнено"
             disabled={sourceFieldsLocked}
             onChange={(event) =>
               update(
@@ -1574,6 +1521,7 @@ export function AdminRegistriesPage() {
 
   const [expandedId, setExpandedId] = useState("");
   const [editingContextId, setEditingContextId] = useState("");
+  const [validationNotes, setValidationNotes] = useState({});
   const [editingProfileId, setEditingProfileId] = useState("");
   const [attemptsById, setAttemptsById] = useState({});
   const [
@@ -1832,10 +1780,19 @@ export function AdminRegistriesPage() {
     await withAction(
       `validate:${obligation.id}`,
       async () => {
-        await api.validate(
-          obligation.id
-        );
-
+        const result = await api.validate(obligation.id);
+        let note = "";
+        if (activeRegistry === "mintrud") {
+          // Read-only provenance lookup; validation still uses the saved record.
+          try {
+            const linked = await getAdminMintrudLinkedProtocols(obligation.id);
+            const saved = result?.obligation?.mintrud_context ?? result?.mintrud_context ?? obligation.mintrud_context;
+            note = draftTransferMessage(saved, linked?.protocols || []);
+          } catch {
+            note = "Проверка записи выполнена, но источник реквизитов проверить не удалось. Повторно откройте данные Минтруда.";
+          }
+        }
+        setValidationNotes(current => ({ ...current, [obligation.id]: note }));
         await load();
       }
     );
@@ -2474,6 +2431,7 @@ export function AdminRegistriesPage() {
             <h1 className="text-2xl font-black text-slate-950">
               {T.title}
             </h1>
+            <a href="/admin/knowledge-protocols" className="mt-2 inline-block text-sm font-semibold text-blue-700 underline">Протоколы проверки знаний →</a>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               {T.subtitle}
@@ -3497,6 +3455,21 @@ export function AdminRegistriesPage() {
                                 {readiness.text}
                               </div>
 
+                              {activeRegistry === "mintrud" && validationNotes[obligation.id] ? (
+                                <p role="status" data-testid="mintrud-draft-validation-note" className="mt-2 text-amber-800">
+                                  {validationNotes[obligation.id]}
+                                </p>
+                              ) : null}
+                              <RegistryLearnerProfileWarning
+                                userId={obligation.user_id}
+                                registry={activeRegistry}
+                                refreshKey={obligation}
+                                onEdit={canChange ? () => {
+                                  setEditingProfileId(obligation.id);
+                                  setEditingContextId("");
+                                } : undefined}
+                              />
+
                               {obligation.last_error ? (
                                 <div className="mt-2 text-red-700">
                                   {activeRegistry === "mintrud"
@@ -3598,6 +3571,7 @@ export function AdminRegistriesPage() {
                             <div className="border-t border-slate-100 px-4 pb-4">
                               <AdminRegistryLearnerProfileForm
                                 userId={obligation.user_id}
+                                registry={activeRegistry}
                                 onCancel={() => setEditingProfileId("")}
                                 onSaved={load}
                               />

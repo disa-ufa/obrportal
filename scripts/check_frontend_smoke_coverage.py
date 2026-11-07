@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
+from m4_frontend_coverage import coverage, M4_MODULES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -108,14 +110,25 @@ def collect_check_scripts_text() -> str:
     return "\n".join(read_text(path) for path in script_files)
 
 
+@lru_cache(maxsize=1)
+def executed_coverage():
+    return coverage(ROOT)
+
+
 def is_likely_covered(path: Path, script_text: str) -> bool:
     relative_path = path.relative_to(ROOT).as_posix()
     filename = path.name
 
+    covered, errors = executed_coverage()
+    if relative_path in {'frontend/src/'+name for name in M4_MODULES}:
+        return relative_path in covered and not errors
     return relative_path in script_text or filename in script_text
 
 
 def main() -> None:
+    covered, errors = executed_coverage()
+    if errors:
+        raise SystemExit("\n".join(errors))
     script_text = collect_check_scripts_text()
     frontend_diagnostics = get_frontend_smoke_guard_diagnostics(script_text)
 
