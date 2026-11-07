@@ -1,3 +1,4 @@
+import { buildAdminKnowledgeProtocolPath } from "../../utils/adminRoutes";
 import { protocolDisplayStatus } from "../../utils/registryPresentation";
 
 const empty = value => value === null || value === undefined || String(value).trim() === "";
@@ -38,8 +39,9 @@ export function MintrudProtocolDetails({ protocols, onOpenProtocol }) {
         </ol>
       </> : !protocol.sync_provenance?.applied ? <p className="mt-2 text-xs">Фиксация комиссии сама по себе не подтверждает подписание. Подтвердите фактическое подписание бумажного оригинала: сервер автоматически заполнит разрешённые пустые реквизиты. Затем проверьте результат переноса.</p> : null}
       {protocol.sync_provenance?.ever_synced && !protocol.sync_provenance?.applied ? <p className="text-xs">Ранее выполнялась синхронизация, но соответствие текущих данных не подтверждено.</p> : null}
-      <button type="button" className="mt-2 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-semibold"
-        onClick={() => onOpenProtocol?.(protocol)}>{protocol.status === "draft" ? "Открыть протокол для проверки и фиксации" : "Открыть протокол и сверку с реестром"}</button>
+      <a className="mt-2 mr-3 inline-block rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white" href={buildAdminKnowledgeProtocolPath(protocol.id)}>Открыть карточку протокола</a>
+            <button type="button" className="mt-2 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-semibold"
+        onClick={() => onOpenProtocol?.(protocol)}>Открыть в прежнем интерфейсе</button>
     </div>)}
   </section>;
 }

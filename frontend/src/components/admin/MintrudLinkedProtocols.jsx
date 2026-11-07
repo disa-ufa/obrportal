@@ -1,3 +1,4 @@
+import { buildAdminKnowledgeProtocolPath } from "../../utils/adminRoutes";
 import { useEffect, useState } from "react";
 import { getAdminMintrudLinkedProtocols } from "../../api/client";
 
@@ -95,8 +96,9 @@ export function MintrudLinkedProtocols({ obligationId, onOpenProtocol }) {
               {hasConflict ? " Есть несовпадающие поля; автоматическая перезапись запрещена." : ""}
               {hasHistory ? " Имеется защищённая история Минтруда." : ""}
             </p>
+            <a className="mt-2 mr-3 inline-block rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white" href={buildAdminKnowledgeProtocolPath(protocol.id)}>Открыть карточку протокола</a>
             <button type="button" className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs" onClick={() => onOpenProtocol?.(protocol)}>
-              Открыть протокол
+              Открыть в прежнем интерфейсе
             </button>
           </div>
         );

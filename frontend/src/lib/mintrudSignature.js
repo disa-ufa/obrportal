@@ -21,11 +21,12 @@ export async function confirmAndRead(api, id, payload) {
 // A 413/415/422 response is a definitive rejection before persistence. Other
 // failures may leave a committed scan or recovery artifacts: absence in a GET
 // alone does not prove that creating another artifact would be safe.
-export async function uploadAndRead(api, id, file, isCurrent = () => true) {
+export async function uploadAndRead(api, id, file, isCurrent = () => true, onPhase = () => {}) {
   if (!isCurrent()) return { stale: true };
   let error = null, protocol = null;
   try { await api.upload(id, file); } catch (exc) { error = exc; }
   if (!isCurrent()) return { stale: true };
+  onPhase("verifying");
   try { protocol = await api.read(id); } catch { /* A failed read cannot authorize a retry. */ }
   if (!isCurrent()) return { stale: true };
   const rejected = Boolean(error && [413, 415, 422].includes(error.status));
@@ -48,4 +49,24 @@ export function beginScanAttempt(id, storage) {
 export function clearScanAttempt(id, storage) {
   try { storage ??= globalThis.localStorage; storage?.removeItem(scanAttemptKey(id)); return !pendingScanAttempt(id, storage); }
   catch { return false; }
+}
+
+// localStorage is durable, but check/set is not atomic across tabs. Hold a
+// same-origin Web Lock through the POST and readback; never queue a second POST.
+// Browsers without this guarantee fail closed instead of using a racy fallback.
+export async function withScanAttemptLock(id, action, locks = globalThis.navigator?.locks) {
+  if (!locks) return { unavailable: true };
+  return locks.request(`obrportal_scan_upload_v1:${id}`, { mode: "exclusive", ifAvailable: true },
+    lock => lock ? action() : { occupied: true });
+}
+export function scanBlockReason({ sessionCurrent = true, write, authorized, signed, available, busy, pending, unread }) {
+  if (!sessionCurrent) return "Авторизация изменилась. Повторно войдите и проверьте протокол.";
+  if (!write) return "Недостаточно прав для прикрепления скана: требуется mintrud.write.";
+  if (!authorized) return "Актуальность прав не подтверждена. Дождитесь проверки авторизации.";
+  if (available) return "Скан ранее прикреплён. Повторная загрузка запрещена.";
+  if (!signed) return "Сначала подтвердите фактическое подписание оригинала.";
+  if (busy) return "Дождитесь завершения текущей операции.";
+  if (pending) return "Предыдущая загрузка не подтверждена. Требуется проверка состояния хранилища; повторная загрузка запрещена.";
+  if (unread) return "Не удалось прочитать актуальное состояние. Сначала проверьте состояние протокола.";
+  return "";
 }

@@ -2431,6 +2431,7 @@ export function AdminRegistriesPage() {
             <h1 className="text-2xl font-black text-slate-950">
               {T.title}
             </h1>
+            <a href="/admin/knowledge-protocols" className="mt-2 inline-block text-sm font-semibold text-blue-700 underline">Протоколы проверки знаний →</a>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               {T.subtitle}

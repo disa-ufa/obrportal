@@ -19,6 +19,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.rbac import require_permission
 from app.api.signed_scan_upload_limit import SignedScanUploadLimitRoute
 from app.core.config import settings
+from app.services.mintrud_employer import (
+    resolve_mintrud_employer_from_approval_snapshot, MintrudEmployerResolutionError,
+)
+from app.services.mintrud_reporting_organization import resolve_mintrud_reporting_organization
+
+
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.base import utcnow
@@ -39,6 +45,19 @@ from app.services.mintrud_protocol_scans import (
     MAX_SIGNED_SCAN_BYTES, validate_signed_scan, scan_digest,
     require_scan_storage_path, validated_download_content,
 )
+
+def _protocol_employer(row):
+    """Use the same scenario policy as approved Mintrud exports, without approval."""
+    organization = resolve_mintrud_reporting_organization()
+    return resolve_mintrud_employer_from_approval_snapshot({
+        "registry": "mintrud",
+        "mintrud_context": {
+            "reporting_scenario": row.reporting_scenario,
+            "employer_name": row.employer_name, "employer_inn": row.employer_inn,
+        },
+        "mintrud_reporting_organization": {"name": organization.name, "inn": organization.inn},
+    })
+
 
 router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"], route_class=SignedScanUploadLimitRoute)
 _logger = logging.getLogger(__name__)
@@ -522,6 +541,8 @@ async def get_protocol_draft_print_preview(
             MintrudKnowledgeProtocolMember.enrollment_id,
             MintrudRegistryContext.profession_or_position,
             MintrudRegistryContext.employer_name,
+            MintrudRegistryContext.employer_inn,
+            MintrudRegistryContext.reporting_scenario,
         )
         .outerjoin(
             MintrudRegistryContext,
@@ -529,13 +550,15 @@ async def get_protocol_draft_print_preview(
         )
         .where(MintrudKnowledgeProtocolMember.protocol_id == protocol_id)
     )
-    context_by_id = {
-        str(r.enrollment_id): {
-            "profession_or_position": r.profession_or_position,
-            "workplace": r.employer_name,
+    context_by_id = {}
+    for r in rows:
+        try:
+            workplace = _protocol_employer(r).title
+        except MintrudEmployerResolutionError:
+            workplace = None
+        context_by_id[str(r.enrollment_id)] = {
+            "profession_or_position": r.profession_or_position, "workplace": workplace,
         }
-        for r in rows
-    }
     for member in draft["participants"]:
         member.update(context_by_id.get(member["enrollment_id"], {
             "profession_or_position": None, "workplace": None,
@@ -856,6 +879,8 @@ async def _recording_report(session: AsyncSession, protocol: MintrudKnowledgePro
             RegistryObligation.approval_snapshot_json.label("existing_approval_snapshot"),
             MintrudRegistryContext.profession_or_position,
             MintrudRegistryContext.employer_name,
+            MintrudRegistryContext.employer_inn,
+            MintrudRegistryContext.reporting_scenario,
             MintrudRegistryContext.protocol_number.label("manual_protocol_number"),
             MintrudRegistryContext.knowledge_check_date.label("manual_check_date"),
             MintrudRegistryContext.knowledge_check_result.label("manual_check_result"),
@@ -940,8 +965,16 @@ async def _recording_report(session: AsyncSession, protocol: MintrudKnowledgePro
             add("legacy_result:" + enrollment_id, f"{label}: ранее введённый результат Минтруда отличается от протокола.")
         if not filled(row.profession_or_position):
             add("position:" + enrollment_id, f"{label}: не указана должность / профессия.")
-        if not filled(row.employer_name):
-            add("workplace:" + enrollment_id, f"{label}: не указано место работы.")
+        employer = None
+        try:
+            employer = _protocol_employer(row)
+        except MintrudEmployerResolutionError:
+            if row.reporting_scenario == "employer_self_training":
+                add("central_employer:" + enrollment_id, f"{label}: для самостоятельного обучения заполните центральные реквизиты организации DOCUMENT_ORG_NAME и DOCUMENT_ORG_INN; обратитесь к администратору настроек.")
+            elif row.reporting_scenario == "external_training_provider":
+                add("workplace:" + enrollment_id, f"{label}: укажите название и ИНН работодателя в данных Минтруда слушателя.")
+            else:
+                add("scenario:" + enrollment_id, f"{label}: выберите сценарий обучения в данных Минтруда слушателя.")
         if row.knowledge_check_result not in ("satisfactory", "unsatisfactory"):
             add("result:" + enrollment_id, f"{label}: отсутствует результат комиссии.")
         if not row.knowledge_check_date:
@@ -957,7 +990,10 @@ async def _recording_report(session: AsyncSession, protocol: MintrudKnowledgePro
             "enrollment_id": enrollment_id, "obligation_id": str(row.obligation_id),
             "user_id": str(row.user_id), "learner_name": row.full_name,
             "profession_or_position": row.profession_or_position,
-            "workplace": row.employer_name,
+            "workplace": employer.title if employer else None,
+            "employer_inn": employer.inn if employer else None,
+            "employer_source": employer.source if employer else None,
+            "reporting_scenario": row.reporting_scenario,
             "knowledge_check_date": row.knowledge_check_date.isoformat() if row.knowledge_check_date else None,
             "knowledge_check_result": row.knowledge_check_result,
         })

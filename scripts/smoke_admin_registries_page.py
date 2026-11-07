@@ -29,7 +29,7 @@ frdo_form = FRDO_FORM.read_text(encoding="utf-8")
 for marker in [
     'key: "registries"',
     'path: "/admin/registries"',
-    '"documents", "registries"',
+    '"documents", "knowledgeProtocols", "registries"',
 ]:
     require(
         marker in routes,

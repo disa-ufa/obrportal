@@ -1,3 +1,4 @@
+import { protocolDateLabel, protocolResultLabel } from "../../utils/knowledgeProtocolPresentation";
 import { useEffect, useRef, useState } from "react";
 import { getAdminMintrudProtocolRegistryReconciliation } from "../../api/client";
 import { SavedMintrudFields } from "./MintrudRegistryDetails";
@@ -17,7 +18,7 @@ export function MintrudParticipantCardView({ card, onClose }) {
     <button type="button" onClick={onClose} className="mt-3 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">Вернуться к протоколу</button>
   </section>;
 }
-export function MintrudParticipantCards({ protocol, permissions = [] }) {
+export function MintrudParticipantCards({ protocol, permissions = [], compact = false }) {
   const [hash, setHash] = useState(() => typeof window === "undefined" ? "" : window.location.hash);
   const [state, setState] = useState(null);
   const lastLink = useRef(null);
@@ -41,10 +42,13 @@ export function MintrudParticipantCards({ protocol, permissions = [] }) {
   if (!allowed) return null;
   return <section className="mt-4" aria-label="Участники протокола">
     <h3 className="text-sm font-bold">Участники протокола</h3>
-    <ul className="mt-2 space-y-2">{(protocol.participants || []).map(p => <li key={p.enrollment_id} className="flex flex-wrap items-center gap-3 text-sm">
+    {compact ? <>
+      <p className="mt-1 text-xs text-slate-600">Здесь показаны результаты комиссии из протокола. Сохранённые реквизиты Минтруда открываются отдельно по участнику.</p>
+      <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200"><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th scope="col" className="p-3">Участник</th><th scope="col" className="p-3">Дата проверки</th><th scope="col" className="p-3">Результат комиссии</th><th scope="col" className="p-3">Минтруд</th></tr></thead><tbody>{(protocol.participants || []).map(p => <tr key={p.enrollment_id} className="border-t border-slate-200"><td className="p-3">{p.learner_name || p.enrollment_id}</td><td className="p-3">{protocolDateLabel(p.knowledge_check_date)}</td><td className="p-3">{protocolResultLabel(p.knowledge_check_result)}</td><td className="p-3"><a data-enrollment-id={p.enrollment_id} className="text-blue-700 underline" href={participantHash(protocol.id,p.enrollment_id)} onClick={e => { lastLink.current=e.currentTarget; }}>Карточка участника</a></td></tr>)}</tbody></table></div>
+    </> : <ul className="mt-2 space-y-2">{(protocol.participants || []).map(p => <li key={p.enrollment_id} className="flex flex-wrap items-center gap-3 text-sm">
       <span>{p.learner_name || p.enrollment_id}</span>
       <a data-enrollment-id={p.enrollment_id} className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-blue-800" href={participantHash(protocol.id,p.enrollment_id)} onClick={e => { lastLink.current=e.currentTarget; }}>Карточка участника</a>
-    </li>)}</ul>
+    </li>)}</ul>}
     {selected && (!state || state.owner !== selected) && <p role="status">Загрузка сохранённых реквизитов…</p>}
     {selected && state?.owner === selected && (state.error ? <div role="alert"><p>Не удалось подтвердить сохранённые реквизиты участника. Данные протокола не используются вместо реестра.</p><button type="button" onClick={close}>Вернуться к протоколу</button></div> : <MintrudParticipantCardView card={state.card} onClose={close} />)}
   </section>;

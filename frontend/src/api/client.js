@@ -1917,7 +1917,7 @@ export async function syncAdminMintrudProtocolRegistryFields(protocolId, payload
 }
 
 // Paper-original attestation and private, authenticated scan access.
-export const getAdminMintrudProtocol = id => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`);
+export const getAdminMintrudProtocol = id => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`, { cache: "no-store" });
 export const confirmAdminMintrudSignature = (id, payload) => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/confirm-signature`, { method: "POST", body: JSON.stringify(payload) });
 export function uploadAdminMintrudScan(id, file) {
   const body = new FormData(); body.append("file", file);
