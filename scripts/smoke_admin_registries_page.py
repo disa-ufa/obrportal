@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +22,7 @@ def require(condition, message):
 routes = ROUTES.read_text(encoding="utf-8")
 shell = SHELL.read_text(encoding="utf-8")
 renderer = RENDERER.read_text(encoding="utf-8")
-page = PAGE.read_text(encoding="utf-8")
+page = "\n".join((ROOT / path).read_text(encoding="utf-8") for path in ["frontend/src/pages/AdminRegistriesPage.jsx", "frontend/src/pages/FrdoRegistryWorkspace.jsx", "frontend/src/pages/MainMintrudRegistriesPage.jsx"])
 client = CLIENT.read_text(encoding="utf-8")
 frdo_form = FRDO_FORM.read_text(encoding="utf-8")
 
@@ -93,7 +94,6 @@ for marker in [
     "isHistoricalInternalLifecycle",
     'data-testid="admin-registry-legacy-internal-lifecycle"',
     "artifactDownloadLabel",
-    "prepareAdminFrdoPortalArtifact",
     "admin-registries-frdo-portal-available",
     "frdoPortalAvailableTitle",
     "frdoPortalAvailable",
@@ -255,14 +255,12 @@ require(
 )
 
 require(
-    'attempt.has_artifact && !attempt.submitted_at'
-    not in page,
+    not re.search(r'\{\s*attempt\.has_artifact\s*&&\s*!attempt\.submitted_at', page),
     "legacy broad submission gate remains",
 )
 
 require(
-    'attempt.submitted_at && !attempt.result_status'
-    not in page,
+    not re.search(r'\{\s*attempt\.submitted_at\s*&&\s*!attempt\.result_status', page),
     "legacy broad result gate remains",
 )
 
@@ -289,3 +287,8 @@ print("ADMIN_REGISTRIES_INLINE_ACTION_FORMS=PASS")
 print("ADMIN_REGISTRIES_NO_FORBIDDEN_UI=PASS")
 print("ADMIN_REGISTRIES_NO_FAKE_EXPORTER=PASS")
 print("SMOKE_ADMIN_REGISTRIES_PAGE=PASS")
+
+# The obsolete portal exporter was replaced by guarded XLSX batch creation.
+from frdo_ui_smoke_contract import check_frdo_workspace
+check_frdo_workspace(ROOT)
+require("prepareAdminFrdoPortalArtifact" not in page, "obsolete FRDO exporter remains")
