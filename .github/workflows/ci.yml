@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -13,7 +14,7 @@ on:
 jobs:
   test:
     name: Test ObrPortal
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       SEED_ADMIN_EMAIL: admin@obrportal.local
@@ -31,6 +32,43 @@ jobs:
         run: |
           python scripts/test_secret_scan.py
           python scripts/secret_scan.py
+
+      - name: Set up Node for synthetic FRDO UI tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        timeout-minutes: 5
+        run: npm ci --prefix frontend --ignore-scripts
+
+      - name: Install pinned Playwright Chromium
+        timeout-minutes: 10
+        run: node frontend/node_modules/playwright-core/cli.js install --with-deps chromium
+
+      - name: Validate FRDO CI execution contract
+        timeout-minutes: 2
+        run: |
+          python scripts/test_frdo_ci.py
+          node frontend/tests/frdo_ci_config.test.mjs
+
+      - name: Run synthetic FRDO unit and browser regressions
+        timeout-minutes: 30
+        run: python scripts/check_frdo_ci.py --evidence runner-evidence/frdo
+
+      - name: Preserve FRDO diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frdo-ui-evidence
+          path: runner-evidence/frdo
+          if-no-files-found: error
+
+      - name: Run full frontend lint
+        timeout-minutes: 3
+        run: npm run lint --prefix frontend
 
       - name: Run text encoding guard
         run: |

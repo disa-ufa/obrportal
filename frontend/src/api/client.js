@@ -23,20 +23,38 @@ export function getStoredToken() {
   );
 }
 
+// A generation changes on every genuine login/logout, even if a token is reused.
+// This tracks ownership of async FRDO work; it never grants permissions.
+let authGeneration = 0;
+let observedAuthToken;
+export function captureAuthSession() {
+  const token = typeof sessionStorage === "undefined" || typeof localStorage === "undefined" ? null : getStoredToken();
+  if (token !== observedAuthToken) { observedAuthToken = token; authGeneration += 1; }
+  return { generation: authGeneration, token };
+}
+export function isCurrentAuthSession(owner) {
+  const current = captureAuthSession();
+  return owner?.generation === current.generation && owner.token === current.token;
+}
+function notifyAuthChange() {
+  observedAuthToken = getStoredToken();
+  authGeneration += 1;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("obrportal-auth-change"));
+}
 export function storeToken(token, { persist = false } = {}) {
   if (persist) {
     localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
     sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-    return;
+  } else {
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   }
-
-  sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
-  localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  notifyAuthChange();
 }
-
 export function clearToken() {
   sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  notifyAuthChange();
 }
 
 async function request(path, options = {}) {
@@ -1243,6 +1261,7 @@ async function downloadAdminRegistrySubmissionAttempt(
   obligationId,
   attemptId
 ) {
+  const downloadOwner = captureAuthSession();
   const token = getStoredToken();
 
   const response = await fetch(
@@ -1284,7 +1303,9 @@ async function downloadAdminRegistrySubmissionAttempt(
     throw error;
   }
 
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const blob = await response.blob();
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
 
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(
@@ -1625,6 +1646,7 @@ export async function markAdminMintrudSubmissionBatchSubmitted(
 export async function downloadAdminMintrudSubmissionBatch(
   batchId
 ) {
+  const downloadOwner = captureAuthSession();
   const token = getStoredToken();
 
   const response = await fetch(
@@ -1670,7 +1692,9 @@ export async function downloadAdminMintrudSubmissionBatch(
     throw error;
   }
 
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const blob = await response.blob();
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
 
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(
@@ -1785,6 +1809,7 @@ export async function recordAdminFrdoSubmissionBatchResults(batchId, payload) {
 }
 
 export async function downloadAdminFrdoSubmissionBatch(batchId) {
+  const owner = captureAuthSession();
   const accessToken = getStoredToken();
   const response = await fetch(
     buildApiUrl(`/api/v1/admin/frdo/batches/${batchId}/download`),
@@ -1814,7 +1839,9 @@ export async function downloadAdminFrdoSubmissionBatch(batchId) {
     throw error;
   }
 
+  if (!isCurrentAuthSession(owner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const blob = await response.blob();
+  if (!isCurrentAuthSession(owner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(response, `frdo-po-batch-${batchId}.xlsx`),
     blob

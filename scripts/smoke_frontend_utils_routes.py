@@ -681,9 +681,24 @@ def main() -> None:
         "frontend/src/utils/mintrudWorkflow.test.js",
         ["successful create followed by failed download", "unknown errors and readiness data"],
     )
+    # The coordinator delegates Mintrud actions to the preserved main page.
     require_contains(
         "frontend/src/pages/AdminRegistriesPage.jsx",
-        ["prepareAndDownloadMintrudBatch({", "validated?.obligation?.status", "Повторно утвердить"],
+        [
+            'import { MainMintrudRegistriesPage } from "./MainMintrudRegistriesPage";',
+            'route.registry === "mintrud"',
+            '<MainMintrudRegistriesPage onFrdo={() => navigate("frdo")} />',
+        ],
+    )
+
+    # Preserve all three historical Mintrud behavior contracts.
+    require_contains(
+        "frontend/src/pages/MainMintrudRegistriesPage.jsx",
+        [
+            "prepareAndDownloadMintrudBatch({",
+            "validated?.obligation?.status",
+            "Повторно утвердить",
+        ],
     )
     print("Frontend utils/routes behavior smoke passed")
 
