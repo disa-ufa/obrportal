@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { openProtocolDraftPrint } from "../../lib/printMintrudProtocolDraft";
 import { checkProtocolDraftCompleteness } from "../../lib/checkMintrudProtocolReadiness";
 import {
+  captureAuthSession, isCurrentAuthSession,
   createAdminMintrudProtocolDraft,
   getAdminMintrudProtocolCandidates,
   listAdminMintrudProtocolDrafts,
+  getAdminMintrudProtocolDraft,
   updateAdminMintrudProtocolDraft,
   getAdminMintrudProtocolDraftPrintPreview,
   getAdminMintrudProtocolRecordingReadiness,
@@ -44,7 +46,12 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
   const [syncRequestById, setSyncRequestById] = useState({});
   const [syncOutcomeById, setSyncOutcomeById] = useState({});
 
+  const readGeneration = useRef(0);
+
   async function reload() {
+    const generation = ++readGeneration.current;
+    const owner = captureAuthSession();
+    const current = () => generation === readGeneration.current && isCurrentAuthSession(owner);
     if (!courseId) return;
     setLoading(true);
     setError("");
@@ -56,8 +63,15 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
         getAdminMintrudProtocolCandidates(filters),
         listAdminMintrudProtocolDrafts(courseId),
       ]);
+      if (!current()) return;
       setCandidates(Array.isArray(people) ? people : []);
-      setDrafts(Array.isArray(existing) ? existing : []);
+      const saved = Array.isArray(existing) ? existing : [];
+      if (focusProtocol?.id && focusProtocol.course_id === courseId && !saved.some(row => row.id === focusProtocol.id)) {
+        const focused = await getAdminMintrudProtocolDraft(focusProtocol.id);
+        if (focused?.id === focusProtocol.id && focused.course_id === courseId) saved.unshift(focused);
+      }
+      if (!current()) return;
+      setDrafts(saved);
       setSchemaReady(true);
       // Saved snapshots can change; do not show a stale readiness report.
       setReadinessById({});
@@ -67,10 +81,11 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
       setSyncConfirmedById({});
       setSyncOutcomeById({});
     } catch (exc) {
+      if (!current()) return;
       setSchemaReady(false);
       setError(exc?.message || "Не удалось получить проекты протоколов. Проверьте схему и доступ к API.");
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   }
 
@@ -88,7 +103,8 @@ export function MintrudProtocolDraftsPanel({ courseId, organizationId, groupId, 
     setSyncConfirmedById({});
     setSyncOutcomeById({});
     if (expanded && courseId) reload();
-  }, [expanded, courseId, organizationId, groupId]);
+    return () => { readGeneration.current += 1; };
+  }, [expanded, courseId, organizationId, groupId, focusProtocol]);
 
   // A learner-card link opens the right course and the saved protocol list.
   useEffect(() => {

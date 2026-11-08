@@ -26,11 +26,13 @@ from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_applicability import RegistryApplicabilityRecord
 from app.models.registry_obligation import RegistryObligation
 from app.models.user import User
+from app.api.v1.mintrud_protocol_preview import router as preview_router
 from app.services.mintrud_protocol_reconciliation import reconcile_mintrud_protocol
 from app.services.mintrud_protocol_sync import build_mintrud_sync_plan, apply_mintrud_protocol_sync
 from app.services.mintrud_protocol_provenance import mintrud_protocol_sync_evidence
 
-router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"])
+router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"] )
+router.include_router(preview_router)
 
 
 class ProtocolDraftMemberResult(BaseModel):

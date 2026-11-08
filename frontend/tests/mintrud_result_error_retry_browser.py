@@ -88,6 +88,8 @@ HTML = r'''<!doctype html>
 </html>'''
 
 JS = r'''
+// All ambiguous outcomes forbid a second POST, including a lost success response.
+const scenario = new URLSearchParams(location.search).get("scenario") || "unresolved";
 const batchId = "synthetic-error-retry-001";
 const base = "/api/v1/admin/mintrud/batches";
 const detailPath = `${base}/${batchId}`;
@@ -291,6 +293,10 @@ window.fetch = async (input, options = {}) => {
   }
 
   if (method === "GET" && path === detailPath) {
+    if (scenario === "unavailable" && d.postAttempts > 0) {
+      d.events.push("readback-unavailable");
+      return respond({detail: "Synthetic readback unavailable"}, 503);
+    }
     return respond(detail());
   }
 
@@ -334,32 +340,22 @@ window.fetch = async (input, options = {}) => {
       );
     }
 
-    if (d.postAttempts === 1) {
-      d.events.push("synthetic-http-503");
-      return respond(
-        {detail: "Synthetic temporary outage"},
-        503
-      );
-    }
-
-    if (d.postAttempts !== 2 || batch.reconciled_at) {
+    if (d.postAttempts !== 1) {
       d.errors.push("UNEXPECTED_EXTRA_MUTATION");
-      return respond(
-        {detail: "unexpected retry"},
-        409
-      );
+      return respond({detail: "duplicate POST forbidden"}, 409);
     }
 
-    payload.items.forEach((item, index) => {
-      items[index].result_status = item.result_status;
-      items[index].external_id = item.external_id;
-      items[index].errors_json = [...item.errors];
-    });
-
-    batch.reconciled_at = "2026-10-18T11:00:00Z";
-    d.events.push("reconciled");
-
-    return respond(detail());
+    if (scenario === "committed") {
+      payload.items.forEach((item, index) => {
+        items[index].result_status = item.result_status;
+        items[index].external_id = item.external_id;
+        items[index].errors_json = [...item.errors];
+      });
+      batch.reconciled_at = "2026-10-18T11:00:00Z";
+      d.events.push("response_lost_after_commit");
+    }
+    d.events.push("synthetic-http-503");
+    return respond({detail: "Synthetic uncertain response"}, 503);
   }
 
   d.errors.push(
@@ -488,6 +484,15 @@ try {
     ))
   );
 
+  const detailGetCount = () => d.calls.filter(call =>
+    call.method === "GET" && call.path === detailPath
+  ).length;
+  const pending = () => byId(`admin-registries-mintrud-result-pending-${batchId}`);
+  const recheck = () => byId(`admin-registries-mintrud-result-check-${batchId}`);
+  const pendingStored = () => JSON.parse(sessionStorage.getItem(
+    "obrportal_mintrud_result_pending_ids_v1"
+  ) || "[]").includes(batchId);
+
   formNode().requestSubmit();
 
   check(
@@ -504,6 +509,25 @@ try {
 
   await new Promise(resolve => setTimeout(resolve, 400));
 
+  check("AUTOMATIC_READBACK_GET", Boolean(await waitFor(() => detailGetCount() === 2)));
+  if (scenario === "committed") {
+    check("SERVER_COMMITTED_BEFORE_RESPONSE_LOSS",
+      batch.reconciled_at !== null && d.events.includes("response_lost_after_commit"));
+    check("RESULTS_RESTORED_READONLY", Boolean(await waitFor(() => {
+      const controls = [...(formNode()?.querySelectorAll("select,input,textarea") || [])];
+      return controls.length === 6 && controls.every(c => c.disabled) && !submit();
+    })));
+    check("SERVER_RESULTS_RESTORED", ids.every((id, index) =>
+      row(id).querySelector("select").value === items[index].result_status));
+    check("SERVER_EXTERNAL_ID_RESTORED", row(ids[0]).querySelector("input").value === "SYN-REC-001");
+    check("SERVER_ERRORS_RESTORED",
+      row(ids[1]).querySelector("textarea").value.includes("Invalid identifier") &&
+      row(ids[2]).querySelector("textarea").value.includes("Missing field X"));
+    check("PENDING_CLEARED_ONLY_AFTER_CONFIRMED_GET", !pendingStored());
+    formNode().requestSubmit();
+    await new Promise(resolve => setTimeout(resolve, 150));
+    check("READONLY_PROGRAMMATIC_RESUBMIT_BLOCKED", postCount() === 1 && d.confirmations.length === 1);
+  } else {
   check(
     "FAILED_POST_DID_NOT_RECONCILE",
     batch.reconciled_at === null
@@ -524,9 +548,9 @@ try {
   );
 
   check(
-    "SAVE_REENABLED_AFTER_FAILURE",
+    "SAVE_DISABLED_AFTER_503",
     Boolean(await waitFor(() =>
-      submit() && !submit().disabled
+      submit() && submit().disabled
     ))
   );
 
@@ -559,61 +583,39 @@ try {
     d.confirmations.length === 1
   );
 
+  check("PENDING_WARNING_VISIBLE", Boolean(await waitFor(pending)));
+  check("MANUAL_CHECK_AVAILABLE", Boolean(await waitFor(() => recheck() && !recheck().disabled)));
+  check("PENDING_STORED", pendingStored());
   formNode().requestSubmit();
-
-  check(
-    "SECOND_CONFIRMATION_PRESENT",
-    Boolean(await waitFor(() =>
-      d.confirmations.length === 2
-    ))
-  );
-
-  check(
-    "RETRY_POST_ATTEMPT",
-    Boolean(await waitFor(() =>
-      postCount() === 2
-    ))
-  );
-
-  check(
-    "RETRY_PAYLOAD_UNCHANGED",
-    JSON.stringify(d.payloads[0]) ===
-    JSON.stringify(d.payloads[1])
-  );
-
-  check(
-    "RETRY_RECONCILED",
-    Boolean(await waitFor(() =>
-      batch.reconciled_at !== null
-    ))
-  );
-
-  check(
-    "READONLY_AFTER_RETRY_SUCCESS",
-    Boolean(await waitFor(() => {
-      const current = formNode();
-      if (!current) return false;
-
-      const controls = [
-        ...current.querySelectorAll(
-          "select,input,textarea"
-        )
-      ];
-
-      return (
-        controls.length === 6 &&
-        controls.every(c => c.disabled) &&
-        !current.querySelector(
-          'button[type="submit"]'
-        )
-      );
-    }))
-  );
-
-  check(
-    "EXACTLY_TWO_POST_ATTEMPTS",
-    postCount() === 2
-  );
+  await new Promise(resolve => setTimeout(resolve, 150));
+  check("PROGRAMMATIC_RESUBMIT_BLOCKED", postCount() === 1);
+  check("NO_SECOND_CONFIRMATION", d.confirmations.length === 1);
+  const beforeCheck = d.calls.length;
+  recheck().click();
+  check("MANUAL_RECHECK_GET", Boolean(await waitFor(() => detailGetCount() === 3)));
+  check("PENDING_AFTER_RECHECK", Boolean(await waitFor(() => recheck() && !recheck().disabled)) &&
+    pendingStored() && Boolean(pending()) && Boolean(submit()) && submit().disabled);
+  check("MANUAL_CHECK_GET_ONLY", d.calls.slice(beforeCheck).length === 1 &&
+    d.calls.slice(beforeCheck).every(call => call.method === "GET" && call.path === detailPath));
+  check("SERVER_REMAINS_UNRECONCILED", batch.reconciled_at === null &&
+    items.every(item => item.result_status === null && item.external_id === null && item.errors_json.length === 0));
+  check("INPUT_PRESERVED_AFTER_RECHECK",
+    rows[0].querySelector("select").value === "accepted" &&
+    rows[1].querySelector("select").value === "rejected" &&
+    rows[2].querySelector("select").value === "correction_required" &&
+    rows[0].querySelector("input").value === "  SYN-REC-001  " &&
+    rows[1].querySelector("textarea").value.includes("Invalid identifier") &&
+    rows[2].querySelector("textarea").value.includes("Missing field X"));
+  if (scenario === "unavailable") {
+    check("AUTOMATIC_AND_MANUAL_READBACK_UNAVAILABLE",
+      d.events.filter(event => event === "readback-unavailable").length === 2);
+  }
+  formNode().requestSubmit();
+  await new Promise(resolve => setTimeout(resolve, 150));
+  check("RESUBMIT_AFTER_RECHECK_BLOCKED", postCount() === 1 && d.confirmations.length === 1);
+  }
+  check("EXACTLY_ONE_POST_ATTEMPT", postCount() === 1);
+  check("EXACTLY_ONE_OPERATOR_CONFIRMATION", d.confirmations.length === 1);
 
   check(
     "NO_MOCK_ERRORS",
@@ -629,6 +631,10 @@ try {
   phase("FAIL");
 } finally {
   d.diagnostic = {
+    scenario,
+    detailGetCount: d.calls.filter(call => call.method === "GET" && call.path === detailPath).length,
+    duplicatePostCount: Math.max(0, postCount() - 1),
+    pendingStored: JSON.parse(sessionStorage.getItem("obrportal_mintrud_result_pending_ids_v1") || "[]").includes(batchId),
     postCount: postCount(),
     confirmCount: d.confirmations.length,
     reconciledAt: batch.reconciled_at,
