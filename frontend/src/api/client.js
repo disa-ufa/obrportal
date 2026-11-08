@@ -1922,3 +1922,18 @@ export async function syncAdminMintrudProtocolRegistryFields(protocolId, payload
     body: JSON.stringify(payload),
   });
 }
+
+// P8 GET-only diagnostics; the caller supplies cancellation and a bounded timeout.
+export function getAdminMintrudProtocolCatalog(filters = {}, options = {}) {
+  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== '' && value != null));
+  return request(`/api/v1/admin/mintrud/protocol-drafts/catalog?${query}`, { ...options, method: 'GET' });
+}
+export function getAdminMintrudProtocolComposition(id, options = {}) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/participants`, { ...options, method: 'GET' });
+}
+export function getAdminMintrudProtocolExportPreview(id, options = {}) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/export-preview`, { ...options, method: 'GET' });
+}
+export function getAdminMintrudProtocolDraft(id, options = {}) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`, { ...options, method: 'GET' });
+}

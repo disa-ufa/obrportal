@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { MintrudProtocolWorkspace } from "../components/admin/MintrudProtocolWorkspace";
+import { protocolLocation, navigateProtocol } from "../utils/mintrudProtocolPreview";
 import * as mainRegistryApi from "../api/client";
 import { getAdminCourses, getAdminCourseDetail, getAdminMintrudLinkedProtocols } from "../api/client";
 import { bindRegistrySession } from "../utils/registrySession";
@@ -1453,6 +1455,14 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
   const ownedApi = useMemo(() => bindRegistrySession(Object.fromEntries(["approveAdminFrdoObligation", "approveAdminMintrudObligation", "prepareAdminMintrudSubmissionBatch", "downloadAdminMintrudSubmissionBatch", "getAdminMintrudSubmissionBatch", "getAdminMintrudSubmissionBatches", "markAdminMintrudSubmissionBatchImported", "markAdminMintrudSubmissionBatchSubmitted", "reopenAdminFrdoObligation", "reopenAdminMintrudObligation", "downloadAdminFrdoSubmissionAttempt", "downloadAdminMintrudSubmissionAttempt", "getAdminCourses", "getAdminCourseDetail", "getAdminFrdoObligations", "getAdminFrdoSubmissionAttempts", "getAdminMintrudObligations", "getAdminMintrudLinkedProtocols", "getAdminMintrudSubmissionAttempts", "markAdminFrdoSubmissionAttemptSubmitted", "markAdminMintrudSubmissionAttemptSubmitted", "recordAdminFrdoSubmissionAttemptResult", "recordAdminMintrudSubmissionAttemptResult", "recordAdminMintrudSubmissionBatchResult", "updateAdminFrdoObligationContext", "updateAdminMintrudObligationContext", "validateAdminFrdoObligation", "validateAdminMintrudObligation"].map(name => [name, mainRegistryApi[name]]))), []);
   const { approveAdminFrdoObligation, approveAdminMintrudObligation, prepareAdminMintrudSubmissionBatch, downloadAdminMintrudSubmissionBatch, getAdminMintrudSubmissionBatch, getAdminMintrudSubmissionBatches, markAdminMintrudSubmissionBatchImported, markAdminMintrudSubmissionBatchSubmitted, reopenAdminFrdoObligation, reopenAdminMintrudObligation, downloadAdminFrdoSubmissionAttempt, downloadAdminMintrudSubmissionAttempt, getAdminCourses, getAdminFrdoObligations, getAdminFrdoSubmissionAttempts, getAdminMintrudObligations, getAdminMintrudLinkedProtocols, getAdminMintrudSubmissionAttempts, markAdminFrdoSubmissionAttemptSubmitted, markAdminMintrudSubmissionAttemptSubmitted, recordAdminFrdoSubmissionAttemptResult, recordAdminMintrudSubmissionAttemptResult, recordAdminMintrudSubmissionBatchResult, updateAdminFrdoObligationContext, updateAdminMintrudObligationContext, validateAdminFrdoObligation, validateAdminMintrudObligation } = ownedApi;
   const [activeRegistry, setActiveRegistry] = useState("mintrud");
+  const [protocolRoute, setProtocolRoute] = useState(protocolLocation);
+  useEffect(() => {
+    const sync = () => setProtocolRoute(protocolLocation());
+    window.addEventListener('popstate', sync);
+    window.addEventListener('obrportal-registry-navigation', sync);
+    return () => {window.removeEventListener('popstate', sync);window.removeEventListener('obrportal-registry-navigation', sync);};
+  }, []);
+
   const [frdoScope, setFrdoScope] = useState("work");
   const latestLoadRef = useRef(0);
 
@@ -2458,7 +2468,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
           <button
             type="button"
             className={SECONDARY}
-            onClick={load}
+            onClick={() => {load(); window.dispatchEvent(new Event("obrportal-mintrud-inputs-change"));}}
             disabled={loading}
           >
             {loading
@@ -2600,6 +2610,25 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
         )}
       </section>
 
+      <nav aria-label="Режим Минтруда" className="flex flex-wrap gap-2">
+        <button type="button" className={SECONDARY} aria-pressed={protocolRoute.mode === 'learners'} onClick={() => navigateProtocol({mode: 'learners', id: ''})}>По слушателям</button>
+        <button type="button" className={SECONDARY} aria-pressed={protocolRoute.mode === 'protocols'} onClick={() => navigateProtocol({mode: 'protocols', id: ''})}>По протоколам</button>
+        <button type="button" className={SECONDARY} onClick={() => {navigateProtocol({mode: 'learners', id: ''}); setTimeout(() => document.querySelector('[data-testid="admin-registries-mintrud-batch"]')?.scrollIntoView(), 0);}}>XML-партии</button>
+      </nav>
+      {protocolRoute.mode === 'protocols' && error && <p role="alert" className="text-red-700">{error}</p>}
+      {protocolRoute.mode === 'protocols' && <MintrudProtocolWorkspace route={protocolRoute} courses={pilotCourseOptions} formatIssue={formatReadinessIssue}
+        onManage={protocol => {navigateProtocol({mode: 'learners', id: ''}); openLinkedProtocol(protocol);}}
+        renderEditor={({row, target}, close) => {
+          const obligation = {id: row.obligation_id, user_id: row.user_id, status: row.registry_status, mintrud_context: row.mintrud_context};
+          if (!row.user_id || !row.obligation_id) return <p role="alert">Связь участника не подтверждена. Исправление требует отдельной сверки.</p>;
+          return <div className="rounded-xl border border-slate-200 p-4" key={`${row.member_id}-${target}`}>
+            <h3 className="font-bold">{row.learner_name} · {target === 'profile' ? 'Карточка слушателя' : 'Данные Минтруда'}</h3>
+            <p>Изменения сохраняются только отдельным действием в существующем редакторе.</p>
+            {target === 'profile' ? <AdminRegistryLearnerProfileForm userId={row.user_id} onCancel={close} onSaved={close}/> : <MintrudContextForm obligation={obligation} busy={Boolean(busyKey)} onCancel={close} onOpenProtocol={protocol => {close(); navigateProtocol({mode:'learners',id:''}); openLinkedProtocol(protocol);}} onSave={payload => withAction(`context:${obligation.id}`, async () => {await updateAdminMintrudObligationContext(obligation.id, payload); close(); await load();})}/>}
+          </div>;
+        }}/>
+      }
+      <div hidden={protocolRoute.mode === 'protocols'} className="space-y-5">
       <section
         data-testid="admin-registries-pilot-facets"
         className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
@@ -3675,6 +3704,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
           </table>
         </div>
       </section>
+      </div>
     </div>
   );
 }
