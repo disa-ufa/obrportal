@@ -174,9 +174,9 @@ def business_io(monkeypatch):
         "read_registry_submission_batch_artifact",
         "_compensate_failed_registry_batch_export",
     ):
-        stub = Mock() if name == "read_registry_submission_batch_artifact" else AsyncMock()
-        monkeypatch.setattr(admin, name, stub)
-        stubs[name] = stub
+        mock_call = Mock() if name == "read_registry_submission_batch_artifact" else AsyncMock()
+        monkeypatch.setattr(admin, name, mock_call)
+        stubs[name] = mock_call
     return stubs
 
 
@@ -239,8 +239,8 @@ def test_http_refusal_has_no_business_side_effects(
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "registry.batch_export.disabled"
     assert session.execute.await_count == (1 if registry == "mintrud" else 0)
-    for stub in business_io.values():
-        stub.assert_not_called()
+    for mock_call in business_io.values():
+        mock_call.assert_not_called()
     session.scalar.assert_not_awaited()
     session.commit.assert_not_awaited()
 
