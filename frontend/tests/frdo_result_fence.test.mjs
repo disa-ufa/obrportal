@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createFrdoResultFence,FRDO_FENCE_PREFIX} from '../src/utils/frdoResultFence.js';
+const store=()=>{const m=new Map();return {get length(){return m.size},key:i=>[...m.keys()][i],getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)}};
+const target={obligation_id:'one',result_status:'accepted',external_id:'private-id',errors:[]};
+const saved={...target,errors_json:[],result_recorded_at:'now'};
+const detail={id:'a',registry:'frdo',items:[saved]};
+test('reload/another owner restores only technical hashes',async()=>{const storage=store(),f=createFrdoResultFence({storage});assert.ok(await f.begin('a',[target]));const raw=storage.getItem(FRDO_FENCE_PREFIX+'a');assert.doesNotMatch(raw,/private-id|accepted|errors/);const next=createFrdoResultFence({storage});assert.ok(next.has('a'));assert.equal(await next.begin('a',[target]),false);assert.equal(await next.readback('a',detail),true);assert.equal(f.has('a'),false);});
+test('unchanged, wrong UUID/registry, conflicting, duplicate, missing date retain fence',async()=>{for(const d of [{...detail,items:[]},{...detail,id:'b'},{...detail,registry:'mintrud'},{...detail,items:[{...saved,external_id:'other'}]},{...detail,items:[saved,saved]},{...detail,items:[{...saved,result_recorded_at:null}]}]){const f=createFrdoResultFence({storage:store()});await f.begin('a',[target]);assert.equal(await f.readback('a',d),false);assert.ok(f.has('a'));}});
+test('batch isolation and partial proof',async()=>{const f=createFrdoResultFence({storage:store()});await f.begin('a',[target]);assert.ok(await f.begin('b',[target]));assert.ok(await f.readback('a',{...detail,items:[saved,{obligation_id:'two',result_status:null}]}));assert.ok(f.has('b'));});
+test('unavailable storage refuses operation',async()=>{const storage={getItem(){throw Error('denied')}};assert.equal(await createFrdoResultFence({storage}).begin('a',[target]),false);});
+test('simultaneous same-owner clicks reserve synchronously',async()=>{const f=createFrdoResultFence({storage:store()});const first=f.begin('a',[target]);assert.equal(await f.begin('a',[target]),false);assert.ok(await first);});
+test('corrupt journal cannot be reset by GET',async()=>{const storage=store();storage.setItem(FRDO_FENCE_PREFIX+'a','broken');const f=createFrdoResultFence({storage});assert.ok(f.has('a'));assert.equal(await f.readback('a',detail),false);});

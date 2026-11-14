@@ -33,6 +33,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // Docker Desktop may miss change events from Windows bind mounts.
+    watch: { usePolling: true, interval: 1000 },
     allowedHosts: ['frontend'],
   },
   build: {

@@ -1,0 +1,27 @@
+import test, {after} from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {createServer} from 'vite';
+import react from '@vitejs/plugin-react';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {registryBatchPresentation as view,createBatchDetailReader as reader} from '../src/utils/registryBatchPresentation.js';
+const require=createRequire(import.meta.url);
+const server=await createServer({configFile:false,plugins:[react()],server:{middlewareMode:true,hmr:false},appType:'custom',optimizeDeps:{noDiscovery:true}});
+after(()=>server.close());
+async function component(name){return (await server.ssrLoadModule('/src/components/admin/registries/'+name+'.jsx')).default;}
+const Card=await component('RegistryBatchCard'),Detail=await component('RegistryBatchDetail');
+const html=(c,p)=>renderToStaticMarkup(createElement(c,p));
+const batch=(registry,status,extra={})=>({id:'synthetic',registry,status,record_count:2,obligation_count:2,...extra});
+for(const [reg,status,label] of [['frdo','exported','Файл сформирован'],['frdo','submitted','Отправка подтверждена'],['mintrud','exported','XML подготовлен'],['mintrud','imported','Импорт подтверждён'],['mintrud','submitted','Отправка подтверждена']])test(`${reg} ${status}`,()=>assert.ok(html(Card,{batch:batch(reg,status)}).includes(label)));
+for(const reg of ['frdo','mintrud'])test(`${reg} reconciled`,()=>assert.match(html(Card,{batch:batch(reg,'submitted',{reconciled_at:'2026-01-01'})}),/Сверка завершена/));
+test('FRDO no results and partial',()=>{const b=batch('frdo','submitted');assert.match(view(b).results,/загрузите/);assert.match(view(b,{id:b.id,items:[{result_status:'accepted'},{}]}).results,/1 из 2/);assert.doesNotMatch(view(b).stage,/Принято/);});
+test('unknown status',()=>assert.match(html(Card,{batch:batch('frdo','legacy')}),/Неизвестная стадия/));
+test('missing file',()=>assert.match(html(Card,{batch:batch('frdo','exported')}),/файл не указан/));
+test('read-only and export is not inferred',()=>{const s=html(Card,{batch:batch('mintrud','submitted')});assert.match(s,/Режим просмотра/);assert.match(s,/не предоставляет право экспорта/);assert.doesNotMatch(s,/Сохранить результаты/);});
+test('GET error/loading/retry',()=>{assert.match(html(Detail,{state:{loading:true}}),/Загрузка/);assert.match(html(Detail,{state:{error:true}}),/Повторить чтение/);});
+test('empty composition',()=>assert.match(html(Detail,{state:{detail:{items:[]}}}),/Состав партии пуст/));
+test('historical without inferred links',()=>{const s=html(Detail,{state:{detail:{items:[{id:'i',obligation_id:'legacy-obligation',position:1,result_status:'rejected',errors_json:['synthetic error']} ]}}});assert.match(s,/legacy-obligation/);assert.match(s,/не подтверждена/);assert.match(s,/Отклонено/);assert.match(s,/synthetic error/);});
+test('pending has no write action',()=>{const s=html(Card,{batch:batch('mintrud','submitted'),pending:true});assert.match(s,/запроса неизвестен/);assert.doesNotMatch(s,/Сохранить результаты/);});
+test('error and mismatched id rejected',async()=>{for(const load of [async()=>{throw Error('synthetic')},async()=>({id:'other',items:[]})]){let last;await reader().read('a',load,s=>{last=s});assert.equal(last.error,true);assert.equal(last.detail,null);}});
+test('stale and cancelled replies ignored',async()=>{const r=reader();let resolve,last;const p=r.read('a',()=>new Promise(done=>{resolve=done}),s=>{last=s});await r.read('b',async()=>({id:'b',items:[]}),s=>{last=s});resolve({id:'a',items:[]});await p;assert.equal(last.detail.id,'b');let finish;const q=r.read('c',()=>new Promise(done=>{finish=done}),s=>{last=s});r.cancel();finish({id:'c',items:[]});await q;assert.equal(last.loading,true);});

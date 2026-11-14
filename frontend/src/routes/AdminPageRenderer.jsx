@@ -17,6 +17,7 @@ const LessonStudioPage = lazyNamed(() => import("../pages/LessonStudioPage"), "L
 const LearnerImportsPage = lazyNamed(() => import("../pages/LearnerImportsPage"), "LearnerImportsPage");
 const AdminEnrollmentsPage = lazyNamed(() => import("../pages/AdminEnrollmentsPage"), "AdminEnrollmentsPage");
 const DocumentsPage = lazyNamed(() => import("../pages/DocumentsPage"), "DocumentsPage");
+const AdminKnowledgeProtocolsPage = lazyNamed(() => import("../pages/AdminKnowledgeProtocolsPage"), "AdminKnowledgeProtocolsPage");
 const AdminRegistriesPage = lazyNamed(() => import("../pages/AdminRegistriesPage"), "AdminRegistriesPage");
 const GroupsPage = lazyNamed(() => import("../pages/GroupsPage"), "GroupsPage");
 const OrganizationsPage = lazyNamed(() => import("../pages/OrganizationsPage"), "OrganizationsPage");
@@ -227,6 +228,8 @@ export function AdminPageRenderer({
     );
   } else if (page === "documents") {
     content = <DocumentsPage onRefreshDocuments={refreshAdminDocuments} />;
+  } else if (page === "knowledgeProtocols") {
+    content = <AdminKnowledgeProtocolsPage pathname={locationPathname} />;
   } else if (page === "registries") {
     content = <AdminRegistriesPage />;
   } else if (page === "audit") {

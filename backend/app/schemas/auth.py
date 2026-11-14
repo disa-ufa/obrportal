@@ -110,3 +110,12 @@ class CurrentUserResponse(BaseModel):
     is_email_verified: bool
     mfa_enabled: bool
     roles: list[CurrentUserRole]
+
+
+class OwnMintrudPermissions(BaseModel):
+    read: bool
+    write: bool
+
+
+class OwnPermissionsResponse(BaseModel):
+    mintrud: OwnMintrudPermissions

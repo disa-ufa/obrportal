@@ -1,7 +1,7 @@
 const RAW_API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ??
   import.meta.env.VITE_API_URL ??
-  (import.meta.env.PROD ? "" : "http://localhost:8000")
+  (import.meta.env.PROD ? "" : "")
 );
 
 const API_BASE_URL = `${RAW_API_BASE_URL || ""}`.trim().replace(/\/+$/, "");
@@ -23,20 +23,28 @@ export function getStoredToken() {
   );
 }
 
+function clearSignatureAttempts() {
+  for (let i = sessionStorage.length - 1; i >= 0; --i) {
+    const key = sessionStorage.key(i);
+    if (key?.startsWith("obrportal_signature_attempt_v1:")) sessionStorage.removeItem(key);
+  }
+}
 export function storeToken(token, { persist = false } = {}) {
+  clearSignatureAttempts();
   if (persist) {
     localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
     sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-    return;
+  } else {
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   }
-
-  sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
-  localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  notifyAuthChange();
 }
-
 export function clearToken() {
+  clearSignatureAttempts();
   sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  notifyAuthChange();
 }
 
 async function request(path, options = {}) {
@@ -56,7 +64,14 @@ async function request(path, options = {}) {
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data;
+  try { data = text ? JSON.parse(text) : null; }
+  catch (error) {
+    // Proxies can return an HTML 413 before the API sees the request.
+    // Preserve its definitive status for upload retry classification.
+    if (!response.ok) error.status = response.status;
+    throw error;
+  }
 
   if (!response.ok) {
     const message = data?.detail || `HTTP ${response.status}`;
@@ -1243,6 +1258,7 @@ async function downloadAdminRegistrySubmissionAttempt(
   obligationId,
   attemptId
 ) {
+  const downloadOwner = captureAuthSession();
   const token = getStoredToken();
 
   const response = await fetch(
@@ -1284,7 +1300,9 @@ async function downloadAdminRegistrySubmissionAttempt(
     throw error;
   }
 
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const blob = await response.blob();
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
 
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(
@@ -1625,6 +1643,7 @@ export async function markAdminMintrudSubmissionBatchSubmitted(
 export async function downloadAdminMintrudSubmissionBatch(
   batchId
 ) {
+  const downloadOwner = captureAuthSession();
   const token = getStoredToken();
 
   const response = await fetch(
@@ -1670,7 +1689,9 @@ export async function downloadAdminMintrudSubmissionBatch(
     throw error;
   }
 
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const blob = await response.blob();
+  if (!isCurrentAuthSession(downloadOwner)) throw new Error("Сессия изменилась. Скачивание отменено.");
 
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(
@@ -1785,6 +1806,7 @@ export async function recordAdminFrdoSubmissionBatchResults(batchId, payload) {
 }
 
 export async function downloadAdminFrdoSubmissionBatch(batchId) {
+  const owner = captureAuthSession();
   const accessToken = getStoredToken();
   const response = await fetch(
     buildApiUrl(`/api/v1/admin/frdo/batches/${batchId}/download`),
@@ -1814,7 +1836,9 @@ export async function downloadAdminFrdoSubmissionBatch(batchId) {
     throw error;
   }
 
+  if (!isCurrentAuthSession(owner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const blob = await response.blob();
+  if (!isCurrentAuthSession(owner)) throw new Error("Сессия изменилась. Скачивание отменено.");
   const filename = normalizeDownloadedFilename(
     extractDownloadFilename(response, `frdo-po-batch-${batchId}.xlsx`),
     blob
@@ -1895,3 +1919,91 @@ export async function syncAdminMintrudProtocolRegistryFields(protocolId, payload
     body: JSON.stringify(payload),
   });
 }
+
+// Paper-original attestation and private, authenticated scan access.
+export const getAdminMintrudProtocol = id => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`, { cache: "no-store" });
+export const confirmAdminMintrudSignature = (id, payload) => request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/confirm-signature`, { method: "POST", body: JSON.stringify(payload) });
+export function uploadAdminMintrudScan(id, file) {
+  const body = new FormData(); body.append("file", file);
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/signed-scan`, { method: "POST", body });
+}
+let authGeneration = 0;
+let observedAuthToken;
+let authEventsInstalled = false;
+const pendingPrivateDownloads = new Set();
+function invalidateAuthSession() {
+  ++authGeneration;
+  for (const cancel of [...pendingPrivateDownloads]) cancel();
+}
+function notifyAuthChange() {
+  observedAuthToken = (typeof sessionStorage === "undefined" ? "" : getStoredToken()) || "";
+  invalidateAuthSession();
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("obrportal-auth-change"));
+}
+export function captureAuthSession() {
+  if (!authEventsInstalled && typeof window !== "undefined") {
+    window.addEventListener("storage", () => { captureAuthSession(); });
+    authEventsInstalled = true;
+  }
+  const currentToken = (typeof sessionStorage === "undefined" ? "" : getStoredToken()) || "";
+  if (observedAuthToken !== currentToken) { observedAuthToken = currentToken; invalidateAuthSession(); }
+  return { generation: authGeneration, accessToken: currentToken, token: currentToken || null };
+}
+export function isCurrentAuthSession(owner) {
+  const current = captureAuthSession();
+  return owner?.generation === current.generation && (owner.accessToken ?? owner.token) === current.accessToken;
+}
+export async function downloadAdminMintrudScan(id) {
+  const owner = captureAuthSession(), controller = new AbortController();
+  let objectUrl = null, link = null, clicked = false;
+  function release() {
+    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    link?.remove(); pendingPrivateDownloads.delete(cancel);
+  }
+  function cancel() { controller.abort(); release(); }
+  function ensureCurrent() {
+    if (controller.signal.aborted || !isCurrentAuthSession(owner)) {
+      cancel(); throw new DOMException("Download session changed", "AbortError");
+    }
+  }
+  pendingPrivateDownloads.add(cancel);
+  try {
+    ensureCurrent();
+    const response = await fetch(buildApiUrl(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/signed-scan`), {
+      signal: controller.signal, headers: { ...(owner.accessToken ? { Authorization: `Bearer ${owner.accessToken}` } : {}) },
+    });
+    ensureCurrent();
+    if (!response.ok) { const error = new Error("Не удалось скачать скан. Проверьте доступ и состояние хранилища."); error.status = response.status; throw error; }
+    const blob = await response.blob(); ensureCurrent();
+    const suffix = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png" }[blob.type] || "bin";
+    objectUrl = URL.createObjectURL(blob); ensureCurrent();
+    link = document.createElement("a"); link.href = objectUrl; link.download = `signed-protocol-${id}.${suffix}`;
+    document.body.appendChild(link); ensureCurrent(); link.click(); clicked = true;
+  } finally {
+    if (clicked) setTimeout(release, 1000); else release();
+  }
+}
+export async function getMintrudUiPermissions() {
+  const result = await request("/api/v1/auth/me/permissions", { cache: "no-store" });
+  return [result?.mintrud?.read === true ? "mintrud.read" : null,
+    result?.mintrud?.write === true ? "mintrud.write" : null].filter(Boolean);
+}
+
+// P8 GET-only diagnostics; the caller supplies cancellation and a bounded timeout.
+export function getAdminMintrudProtocolCatalog(filters = {}, options = {}) {
+  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== '' && value != null));
+  return request(`/api/v1/admin/mintrud/protocol-drafts/catalog?${query}`, { ...options, method: 'GET' });
+}
+export function getAdminMintrudProtocolComposition(id, options = {}) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/participants`, { ...options, method: 'GET' });
+}
+export function getAdminMintrudProtocolExportPreview(id, options = {}) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}/export-preview`, { ...options, method: 'GET' });
+}
+export function getAdminMintrudProtocolDraft(id, options = {}) {
+  return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`, { ...options, method: 'GET' });
+}
+
+export const getAdminMintrudExportStatus = () => request("/api/v1/admin/mintrud/local-workflow/export-status");
+export const getAdminMintrudLocalReview = (id) => request(`/api/v1/admin/mintrud/local-workflow/obligations/${id}`);
+export const confirmAdminMintrudLocalReview = (id, payload) => request(`/api/v1/admin/mintrud/local-workflow/obligations/${id}/confirm`, { method: "POST", body: JSON.stringify(payload) });

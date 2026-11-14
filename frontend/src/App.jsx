@@ -1,3 +1,4 @@
+import { OwnMintrudProtocolsPage } from "./pages/OwnMintrudProtocolsPage";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
@@ -351,6 +352,8 @@ export default function App() {
     <AdminPageRenderer {...adminPageRendererProps} />
   );
 
+  if (location.pathname === "/mintrud/protocols") return <OwnMintrudProtocolsPage />;
+
   if (isAdminRoute) {
     if (initializingAuth) {
       return (
@@ -363,7 +366,7 @@ export default function App() {
     }
 
     if (!isAdmin) {
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/login" replace state={{ from: location.pathname + location.search + location.hash }} />;
     }
 
     return (
