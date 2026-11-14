@@ -82,7 +82,12 @@ def main() -> None:
             "...options,",
             "headers,",
             "const text = await response.text();",
-            "const data = text ? JSON.parse(text) : null;",
+            "let data;",
+            "try { data = text ? JSON.parse(text) : null; }",
+            "catch (error) {",
+            "if (!response.ok) error.status = response.status;",
+            "throw error;",
+
             "if (!response.ok)",
             "const message = data?.detail || `HTTP ${response.status}`;",
             "const error = new Error(typeof message === \"string\" ? message : (message?.message || JSON.stringify(message)));",

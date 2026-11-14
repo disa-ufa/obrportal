@@ -310,6 +310,10 @@ jobs:
           python scripts/check_backend_smoke_coverage.py
           python scripts/check_no_todo_markers.py
 
+      - name: Run frontend Node unit and SSR regressions
+        run: |
+          python scripts/run_frontend_node_tests.py
+
       - name: Build frontend
         run: |
           docker compose exec -T frontend npm run build

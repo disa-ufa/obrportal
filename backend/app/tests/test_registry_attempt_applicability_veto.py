@@ -137,6 +137,9 @@ async def test_registry_mutation_http_requires_its_own_permission(monkeypatch, r
     monkeypatch.setattr(rbac, "get_user_permission_codes", AsyncMock(return_value={other + ".approve", other + ".export"}))
     from app.services import registry_batch_transaction as batch_tx
     app.dependency_overrides[batch_tx.get_registry_batch_db] = db
+    # Use the exact route dependency for the synthetic RBAC test.
+    if registry == 'mintrud':
+        app.dependency_overrides[admin.get_mintrud_batch_db] = db
     app.dependency_overrides[batch_tx.oauth2_scheme] = lambda: 'synthetic-unit-token'
     monkeypatch.setattr(batch_tx, 'get_current_user', AsyncMock(return_value=await actor()))
     monkeypatch.setattr(batch_tx, 'get_user_permission_codes', rbac.get_user_permission_codes)

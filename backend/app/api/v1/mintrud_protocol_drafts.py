@@ -4,18 +4,27 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from hashlib import sha256
 import json
+import logging
 from typing import Literal
 from uuid import UUID
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, inspect as sa_inspect, select
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.rbac import require_permission
+from app.api.signed_scan_upload_limit import SignedScanUploadLimitRoute
 from app.core.config import settings
+from app.services.mintrud_employer import (
+    resolve_mintrud_employer_from_approval_snapshot, MintrudEmployerResolutionError,
+)
+from app.services.mintrud_reporting_organization import resolve_mintrud_reporting_organization
+
+
 from app.db.session import get_db
 from app.models.audit_event import AuditEvent
 from app.models.base import utcnow
@@ -26,11 +35,34 @@ from app.models.mintrud_registry_context import MintrudRegistryContext
 from app.models.registry_applicability import RegistryApplicabilityRecord
 from app.models.registry_obligation import RegistryObligation
 from app.models.user import User
+from app.api.v1.mintrud_protocol_preview import router as preview_router
 from app.services.mintrud_protocol_reconciliation import reconcile_mintrud_protocol
-from app.services.mintrud_protocol_sync import build_mintrud_sync_plan, apply_mintrud_protocol_sync
+from app.services.mintrud_protocol_sync import build_mintrud_sync_plan, apply_mintrud_protocol_sync, auto_sync_mintrud_after_signing
 from app.services.mintrud_protocol_provenance import mintrud_protocol_sync_evidence
+from app.services.mintrud_protocol_signing import attest_signed_paper_protocol, require_signed_protocol
+from app.services.mintrud_scan_resources import ScanAttempt, write_resource, classify_commit
+from app.services.mintrud_scan_namespace import Namespace, StorageFailure, classify_os
+from app.services.mintrud_protocol_scans import (
+    MAX_SIGNED_SCAN_BYTES, validate_signed_scan, scan_digest,
+    require_scan_storage_path, validated_download_content,
+)
 
-router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"])
+def _protocol_employer(row):
+    """Use the same scenario policy as approved Mintrud exports, without approval."""
+    organization = resolve_mintrud_reporting_organization()
+    return resolve_mintrud_employer_from_approval_snapshot({
+        "registry": "mintrud",
+        "mintrud_context": {
+            "reporting_scenario": row.reporting_scenario,
+            "employer_name": row.employer_name, "employer_inn": row.employer_inn,
+        },
+        "mintrud_reporting_organization": {"name": organization.name, "inn": organization.inn},
+    })
+
+
+router = APIRouter(prefix="/mintrud/protocol-drafts", tags=["mintrud-protocol-drafts"], route_class=SignedScanUploadLimitRoute)
+_logger = logging.getLogger(__name__)
+router.include_router(preview_router)
 
 
 class ProtocolDraftMemberResult(BaseModel):
@@ -83,6 +115,22 @@ def _serialize(protocol: MintrudKnowledgeProtocol, members: list[dict]) -> dict:
         "recorded_at": protocol.recorded_at,
         "recorded_by_user_id": protocol.recorded_by_user_id,
         "recorded_snapshot_sha256": protocol.recorded_snapshot_sha256,
+        "is_signed": bool(
+            protocol.status == "recorded"
+            and protocol.signed_at is not None
+            and protocol.signed_on is not None
+            and protocol.signed_by_user_id
+            and protocol.signing_request_id
+            and protocol.signed_source_sha256 == protocol.recorded_snapshot_sha256
+        ),
+        "signed_at": protocol.signed_at,
+        "signed_on": protocol.signed_on,
+        "signed_by_user_id": protocol.signed_by_user_id,
+        "signed_scan_available": bool(protocol.signed_scan_path),
+        "signed_scan_uploaded_at": protocol.signed_scan_uploaded_at,
+        "signed_scan_size": protocol.signed_scan_size,
+        "signed_scan_media_type": protocol.signed_scan_media_type,
+        "signed_scan_sha256": protocol.signed_scan_sha256,
         "commission_order_number": protocol.commission_order_number,
         "commission_order_date": protocol.commission_order_date,
         "commission_chair": protocol.commission_chair,
@@ -240,6 +288,231 @@ async def linked_protocols_for_obligation(
     }
 
 
+class ProtocolPaperSignatureConfirmation(BaseModel):
+    """Attest existence of an actually signed paper original, not an e-signature."""
+    expected_updated_at: datetime
+    confirmation_id: UUID
+    signed_on: date
+    confirmed_paper_original_signed: Literal[True]
+
+
+@router.post("/{protocol_id}/confirm-signature", response_model=dict)
+async def confirm_protocol_paper_signature(
+    protocol_id: str,
+    payload: ProtocolPaperSignatureConfirmation,
+    request: Request,
+    current_user: User = Depends(require_permission("mintrud.write")),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """Attest paper signature, commit, then best-effort fill safe Mintrud fields.
+
+    Never export or submit anything. Any sync conflict leaves attestation saved.
+    """
+    actor_id = str(sa_inspect(current_user).identity[0])
+    try:
+        # Serializes competing signing requests (and protocol editors/recorders).
+        protocol = await session.scalar(
+            select(MintrudKnowledgeProtocol)
+            .where(MintrudKnowledgeProtocol.id == protocol_id)
+            .with_for_update()
+        )
+        if protocol is None:
+            raise HTTPException(status_code=404, detail="Protocol not found")
+        changed = attest_signed_paper_protocol(
+            protocol,
+            expected_updated_at=payload.expected_updated_at,
+            signed_on=payload.signed_on,
+            actor_user_id=actor_id,
+            request_id=str(payload.confirmation_id),
+        )
+        if not changed:
+            # A valid replay may retry interrupted auto-sync, but cannot
+            # create another signature audit event.
+            await session.rollback()
+        else:
+            session.add(AuditEvent(
+                actor_user_id=actor_id,
+                action="admin.mintrud_protocol_paper_signature_attested",
+                entity_type="mintrud_knowledge_protocol",
+                entity_id=protocol_id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=(request.headers.get("user-agent") or "")[:512],
+                payload={
+                    "request_id": str(payload.confirmation_id),
+                    "signed_on": payload.signed_on.isoformat(),
+                    "source_sha256": protocol.signed_source_sha256,
+                    "kind": "SIGNED_PAPER_ORIGINAL_ATTESTATION_NOT_ELECTRONIC_SIGNATURE",
+                    "scan_uploaded": False,
+                    "registry_synced": False,
+                    "registry_exported": False,
+                },
+            ))
+            # Signing is a separate durable transaction. A subsequent Mintrud
+            # conflict must never roll this confirmation back.
+            await session.commit()
+
+        try:
+            auto_sync = await auto_sync_mintrud_after_signing(
+                session,
+                protocol_id=protocol_id,
+                actor_user_id=actor_id,
+                signing_request_id=str(payload.confirmation_id),
+                request_ip=request.client.host if request.client else None,
+                user_agent=(request.headers.get("user-agent") or "")[:512],
+            )
+        except HTTPException as exc:
+            await session.rollback()
+            auto_sync = {"status": "REVIEW_REQUIRED", "detail": str(exc.detail),
+                         "changed_obligation_ids": [], "approved": False, "exported": False}
+        except Exception:
+            # The signing transaction is already committed and immutable.
+            await session.rollback()
+            _logger.exception("Post-signing Mintrud sync failed for protocol %s", protocol_id)
+            auto_sync = {"status": "RETRY_REQUIRED",
+                         "detail": "Automatic registry synchronization failed; signing remains saved",
+                         "changed_obligation_ids": [], "approved": False, "exported": False}
+
+        detail = await _detail(session, protocol_id)
+        return {**detail, "auto_sync": auto_sync}
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="Conflicting protocol signing request") from exc
+    except ProgrammingError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=503, detail="Signed protocol migration is not installed") from exc
+    except Exception:
+        await session.rollback()
+        raise
+
+
+@router.post("/{protocol_id}/signed-scan", response_model=dict)
+async def upload_signed_protocol_scan(
+    protocol_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_permission("mintrud.write")),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """Attach one immutable optional scan AFTER the paper-signing attestation.
+
+    Persist the file exclusively before its DB pointer. An uncertain DB commit
+    keeps the private file with a durable recovery manifest;
+    deleting it could destroy evidence of a successful but unacknowledged commit.
+    """
+    try:
+        content = await file.read(MAX_SIGNED_SCAN_BYTES + 1)
+        media_type, suffix = validate_signed_scan(file.filename, file.content_type, content)
+    finally:
+        await file.close()
+    actor_id = str(sa_inspect(current_user).identity[0])
+    attempt = None
+    commit_entered = False
+    commit_returned = False
+    try:
+        protocol = await session.scalar(
+            select(MintrudKnowledgeProtocol)
+            .where(MintrudKnowledgeProtocol.id == protocol_id).with_for_update()
+        )
+        if protocol is None:
+            raise HTTPException(status_code=404, detail="Protocol not found")
+        require_signed_protocol(protocol)
+        if protocol.signed_scan_path is not None:
+            raise HTTPException(status_code=409, detail="A signed scan is already attached; replacement is prohibited")
+        if any(getattr(protocol, key, None) is not None for key in (
+            "signed_scan_sha256", "signed_scan_size", "signed_scan_media_type",
+            "signed_scan_uploaded_at", "signed_scan_uploaded_by_user_id",
+        )):
+            raise HTTPException(status_code=409, detail="Partial scan metadata requires review")
+        upload_attempt_id = uuid4().hex
+        relative_path = f"mintrud/signed-protocol-scans/{protocol.id}/{uuid4().hex}{suffix}"
+        attempt = ScanAttempt(relative_path, {
+            "schema_version": 1, "upload_attempt_id": upload_attempt_id,
+            "protocol_id": protocol_id, "storage_path": relative_path,
+            "sha256": scan_digest(content), "size": len(content), "media_type": media_type,
+            "created_at": utcnow().isoformat(), "state": "PENDING_DATABASE_COMMIT",
+        })
+        attempt.publish_manifest()
+        write_resource(attempt.scan, content, attempt.namespace)
+        protocol.signed_scan_path = relative_path
+        protocol.signed_scan_sha256 = scan_digest(content)
+        protocol.signed_scan_size = len(content)
+        protocol.signed_scan_media_type = media_type
+        protocol.signed_scan_uploaded_at = utcnow()
+        protocol.signed_scan_uploaded_by_user_id = actor_id
+        protocol.updated_at = utcnow()
+        session.add(AuditEvent(
+            actor_user_id=actor_id, action="admin.mintrud_protocol_signed_scan_attached",
+            entity_type="mintrud_knowledge_protocol", entity_id=protocol_id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=(request.headers.get("user-agent") or "")[:512],
+            payload={"sha256": protocol.signed_scan_sha256, "size": len(content),
+                "media_type": media_type, "signed_source_sha256": protocol.signed_source_sha256,
+                "upload_attempt_id": upload_attempt_id,
+                "registry_updated": False, "registry_exported": False},
+        ))
+        commit_entered = True
+        await session.commit()
+        commit_returned = True
+        detail = await _detail(session, protocol_id)
+        if not attempt.confirmed():
+            _logger.warning("scan_recovery_required phase=COMMITTED attempt=%s", upload_attempt_id)
+        return detail
+    except Exception as exc:
+        phase = classify_commit(session, commit_entered, commit_returned, exc)
+        if phase != "COMMITTED" and session.sync_session.in_transaction():
+            try:
+                await session.rollback()
+            except Exception:
+                _logger.warning("scan_rollback_unconfirmed phase=%s", phase)
+        if attempt:
+            attempt.retain()
+        if attempt:
+            reason = exc.reason if isinstance(exc, StorageFailure) else classify_os(exc) if isinstance(exc, OSError) else "UNSPECIFIED"
+            recovery_required = any(resource.created for resource in (attempt.scan, attempt.manifest, attempt.temporary))
+            _logger.warning("scan_upload_failed phase=%s error_type=%s reason=%s recovery=%s attempt=%s",
+                phase, type(exc).__name__, reason, recovery_required, attempt.data["upload_attempt_id"])
+        if isinstance(exc, HTTPException):
+            raise
+        if phase == "ROLLED_BACK" or (attempt and (attempt.scan.collision or attempt.manifest.collision)):
+            raise HTTPException(status_code=409, detail="Scan upload conflict; refresh before retrying") from None
+        raise HTTPException(status_code=503, detail="Scan upload incomplete; private recovery review may be required") from None
+    finally:
+        if attempt:
+            attempt.close()
+
+
+@router.get("/{protocol_id}/signed-scan")
+async def download_signed_protocol_scan(
+    protocol_id: str,
+    _: User = Depends(require_permission("mintrud.read")),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    """Authenticated download with path restriction and SHA-256 verification."""
+    protocol = await session.scalar(
+        select(MintrudKnowledgeProtocol).where(MintrudKnowledgeProtocol.id == protocol_id)
+    )
+    if protocol is None:
+        raise HTTPException(status_code=404, detail="Protocol not found")
+    require_signed_protocol(protocol)
+    relative = require_scan_storage_path(str(protocol.id), protocol.signed_scan_path)
+    try:
+        with Namespace() as namespace:
+            data = namespace.read(relative, MAX_SIGNED_SCAN_BYTES)
+    except (OSError, StorageFailure):
+        raise HTTPException(status_code=503, detail="Private scan storage cannot be read safely") from None
+    content, media_type = validated_download_content(protocol, data)
+    suffix = {"application/pdf": ".pdf", "image/jpeg": ".jpg", "image/png": ".png"}[media_type]
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="signed-protocol-{protocol.id}{suffix}"',
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
 @router.get("/{protocol_id}", response_model=dict)
 async def get_protocol_draft(
     protocol_id: str,
@@ -257,8 +530,90 @@ async def get_protocol_draft_print_preview(
 ) -> dict:
     """Read-only draft snapshot for browser printing; never constitutes a signed protocol."""
     draft = await _detail(session, protocol_id)
+    if draft["status"] == "recorded":
+        protocol = await session.scalar(
+            select(MintrudKnowledgeProtocol).where(
+                MintrudKnowledgeProtocol.id == protocol_id
+            )
+        )
+        snapshot = protocol.recorded_snapshot if protocol is not None else None
+
+        if (
+            not isinstance(snapshot, dict)
+            or snapshot.get("kind") != "ADMINISTRATIVELY_RECORDED_COMMISSION_CHECK_NOT_SIGNED_NOT_EXPORTED"
+            or snapshot.get("protocol_id") != protocol_id
+            or snapshot.get("course_id") != draft["course_id"]
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Recorded snapshot is missing or invalid",
+            )
+
+        participants = snapshot.get("participants")
+        if (
+            not isinstance(participants, list)
+            or not 1 <= len(participants) <= 100
+            or len(participants) != draft["participant_count"]
+            or any(
+                not isinstance(p, dict)
+                or not isinstance(p.get("enrollment_id"), str)
+                or not p["enrollment_id"]
+                for p in participants
+            )
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Recorded participants are invalid",
+            )
+
+        recorded_ids = [p["enrollment_id"] for p in participants]
+        current_ids = [
+            p["enrollment_id"] for p in draft["participants"]
+        ]
+        if (
+            len(set(recorded_ids)) != len(recorded_ids)
+            or set(recorded_ids) != set(current_ids)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Recorded participant set differs",
+            )
+
+        canonical = json.dumps(
+            snapshot,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        actual_sha256 = sha256(
+            canonical.encode("utf-8")
+        ).hexdigest()
+
+        if (
+            not protocol.recorded_snapshot_sha256
+            or actual_sha256 != protocol.recorded_snapshot_sha256
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Recorded snapshot integrity failure",
+            )
+
+        return {
+            **snapshot,
+            "status": "recorded",
+            "document_kind": "RECORDED_PREVIEW_ONLY",
+            "is_signed": bool(draft.get("is_signed")),
+            "signed_scan_available": bool(
+                draft.get("signed_scan_available")
+            ),
+            "legal_status": "RECORDED_PRINT_COPY_SIGNATURE_STATUS_SEPARATE",
+        }
+
     if draft["status"] != "draft":
-        raise HTTPException(status_code=409, detail="Only draft preview is supported")
+        raise HTTPException(
+            status_code=409,
+            detail="Only draft preview is supported",
+        )
     course = await session.scalar(select(Course).where(Course.id == draft["course_id"]))
     if course is None:
         raise HTTPException(status_code=404, detail="Protocol program not found")
@@ -270,6 +625,8 @@ async def get_protocol_draft_print_preview(
             MintrudKnowledgeProtocolMember.enrollment_id,
             MintrudRegistryContext.profession_or_position,
             MintrudRegistryContext.employer_name,
+            MintrudRegistryContext.employer_inn,
+            MintrudRegistryContext.reporting_scenario,
         )
         .outerjoin(
             MintrudRegistryContext,
@@ -277,13 +634,15 @@ async def get_protocol_draft_print_preview(
         )
         .where(MintrudKnowledgeProtocolMember.protocol_id == protocol_id)
     )
-    context_by_id = {
-        str(r.enrollment_id): {
-            "profession_or_position": r.profession_or_position,
-            "workplace": r.employer_name,
+    context_by_id = {}
+    for r in rows:
+        try:
+            workplace = _protocol_employer(r).title
+        except MintrudEmployerResolutionError:
+            workplace = None
+        context_by_id[str(r.enrollment_id)] = {
+            "profession_or_position": r.profession_or_position, "workplace": workplace,
         }
-        for r in rows
-    }
     for member in draft["participants"]:
         member.update(context_by_id.get(member["enrollment_id"], {
             "profession_or_position": None, "workplace": None,
@@ -604,6 +963,8 @@ async def _recording_report(session: AsyncSession, protocol: MintrudKnowledgePro
             RegistryObligation.approval_snapshot_json.label("existing_approval_snapshot"),
             MintrudRegistryContext.profession_or_position,
             MintrudRegistryContext.employer_name,
+            MintrudRegistryContext.employer_inn,
+            MintrudRegistryContext.reporting_scenario,
             MintrudRegistryContext.protocol_number.label("manual_protocol_number"),
             MintrudRegistryContext.knowledge_check_date.label("manual_check_date"),
             MintrudRegistryContext.knowledge_check_result.label("manual_check_result"),
@@ -688,8 +1049,16 @@ async def _recording_report(session: AsyncSession, protocol: MintrudKnowledgePro
             add("legacy_result:" + enrollment_id, f"{label}: ранее введённый результат Минтруда отличается от протокола.")
         if not filled(row.profession_or_position):
             add("position:" + enrollment_id, f"{label}: не указана должность / профессия.")
-        if not filled(row.employer_name):
-            add("workplace:" + enrollment_id, f"{label}: не указано место работы.")
+        employer = None
+        try:
+            employer = _protocol_employer(row)
+        except MintrudEmployerResolutionError:
+            if row.reporting_scenario == "employer_self_training":
+                add("central_employer:" + enrollment_id, f"{label}: для самостоятельного обучения заполните центральные реквизиты организации DOCUMENT_ORG_NAME и DOCUMENT_ORG_INN; обратитесь к администратору настроек.")
+            elif row.reporting_scenario == "external_training_provider":
+                add("workplace:" + enrollment_id, f"{label}: укажите название и ИНН работодателя в данных Минтруда слушателя.")
+            else:
+                add("scenario:" + enrollment_id, f"{label}: выберите сценарий обучения в данных Минтруда слушателя.")
         if row.knowledge_check_result not in ("satisfactory", "unsatisfactory"):
             add("result:" + enrollment_id, f"{label}: отсутствует результат комиссии.")
         if not row.knowledge_check_date:
@@ -705,7 +1074,10 @@ async def _recording_report(session: AsyncSession, protocol: MintrudKnowledgePro
             "enrollment_id": enrollment_id, "obligation_id": str(row.obligation_id),
             "user_id": str(row.user_id), "learner_name": row.full_name,
             "profession_or_position": row.profession_or_position,
-            "workplace": row.employer_name,
+            "workplace": employer.title if employer else None,
+            "employer_inn": employer.inn if employer else None,
+            "employer_source": employer.source if employer else None,
+            "reporting_scenario": row.reporting_scenario,
             "knowledge_check_date": row.knowledge_check_date.isoformat() if row.knowledge_check_date else None,
             "knowledge_check_result": row.knowledge_check_result,
         })

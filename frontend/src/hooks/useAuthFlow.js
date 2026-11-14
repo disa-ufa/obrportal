@@ -1,5 +1,5 @@
 import { formatApiError } from "../utils/apiErrors";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   checkAdminRbac,
@@ -10,6 +10,7 @@ import {
   registerUser,
 } from "../api/client";
 import { EMPTY_ADMIN_DATA, userHasRole } from "../utils/adminState";
+import { adminPostLoginDestination } from "../lib/adminPostLoginDestination";
 
 function getPostAuthPublicPage(user) {
   if (userHasRole(user, "org_rep")) {
@@ -44,6 +45,7 @@ export function useAuthFlow({
   completePendingEnrollmentIfNeeded,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   async function bootstrapAuthState() {
     setInitializingAuth(true);
@@ -109,7 +111,7 @@ export function useAuthFlow({
       if (userHasRole(currentUser, "admin")) {
         setCurrentPage("dashboard");
         await loadAdminData();
-        navigate("/admin", { replace: true });
+        navigate(adminPostLoginDestination(location.state?.from), { replace: true });
       } else {
         setAdminData(EMPTY_ADMIN_DATA);
         setAdminDataLoadedAt("");

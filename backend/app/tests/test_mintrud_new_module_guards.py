@@ -111,16 +111,16 @@ def _member(verdict="missing_target_fields"):
 
 def test_mintrud_sync_rejects_unrecorded_results():
     allowed, reason = _eligible(
-        _member(), "pending_data", recorded=False
+        _member(), "pending_data", signed=False
     )
 
     assert allowed is False
-    assert reason == "protocol_not_recorded"
+    assert reason == "protocol_not_signed"
 
 
 def test_mintrud_sync_rejects_approved_obligation():
     allowed, reason = _eligible(
-        _member(), "approved", recorded=True
+        _member(), "approved", signed=True
     )
 
     assert allowed is False
@@ -132,7 +132,7 @@ def test_mintrud_sync_preserves_protected_history():
     member["history_reasons"] = ["approval"]
 
     allowed, reason = _eligible(
-        member, "pending_data", recorded=True
+        member, "pending_data", signed=True
     )
 
     assert allowed is False
@@ -141,7 +141,7 @@ def test_mintrud_sync_preserves_protected_history():
 
 def test_mintrud_sync_only_fills_eligible_empty_fields():
     allowed, reason = _eligible(
-        _member(), "pending_data", recorded=True
+        _member(), "pending_data", signed=True
     )
 
     assert allowed is True
@@ -205,7 +205,7 @@ async def test_historical_apply_denied_on_production_before_database_io(
     # must reject the request before any database interaction.
     with pytest.raises(
         HistoricalMintrudReconciliationError,
-        match="historical.apply_disabled",
+        match=r"^historical\.local_target_required$",
     ):
         await reconcile_historical_mintrud(
             session=object(),

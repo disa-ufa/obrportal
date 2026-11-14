@@ -198,7 +198,8 @@ def main() -> None:
     require_contains(
         "frontend/src/hooks/useAuthFlow.js",
         [
-            'import { useNavigate } from "react-router-dom";',
+            'import { useLocation, useNavigate } from "react-router-dom";',
+            'import { adminPostLoginDestination } from "../lib/adminPostLoginDestination";',
             'checkAdminRbac,',
             'clearToken,',
             'getCurrentUser,',
@@ -215,6 +216,7 @@ def main() -> None:
             'export function useAuthFlow',
             'completePendingEnrollmentIfNeeded,',
             'const navigate = useNavigate();',
+            'const location = useLocation();',
             'async function bootstrapAuthState()',
             'const token = getStoredToken();',
             'clearToken();',
@@ -230,6 +232,7 @@ def main() -> None:
             'await login(email, password, { persist: rememberMe });',
             'const currentUser = await getCurrentUser();',
             'await completePendingEnrollmentIfNeeded();',
+            'navigate(adminPostLoginDestination(location.state?.from), { replace: true });',
             'navigate(getPostAuthPublicPath(currentUser), { replace: true });',
             'async function handleRbacCheck()',
             'const data = await checkAdminRbac();',

@@ -9,32 +9,26 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
-from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
 from app.api.v1.rbac import get_user_permission_codes
-from app.core.config import settings
 from app.db.session import AsyncSessionLocal, get_db
 from app.models.role import Role, UserRole
 from app.models.user import User
 from app.services.registry_historical_mintrud_reconciliation import (
     HistoricalMintrudReconciliationError,
     reconcile_historical_mintrud,
+    require_historical_local_target,
 )
 
 
 def require_local_clone() -> None:
-    url = make_url(settings.database_url)
+    try:
+        require_historical_local_target()
+    except HistoricalMintrudReconciliationError as exc:
+        raise HTTPException(status_code=404, detail="Not found") from exc
 
-    if (
-        settings.environment != "local"
-        or url.drivername != "postgresql+asyncpg"
-        or url.host != "postgres"
-        or url.database != "obrportal_prodclone_20261101"
-        or bool(url.query)
-    ):
-        raise HTTPException(status_code=404, detail="Not found")
 
 
 router = APIRouter(

@@ -3,6 +3,8 @@ const REAPPROVE = "Проверьте данные и нажмите «Повт�
 // Only fixed messages are displayed: API errors can include XML values or paths.
 export function formatMintrudError(error, readinessLabels = {}) {
   const detail = error?.payload?.detail;
+  if (detail?.code === "mintrud.batch_selection_changed") return "Готовность выбранных записей изменилась. Список обновлён; проверьте применимость, утверждение и историю.";
+  if (/registry\.applicability|registry\.manual_authority/.test(typeof detail === "string" ? detail : detail?.code || "")) return "Применимость не подтверждена. Откройте проверку применимости; исторические записи требуют отдельной сверки.";
   if (detail?.code === "registry.batch_export.disabled") return "Пакетная выгрузка отключена в этой среде. История доступна для просмотра.";
   const issues = detail?.issues || detail?.readiness_errors || [];
   if (issues.length) {
