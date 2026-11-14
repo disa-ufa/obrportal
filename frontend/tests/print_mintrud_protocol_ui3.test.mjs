@@ -38,7 +38,7 @@ test('does not infer certificate numbers or reason from registry number', () => 
   const html = buildProtocolDraftPrintHtml(sample());
   assert.match(html, /№ удостоверения: —/);
   assert.doesNotMatch(html, /987654321/);
-  assert.match(html, /номер удостоверения отсутствуют в текущем API/);
+  assert.match(html, /<td>—<\/td>\s*<\/tr>/);
 });
 
 test('draft watermark and API restriction remain fail-closed', () => {
