@@ -205,7 +205,7 @@ async def test_historical_apply_denied_on_production_before_database_io(
     # must reject the request before any database interaction.
     with pytest.raises(
         HistoricalMintrudReconciliationError,
-        match="historical.apply_disabled",
+        match=r"^historical\.local_target_required$",
     ):
         await reconcile_historical_mintrud(
             session=object(),
