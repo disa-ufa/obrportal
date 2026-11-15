@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 
 from app.services import mintrud_local_workflow as workflow
+from app.services.compliance_registry_approval import fingerprint_registry_approval_snapshot
 
 
 class Rows:
@@ -65,11 +66,17 @@ async def test_reapproval_readiness_respects_actual_replay_guard(
     elif case == "absent_current":
         current_event = None
 
+    current_snapshot = {"synthetic": "current"}
+    approved_snapshot = (
+        {"synthetic": "previous"} if case == "stale_approval" else current_snapshot
+    )
     obligation = SimpleNamespace(
         id=obligation_id,
         registry="mintrud",
         enrollment_id=str(uuid4()),
         approval_event_id=current_event,
+        approval_snapshot_json=approved_snapshot,
+        approval_fingerprint=fingerprint_registry_approval_snapshot(approved_snapshot),
         status="approved",
         submitted_at=None,
         accepted_at=None,
@@ -90,7 +97,8 @@ async def test_reapproval_readiness_respects_actual_replay_guard(
         registry="mintrud",
         enrollment_id=obligation.enrollment_id,
         source="auto",
-        input_fingerprint=current.fingerprint,
+        input_fingerprint="b" * 64 if case == "stale_applicability" else current.fingerprint,
+        reason=current.evaluation.reason,
         rule_code="synthetic_rule",
         rule_version="v1",
         decision="required",
@@ -121,17 +129,6 @@ async def test_reapproval_readiness_respects_actual_replay_guard(
         current_inputs,
     )
 
-    def applicability_policy(**kwargs):
-        if case == "stale_applicability":
-            raise ValueError("registry.applicability_stale")
-        return (object(),)
-
-    monkeypatch.setattr(
-        workflow,
-        "require_current_registry_batch_applicability",
-        applicability_policy,
-    )
-
     monkeypatch.setattr(
         workflow,
         "evaluate_registry_readiness",
@@ -144,15 +141,7 @@ async def test_reapproval_readiness_respects_actual_replay_guard(
     monkeypatch.setattr(
         workflow,
         "build_registry_approval_snapshot",
-        lambda **kwargs: {},
-    )
-
-    monkeypatch.setattr(
-        workflow,
-        "evaluate_registry_approval",
-        lambda *args, **kwargs: SimpleNamespace(
-            is_current=(case != "stale_approval")
-        ),
+        lambda **kwargs: current_snapshot,
     )
 
     monkeypatch.setattr(
@@ -165,8 +154,7 @@ async def test_reapproval_readiness_respects_actual_replay_guard(
         lambda: None,
     )
 
-    # Intentionally do not replace require_unexported_approval_events.
-    # Exercise the actual production replay decision.
+    # Exercise the real approval, P0 applicability, and replay checks.
     general_session = SyntheticSession(obligation, decision, previous)
     general, _, _ = await workflow.read_review(
         general_session,
@@ -182,6 +170,11 @@ async def test_reapproval_readiness_respects_actual_replay_guard(
 
     assert general["batch_eligible"] is expected_general
     assert local["batch_eligible"] is expected_local
+    if case == "stale_approval":
+        assert general["block_reason"] == "approval.current_data_fingerprint_mismatch"
+    elif case == "stale_applicability":
+        assert general["approval_current"] is True
+        assert general["block_reason"] == "registry.applicability_stale"
 
     assert general["read_only"] is True
     assert general["not_authorization_for_export"] is True
