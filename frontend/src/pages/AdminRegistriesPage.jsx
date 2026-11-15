@@ -1,3 +1,4 @@
+import MintrudBatchHistory from "../components/admin/registries/MintrudBatchHistory";
 import { useEffect, useState } from "react";
 import { captureAuthSession } from "../api/client";
 import FrdoRegistryWorkspace from "./FrdoRegistryWorkspace";
@@ -35,6 +36,7 @@ function RegistrySession() {
         <h2 className="text-lg font-bold">Партии и отправки · Минтруд</h2>
         <div role="group" aria-label="Реестр партий"><button onClick={() => navigate("frdo", "batches")}>ФРДО · XLSX</button><button onClick={() => navigate("mintrud", "batches")}>Минтруд · XML v1.0.9</button></div>
         <p>Режим просмотра партии не предоставляет право экспорта. Рабочие действия доступны в разделе Минтруд.</p>
+        <MintrudBatchHistory onSelect={id => navigate("mintrud", "batches", id)} />
         {route.batch && <SelectedRegistryBatch key={`mintrud:${route.batch}`} registry="mintrud" id={route.batch} onClose={() => navigate("mintrud", "batches")} />}
       </> : <MainMintrudRegistriesPage onFrdo={() => navigate("frdo")} />}
     </section>}

@@ -1,4 +1,5 @@
-"""Local-only read-only diagnostics and explicitly confirmed rule persistence."""
+"""Export diagnostics and strictly local applicability confirmation."""
+from contextlib import aclosing
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,15 +14,72 @@ from app.services.registry_batch_transaction import get_registry_batch_db
 from app.services.registry_release_gate import require_mintrud_batch_exports_enabled
 from app.services.mintrud_local_workflow import require_local_workspace, read_review, confirm_review
 
-router=APIRouter(prefix='/admin/mintrud/local-workflow',tags=['admin'])
+router=APIRouter(prefix='/admin/mintrud',tags=['admin'])
 
-async def readonly_db():
+async def export_readonly_db():
     async with AsyncSession(engine,autoflush=False,expire_on_commit=False) as session:
         try:
             await session.execute(text('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'))
-            await require_local_workspace(session)
             yield session
         finally: await session.rollback()
+
+async def readonly_db():
+    async with aclosing(export_readonly_db()) as sessions:
+        async for session in sessions:
+            await require_local_workspace(session)
+            yield session
+
+
+@router.get('/export-status')
+async def batch_export_status(
+    _=Depends(require_permission('mintrud.export')),
+    session=Depends(export_readonly_db),
+):
+    """Permission and environment only; POST repeats all record-level guards."""
+    try:
+        await require_mintrud_batch_exports_enabled(session)
+    except (HTTPException, SQLAlchemyError, OSError, TimeoutError):
+        return {'enabled': False, 'read_only': True,
+                'message': 'Разрешение на создание XML не подтверждено.'}
+    return {'enabled': True, 'read_only': True,
+            'message': 'Создание XML разрешено только для записей, прошедших серверные проверки.'}
+
+
+@router.get('/obligations/{obligation_id}/export-readiness')
+async def batch_export_readiness(
+    obligation_id: UUID,
+    _=Depends(require_permission('mintrud.export')),
+    session=Depends(export_readonly_db),
+):
+    # Row eligibility is read-only. Environment authorization is checked by
+    # export-status and again by the actual batch POST.
+    try:
+        result, obligation, _ = await read_review(session, str(obligation_id), general_export=True)
+        raw_event = getattr(obligation, 'approval_event_id', None)
+        event_id = str(raw_event) if raw_event is not None else None
+        try:
+            parsed = UUID(event_id)
+            valid_event = parsed.version == 4 and str(parsed) == event_id
+        except (ValueError, TypeError, AttributeError):
+            valid_event = False
+
+        eligible = result['batch_eligible'] is True and valid_event
+        reason = result.get('block_reason')
+        if not valid_event and reason in (None, 'registry.approval_history_unverified'):
+            reason = 'approval.event_unverified'
+        return {
+            'obligation_id': str(obligation_id),
+            'approval_event_id': event_id if eligible else None,
+            'batch_eligible': eligible,
+            'block_reason': None if eligible else reason or 'mintrud.readiness_unverified',
+            'calculated_decision': result.get('calculated_decision'),
+            'issue_codes': list(dict.fromkeys(issue['code'] for issue in result.get('issues', ()))),
+            'read_only': True,
+            'not_authorization_for_export': True,
+        }
+    except (ValueError, SQLAlchemyError, OSError, TimeoutError) as exc:
+        raise HTTPException(409, 'Готовность к экспорту не подтверждена.') from exc
+
 
 async def confirm_user(token=Depends(oauth2_scheme),session=Depends(get_registry_batch_db)):
     user=await get_current_user(token=token,session=session)
@@ -31,7 +89,7 @@ async def confirm_user(token=Depends(oauth2_scheme),session=Depends(get_registry
         raise HTTPException(403,'Требуется администратор с правами просмотра и утверждения Минтруда.')
     return user
 
-@router.get('/export-status')
+@router.get('/local-workflow/export-status')
 async def export_status(_=Depends(require_permission('mintrud.read')),session=Depends(readonly_db)):
     try:
         await require_mintrud_batch_exports_enabled(session)
@@ -39,7 +97,7 @@ async def export_status(_=Depends(require_permission('mintrud.read')),session=De
         return {'enabled':False,'code':'registry.batch_export.disabled','message':'Создание XML-партий отключено или идентичность локальной базы не подтверждена. Подготовка данных и просмотр истории доступны.','read_only':True}
     return {'enabled':True,'code':'mintrud.local_export.available','message':'Локальное создание XML разрешено. Готовность, применимость, утверждение и история каждой записи проверяются отдельно.','read_only':True}
 
-@router.get('/obligations/{obligation_id}')
+@router.get('/local-workflow/obligations/{obligation_id}')
 async def review(obligation_id:UUID,_=Depends(require_permission('mintrud.read')),session=Depends(readonly_db)):
     try: return (await read_review(session,str(obligation_id)))[0]
     except (ValueError,SQLAlchemyError) as exc:
@@ -51,7 +109,7 @@ class ConfirmRequest(BaseModel):
     expected_input_fingerprint:str=Field(pattern=r'^[a-f0-9]{64}$')
     confirmed:bool
 
-@router.post('/obligations/{obligation_id}/confirm')
+@router.post('/local-workflow/obligations/{obligation_id}/confirm')
 async def confirm(obligation_id:UUID,body:ConfirmRequest,user=Depends(confirm_user),session=Depends(get_registry_batch_db)):
     if body.confirmed is not True: raise HTTPException(422,'Требуется явное подтверждение расчёта.')
     try:

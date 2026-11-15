@@ -9,6 +9,7 @@ import { protocolLocation, navigateProtocol } from "../utils/mintrudProtocolPrev
 import * as mainRegistryApi from "../api/client";
 import { parseMintrudParticipantLink, resolveMintrudParticipantObligation } from "../lib/mintrudRegistryParticipantLink";
 import { getAdminCourses, getAdminCourseDetail, getAdminMintrudLinkedProtocols } from "../api/client";
+import RegistryAutomaticApplicability from "../components/admin/RegistryAutomaticApplicability";
 import { bindRegistrySession } from "../utils/registrySession";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { FrdoPoContextForm } from "../components/admin/FrdoPoContextForm";
@@ -17,7 +18,8 @@ import { FrdoPoBatchesPanel } from "../components/admin/FrdoPoBatchesPanel";
 import { MintrudProtocolCandidatesPanel } from "../components/admin/MintrudProtocolCandidatesPanel";
 import { MintrudProtocolDraftsPanel } from "../components/admin/MintrudProtocolDraftsPanel";
 import { MintrudLinkedProtocols } from "../components/admin/MintrudLinkedProtocols";
-import { formatMintrudError, prepareAndDownloadMintrudBatch } from "../utils/mintrudWorkflow";
+import { formatMintrudError, prepareAndDownloadMintrudBatch, verifyMintrudExportSelection, createMintrudBatchWithDefiniteRejection } from "../utils/mintrudWorkflow";
+import { createMintrudBatchCreateJournal, validMintrudApprovalEventId, withMintrudBatchCreateLock } from "../utils/mintrudBatchCreateJournal.js";
 
 
 const MINTRUD_RESULT_PENDING_KEY =
@@ -336,6 +338,50 @@ const READINESS_LABELS = {
   "mintrud.reporting_organization_inn_missing": "\u041d\u0435 \u0437\u0430\u0434\u0430\u043d \u0418\u041d\u041d \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438, \u043e\u0442 \u0438\u043c\u0435\u043d\u0438 \u043a\u043e\u0442\u043e\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u0430\u044e\u0442\u0441\u044f \u0441\u0432\u0435\u0434\u0435\u043d\u0438\u044f \u0432 \u041c\u0438\u043d\u0442\u0440\u0443\u0434.",
 
 };
+
+const BATCH_READINESS_MESSAGES = {
+  unverified: "Не удалось подтвердить готовность. Обновите список и повторите проверку.",
+  "approval.status_not_approved": "Сначала утвердите запись.",
+  "approval.event_unverified": "Нет подтверждённого события утверждения. Требуется сверка утверждения.",
+  "approval.missing_snapshot": "У утверждения отсутствует сохранённый снимок данных.",
+  "approval.missing_fingerprint": "У утверждения отсутствует контрольная сумма.",
+  "approval.invalidated": "Утверждение потеряло актуальность. Проверьте данные записи.",
+  "approval.stored_snapshot_fingerprint_mismatch": "Контрольная сумма утверждённого снимка не совпадает. Требуется сверка.",
+  "approval.current_data_fingerprint_mismatch": "Текущие данные отличаются от утверждённых. Проверьте актуальность утверждения.",
+  "registry.applicability_missing": "Автоматическое решение о применимости не сохранено.",
+  "registry.applicability_stale": "Решение о применимости устарело после изменения исходных данных.",
+  "registry.applicability_rule_mismatch": "Сохранённое решение расходится с текущим правилом применимости.",
+  "registry.applicability_needs_review": "Применимость требует отдельного рассмотрения.",
+  "registry.applicability_not_required": "По сохранённому решению передача сведений не требуется.",
+  "registry.manual_authority_not_reviewed": "Ручное решение требует отдельной сверки применимости.",
+  "registry.legacy_decision_unverified": "Историческое решение о применимости требует сверки.",
+  "registry.approval_already_exported": "Это утверждение уже включено в пакет.",
+  "registry.approval_history_unverified": "История выгрузки не подтверждена. Требуется сверка.",
+};
+
+function mintrudBatchBlockMessage(review) {
+  if (review.batch_eligible === true) return BATCH_READINESS_MESSAGES["approval.event_unverified"];
+  if (review.block_reason === "registry.current_rule_not_required") {
+    return review.calculated_decision === "needs_review"
+      ? BATCH_READINESS_MESSAGES["registry.applicability_needs_review"]
+      : "По текущему правилу передача сведений не требуется.";
+  }
+  if (review.block_reason === "mintrud.data_not_ready") {
+    const issues = Array.isArray(review.issue_codes) ? review.issue_codes : [];
+    const labels = issues.map(code => READINESS_LABELS[code]).filter(Boolean);
+    return labels[0] || "Реквизиты XML не прошли проверку. Проверьте данные Минтруда и программу курса.";
+  }
+  return BATCH_READINESS_MESSAGES[review.block_reason] || BATCH_READINESS_MESSAGES.unverified;
+}
+
+function mintrudUnapprovedBatchMessage(obligation) {
+  if (obligation.status === "not_required") return "Передача сведений не требуется.";
+  if (["exported", "submitted", "accepted", "rejected", "correction_required"].includes(obligation.status)) {
+    return "Запись уже имеет историю выгрузки. Проверьте её статус.";
+  }
+  return obligation.readiness_errors?.map(issue => READINESS_LABELS[issue?.code]).find(Boolean)
+    || BATCH_READINESS_MESSAGES["approval.status_not_approved"];
+}
 
 function formatReadinessIssue(item) {
   if (!item) {
@@ -1401,7 +1447,7 @@ function pilotRegistryFacetOptions(rows, facet) {
 }
 
 export function MainMintrudRegistriesPage({ onFrdo }) {
-  const ownedApi = useMemo(() => bindRegistrySession(Object.fromEntries(["getAdminMintrudExportStatus", "getAdminMintrudLocalReview", "confirmAdminMintrudLocalReview", "approveAdminFrdoObligation", "approveAdminMintrudObligation", "prepareAdminMintrudSubmissionBatch", "downloadAdminMintrudSubmissionBatch", "getAdminMintrudSubmissionBatch", "getAdminMintrudSubmissionBatches", "markAdminMintrudSubmissionBatchImported", "markAdminMintrudSubmissionBatchSubmitted", "reopenAdminFrdoObligation", "reopenAdminMintrudObligation", "downloadAdminFrdoSubmissionAttempt", "downloadAdminMintrudSubmissionAttempt", "getAdminCourses", "getAdminCourseDetail", "getAdminFrdoObligations", "getAdminFrdoSubmissionAttempts", "getAdminMintrudObligations", "getAdminMintrudLinkedProtocols", "getAdminMintrudSubmissionAttempts", "markAdminFrdoSubmissionAttemptSubmitted", "markAdminMintrudSubmissionAttemptSubmitted", "recordAdminFrdoSubmissionAttemptResult", "recordAdminMintrudSubmissionAttemptResult", "recordAdminMintrudSubmissionBatchResult", "updateAdminFrdoObligationContext", "updateAdminMintrudObligationContext", "validateAdminFrdoObligation", "validateAdminMintrudObligation"].map(name => [name, mainRegistryApi[name]]))), []);
+  const ownedApi = useMemo(() => bindRegistrySession(Object.fromEntries(["getAdminMintrudExportReadiness", "getAdminMintrudExportStatus", "getAdminMintrudLocalReview", "confirmAdminMintrudLocalReview", "approveAdminFrdoObligation", "approveAdminMintrudObligation", "prepareAdminMintrudSubmissionBatch", "downloadAdminMintrudSubmissionBatch", "getAdminMintrudSubmissionBatch", "getAdminMintrudSubmissionBatches", "markAdminMintrudSubmissionBatchImported", "markAdminMintrudSubmissionBatchSubmitted", "reopenAdminFrdoObligation", "reopenAdminMintrudObligation", "downloadAdminFrdoSubmissionAttempt", "downloadAdminMintrudSubmissionAttempt", "getAdminCourses", "getAdminCourseDetail", "getAdminFrdoObligations", "getAdminFrdoSubmissionAttempts", "getAdminMintrudObligations", "getAdminMintrudLinkedProtocols", "getAdminMintrudSubmissionAttempts", "markAdminFrdoSubmissionAttemptSubmitted", "markAdminMintrudSubmissionAttemptSubmitted", "recordAdminFrdoSubmissionAttemptResult", "recordAdminMintrudSubmissionAttemptResult", "recordAdminMintrudSubmissionBatchResult", "updateAdminFrdoObligationContext", "updateAdminMintrudObligationContext", "validateAdminFrdoObligation", "validateAdminMintrudObligation"].map(name => [name, mainRegistryApi[name]]))), []);
   const { approveAdminFrdoObligation, approveAdminMintrudObligation, prepareAdminMintrudSubmissionBatch, downloadAdminMintrudSubmissionBatch, getAdminMintrudSubmissionBatch, getAdminMintrudSubmissionBatches, markAdminMintrudSubmissionBatchImported, markAdminMintrudSubmissionBatchSubmitted, reopenAdminFrdoObligation, reopenAdminMintrudObligation, downloadAdminFrdoSubmissionAttempt, downloadAdminMintrudSubmissionAttempt, getAdminCourses, getAdminFrdoObligations, getAdminFrdoSubmissionAttempts, getAdminMintrudObligations, getAdminMintrudLinkedProtocols, getAdminMintrudSubmissionAttempts, markAdminFrdoSubmissionAttemptSubmitted, markAdminMintrudSubmissionAttemptSubmitted, recordAdminFrdoSubmissionAttemptResult, recordAdminMintrudSubmissionAttemptResult, recordAdminMintrudSubmissionBatchResult, updateAdminFrdoObligationContext, updateAdminMintrudObligationContext, validateAdminFrdoObligation, validateAdminMintrudObligation } = ownedApi;
   const [activeRegistry, setActiveRegistry] = useState("mintrud");
   const [protocolRoute, setProtocolRoute] = useState(protocolLocation);
@@ -1504,6 +1550,8 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
 
   const [workflowNotice, setWorkflowNotice] = useState("");
   const [exportStatus, setExportStatus] = useState(null);
+  const batchInFlight = useRef(false);
+  const batchCreateJournal = useMemo(() => createMintrudBatchCreateJournal(), []);
   const [batchEligibility, setBatchEligibility] = useState({});
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState("");
@@ -1515,10 +1563,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
   const [participantDeepLink, setParticipantDeepLink] = useState(null);
   const openedParticipantDeepLink = useRef("");
   const [attemptsById, setAttemptsById] = useState({});
-  const [
-    selectedMintrudIds,
-    setSelectedMintrudIds,
-  ] = useState([]);
+  const [selectedMintrudApprovals, setSelectedMintrudApprovals] = useState({});
 
   const [
     mintrudBatches,
@@ -1559,41 +1604,13 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
     new Set(mintrudResultPendingIds)
   );
 
-  const selectedMintrudIdSet = useMemo(
-    () => new Set(
-      selectedMintrudIds
-    ),
-    [selectedMintrudIds]
+  const selectableMintrudIds = filteredObligations
+    .filter(({ id, status }) => status === "approved" && batchEligibility[id]?.approvalEventId)
+    .map(({ id }) => id);
+  const selectedMintrudIdsInVisibleOrder = selectableMintrudIds.filter(
+    id => selectedMintrudApprovals[id] === batchEligibility[id].approvalEventId,
   );
-
-  const selectableMintrudIds = useMemo(
-    () => filteredObligations
-      .filter((obligation) => (
-        obligation.status === "approved" && batchEligibility[obligation.id] === true
-      ))
-      .map((obligation) => (
-        obligation.id
-      )),
-    [filteredObligations, batchEligibility]
-  );
-
-  const selectedMintrudIdsInVisibleOrder = useMemo(
-    () => filteredObligations
-      .filter((obligation) => (
-        obligation.status === "approved" && batchEligibility[obligation.id] === true
-        && selectedMintrudIdSet.has(
-          obligation.id
-        )
-      ))
-      .map((obligation) => (
-        obligation.id
-      )),
-    [
-      filteredObligations,
-      selectedMintrudIdSet,
-      batchEligibility,
-    ]
-  );
+  const selectedMintrudIdSet = new Set(selectedMintrudIdsInVisibleOrder);
 
   const allSelectableMintrudSelected = (
     selectableMintrudIds.length > 0
@@ -1662,16 +1679,33 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
       if (requestId !== latestLoadRef.current) return;
       setObligations(visible);
       if (activeRegistry === "mintrud") {
-        const gate = await ownedApi.getAdminMintrudExportStatus().catch(() => ({enabled: false, message: "Не удалось проверить доступность экспорта. Создание партий заблокировано."}));
-        const entries = await Promise.all(visible.filter(item => item.status === "approved").map(async item => {
-          try { const review = await ownedApi.getAdminMintrudLocalReview(item.id); return [item.id, review.batch_eligible === true]; }
-          catch { return [item.id, false]; }
-        }));
+        const [gate, entries] = await Promise.all([
+          ownedApi.getAdminMintrudExportStatus().catch(() => null),
+          Promise.all(visible.filter(item => item.status === "approved").map(async ({ id }) => {
+            try {
+              const review = await ownedApi.getAdminMintrudExportReadiness(id);
+              if (review?.obligation_id !== id || review.read_only !== true || review.not_authorization_for_export !== true) {
+                return [id, { reason: BATCH_READINESS_MESSAGES.unverified }];
+              }
+              if (review.batch_eligible === true && validMintrudApprovalEventId(review.approval_event_id)) {
+                return [id, { approvalEventId: review.approval_event_id }];
+              }
+              return [id, { reason: mintrudBatchBlockMessage(review) }];
+            } catch (error) {
+              const reason = error?.status === 403 ? "Нет права на экспорт Минтруда."
+                : error?.status === 401 ? "Войдите снова, чтобы проверить готовность записи."
+                : BATCH_READINESS_MESSAGES.unverified;
+              return [id, { reason }];
+            }
+          })),
+        ]);
         if (requestId !== latestLoadRef.current) return;
-        setExportStatus(gate); setBatchEligibility(Object.fromEntries(entries));
-        setSelectedMintrudIds((current) => current.filter(
-          (id) => visible.some((item) => item.id === id)
-        ));
+        const eligibility = Object.fromEntries(entries);
+        setExportStatus(gate?.read_only === true ? gate : null);
+        setBatchEligibility(eligibility);
+        setSelectedMintrudApprovals(current => Object.fromEntries(Object.entries(current).filter(
+          ([id, event]) => eligibility[id]?.approvalEventId === event,
+        )));
       }
 
       if (
@@ -1694,7 +1728,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
     } catch (err) {
       if (requestId === latestLoadRef.current) {
         setObligations([]);
-        setSelectedMintrudIds([]);
+        setSelectedMintrudApprovals({});
         setError(formatApiError(err, activeRegistry));
       }
     } finally {
@@ -1846,39 +1880,29 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
     );
   }
 
-  function toggleMintrudBatchSelection(
-    obligationId
-  ) {
-    setSelectedMintrudIds(
-      (current) => (
-        current.includes(
-          obligationId
-        )
-          ? current.filter(
-            (item) => (
-              item !== obligationId
-            )
-          )
-          : [
-            ...current,
-            obligationId,
-          ]
-      )
-    );
+  function toggleMintrudBatchSelection(obligationId, checked) {
+    const event = batchEligibility[obligationId]?.approvalEventId;
+    if (busyKey || loading || !event) return;
+    setSelectedMintrudApprovals(current => {
+      if (checked) return { ...current, [obligationId]: event };
+      const next = { ...current };
+      delete next[obligationId];
+      return next;
+    });
   }
 
   function selectAllMintrudBatch() {
-    setSelectedMintrudIds([
-      ...selectableMintrudIds,
-    ]);
+    setSelectedMintrudApprovals(Object.fromEntries(
+      selectableMintrudIds.map(id => [id, batchEligibility[id].approvalEventId]),
+    ));
   }
 
   function clearMintrudBatchSelection() {
-    setSelectedMintrudIds([]);
+    setSelectedMintrudApprovals({});
   }
 
   async function prepareMintrudBatch() {
-    if (exportStatus?.enabled !== true || loading || busyKey) {
+    if (batchInFlight.current || exportStatus?.enabled !== true || loading || busyKey) {
       setError(exportStatus?.message || "Доступность экспорта не подтверждена."); return;
     }
     const obligationIds = [
@@ -1893,23 +1917,40 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
       return;
     }
 
-    await withAction(
-      "mintrud-batch",
-      async () => {
-        const gate = await ownedApi.getAdminMintrudExportStatus();
-        setExportStatus(gate);
-        if (gate.enabled !== true) throw { payload: { detail: { code: "registry.batch_export.disabled" } } };
-        const reviews = await Promise.all(obligationIds.map(id => ownedApi.getAdminMintrudLocalReview(id)));
-        if (reviews.some(item => item.batch_eligible !== true)) { await load(); throw {payload: {detail: {code: "mintrud.batch_selection_changed"}}}; }
-        await prepareAndDownloadMintrudBatch({
-          ids: obligationIds,
-          create: prepareAdminMintrudSubmissionBatch,
-          download: downloadAdminMintrudSubmissionBatch,
-          reload: load,
-          clearSelection: () => setSelectedMintrudIds([]),
-        });
-      }
-    );
+    batchInFlight.current = true;
+    try {
+      await withAction(
+        "mintrud-batch",
+        async () => {
+          await withMintrudBatchCreateLock(async () => {
+            setExportStatus(null);
+            const verified = await verifyMintrudExportSelection(
+              ownedApi, obligationIds, { requireApprovalEvents: true }
+            );
+            setExportStatus(verified.gate);
+            if (verified.targets.some(target => selectedMintrudApprovals[target.obligation_id] !== target.approval_event_id)) {
+              await load();
+              throw { payload: { detail: { code: "mintrud.batch_selection_changed" } } };
+            }
+            await prepareAndDownloadMintrudBatch({
+              ids: obligationIds,
+              create: async ids => {
+                setSelectedMintrudApprovals({});
+                return createMintrudBatchWithDefiniteRejection({
+                  ids,
+                  targets: verified.targets,
+                  journal: batchCreateJournal,
+                  create: prepareAdminMintrudSubmissionBatch,
+                });
+              },
+              download: downloadAdminMintrudSubmissionBatch,
+              reload: load,
+              clearSelection: () => setSelectedMintrudApprovals({}),
+            });
+          });
+        }
+      );
+    } finally { batchInFlight.current = false; }
   }
 
 
@@ -2610,7 +2651,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
               latestLoadRef.current += 1;
               setObligations([]);
               setLoading(true);
-              setSelectedMintrudIds([]);
+              setSelectedMintrudApprovals({});
               setPilotCourseFilter("");
               setPilotOrganizationFilter("");
               setPilotGroupFilter("");
@@ -2633,7 +2674,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
               latestLoadRef.current += 1;
               setObligations([]);
               setLoading(true);
-              setSelectedMintrudIds([]);
+              setSelectedMintrudApprovals({});
               setPilotCourseFilter("");
               setPilotOrganizationFilter("");
               setPilotGroupFilter("");
@@ -2670,7 +2711,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                   setExpandedId("");
                   setEditingContextId("");
                   setAttemptsById({});
-                  setSelectedMintrudIds([]);
+                  setSelectedMintrudApprovals({});
                   setLoading(true);
                   setFrdoScope(value);
                 }}
@@ -2760,7 +2801,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
             type="button"
             className={SECONDARY}
             onClick={() => {
-              setSelectedMintrudIds([]);
+              setSelectedMintrudApprovals({});
               setPilotCourseFilter("");
               setPilotOrganizationFilter("");
               setPilotGroupFilter("");
@@ -2780,7 +2821,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
               onChange={(event) => {
                 setPilotOrganizationFilter(event.target.value);
                 setPilotGroupFilter("");
-                setSelectedMintrudIds([]);
+                setSelectedMintrudApprovals({});
               }}
             >
               <option value="">Все организации</option>
@@ -2800,7 +2841,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                 setPilotCourseFilter(event.target.value);
                 setPilotOrganizationFilter("");
                 setPilotGroupFilter("");
-                setSelectedMintrudIds([]);
+                setSelectedMintrudApprovals({});
               }}
             >
               <option value="">Все курсы</option>
@@ -2818,7 +2859,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
               disabled={!pilotGroupOptions.length || Boolean(busyKey)}
               onChange={(event) => {
                 setPilotGroupFilter(event.target.value);
-                setSelectedMintrudIds([]);
+                setSelectedMintrudApprovals({});
               }}
             >
               <option value="">Все группы</option>
@@ -3518,8 +3559,10 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                       obligation.status
                     ) || (activeRegistry === "mintrud" && obligation.status === "approved");
 
-                    const canExport =
-                      obligation.status === "approved" && batchEligibility[obligation.id] === true;
+                    const canSelectForBatch = obligation.status === "approved" && Boolean(batchEligibility[obligation.id]?.approvalEventId);
+                    const batchBlock = canSelectForBatch ? "" : obligation.status === "approved"
+                      ? batchEligibility[obligation.id]?.reason || (loading ? "Проверяем готовность записи…" : BATCH_READINESS_MESSAGES.unverified)
+                      : mintrudUnapprovedBatchMessage(obligation);
 
                     const canReopen = canChange && [
                       "rejected",
@@ -3545,7 +3588,8 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                           <div className="grid min-w-[1050px] grid-cols-[1.1fr_1.3fr_1fr_0.9fr_1.5fr_1.7fr]">
                             <div className="px-4 py-4">
                               {activeRegistry === "mintrud" ? (
-                                <label className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                <div className="mb-2 text-xs text-slate-600">
+                                <label className="flex items-center gap-2 font-semibold">
                                   <input
                                     data-testid={`admin-registries-mintrud-batch-select-${obligation.id}`}
                                     type="checkbox"
@@ -3554,21 +3598,17 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                                         obligation.id
                                       )
                                     }
-                                    disabled={
-                                      !canExport
-                                      || Boolean(busyKey)
-                                    }
-                                    onChange={() => (
-                                      toggleMintrudBatchSelection(
-                                        obligation.id
-                                      )
-                                    )}
+                                    disabled={!canSelectForBatch || Boolean(busyKey) || loading}
+                                    aria-describedby={batchBlock ? `mintrud-batch-block-${obligation.id}` : undefined}
+                                    onChange={event => toggleMintrudBatchSelection(obligation.id, event.target.checked)}
                                   />
 
                                   <span>
                                     {T.mintrudBatchSelect}
                                   </span>
                                 </label>
+                                {batchBlock && <p id={`mintrud-batch-block-${obligation.id}`} className="mt-1">{batchBlock}</p>}
+                                </div>
                               ) : null}
 
                               <div className="font-semibold text-slate-900">
@@ -3578,6 +3618,7 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                               <div className="mt-1 text-xs text-slate-500">
                                 {obligation.user_email}
                               </div>
+                              <RegistryAutomaticApplicability registry="mintrud" obligationId={obligation.id} busy={Boolean(busyKey)} onSaved={load} />
                               {activeRegistry === "mintrud" && <MintrudApplicabilityReview obligationId={obligation.id} api={ownedApi} reload={load} onSaved={setWorkflowNotice} busy={Boolean(busyKey)} onBusy={value => setBusyKey(value ? "mintrud-applicability" : "")} />}
                             </div>
 

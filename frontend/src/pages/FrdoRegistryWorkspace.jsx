@@ -1,3 +1,4 @@
+import RegistryAutomaticApplicability from "../components/admin/RegistryAutomaticApplicability";
 import { bindRegistrySession } from "../utils/registrySession";
 import FrdoBatchCreation from "../components/admin/registries/FrdoBatchCreation";
 import { useFrdoSubmissionFence } from "../hooks/useFrdoSubmissionFence";
@@ -1202,6 +1203,7 @@ export default function FrdoRegistryWorkspace({
                               write: undefined
                             }).reason}</p>
                                 <p className="text-xs">{readiness.text}</p>
+                                <RegistryAutomaticApplicability registry="frdo" obligationId={obligation.id} busy={Boolean(busyKey)} onSaved={load} />
                                 <dl className="my-2 break-all text-xs"><dt>Номер документа</dt><dd>{obligation.document_number || "—"}</dd><dt>Тип документа</dt><dd>{obligation.document_type || "—"}</dd><dt>Идентификатор записи</dt><dd>{obligation.id}</dd></dl>
                                 {obligation.last_error && <p className="text-xs text-red-700">{obligation.last_error}</p>}
                                                               <RegistryDetails title="Проверка профиля слушателя"><RegistryLearnerProfileWarning userId={obligation.user_id} registry={"frdo"} refreshKey={obligation} onEdit={canChange ? () => {

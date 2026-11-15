@@ -2004,6 +2004,17 @@ export function getAdminMintrudProtocolDraft(id, options = {}) {
   return request(`/api/v1/admin/mintrud/protocol-drafts/${encodeURIComponent(id)}`, { ...options, method: 'GET' });
 }
 
-export const getAdminMintrudExportStatus = () => request("/api/v1/admin/mintrud/local-workflow/export-status");
+export const getAdminMintrudExportStatus = () => request("/api/v1/admin/mintrud/export-status", { cache: "no-store" });
 export const getAdminMintrudLocalReview = (id) => request(`/api/v1/admin/mintrud/local-workflow/obligations/${id}`);
 export const confirmAdminMintrudLocalReview = (id, payload) => request(`/api/v1/admin/mintrud/local-workflow/obligations/${id}/confirm`, { method: "POST", body: JSON.stringify(payload) });
+
+export const getAdminMintrudExportReadiness = id => request(`/api/v1/admin/mintrud/obligations/${encodeURIComponent(id)}/export-readiness`, { cache: "no-store" });
+
+export const getRegistryAutomaticApplicability = (registry, id) => request(
+  `/api/v1/admin/${encodeURIComponent(registry)}/obligations/${encodeURIComponent(id)}/applicability`,
+  { cache: "no-store" },
+);
+export const confirmRegistryAutomaticApplicability = (registry, id, payload) => request(
+  `/api/v1/admin/${encodeURIComponent(registry)}/obligations/${encodeURIComponent(id)}/applicability/confirm-auto`,
+  { method: "POST", body: JSON.stringify(payload) },
+);

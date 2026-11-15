@@ -41,12 +41,14 @@ function functionHashes(relative) {
  function walk(node){if(!node||typeof node!=='object')return;if(node.type==='FunctionDeclaration'&&node.id)result[node.id.name]=createHash('sha256').update(source.slice(...node.body.range)).digest('hex');for(const [key,value]of Object.entries(node))if(key!=='range'){if(Array.isArray(value))value.forEach(walk);else if(value&&typeof value==='object')walk(value)}}
  walk(ast);return result;
 }
-test('53 main and 179 API bodies match P8; M4 form and proxy status are pinned',()=>{
+test('P8 bodies remain pinned except verified M4 form, M1 export action and proxy status',()=>{
  const fixture=JSON.parse(readFileSync(new URL('./fixtures/main_registry_contract.json',import.meta.url),'utf8'));
  const mintrud=functionHashes('pages/MainMintrudRegistriesPage.jsx'),client=functionHashes('api/client.js');
  // Restore M4's saved-versus-draft separation; pins verified against c77e96d.
  const m4Form={MintrudContextForm:'7fbc47919ce5332552c4999e89798978718cf0c02d68b99472cad4c03c7f2d04',submit:'ae9895d36674788e8ea728549e76b0024f42f02460dd33f2e209bf714907afc2'};
- for(const [name,sha]of Object.entries(fixture.mintrud))assert.equal(mintrud[name],m4Form[name]||sha,'main helper/action '+name);
+ // Browser tests pin selection to the same server-confirmed approval across refresh and keep POST behind the gate.
+ const m1Action={"toggleMintrudBatchSelection":"9f2ac155e474449d34b955cc7583a5ba0a4cb69d7acd56084b09b32020a67f5e","selectAllMintrudBatch":"127452a0ffda214f4ecddc62a2f46cefeacf11cface26118d8e254e0a7c650de","clearMintrudBatchSelection":"a1d8de3baed21996c953bb6835df078d3ad506282f5f17f62d73c00352c80893","prepareMintrudBatch":"21463d130272b92c3c75efc3ff3595be38a49f2e8d6b90b1b7f3a2dd1c8696b1"};
+ for(const [name,sha]of Object.entries(fixture.mintrud))assert.equal(mintrud[name],m1Action[name]||m4Form[name]||sha,'main helper/action '+name);
  // M4 c77e96d preserves a proxy HTML error's HTTP status (not present in P8).
  // Keep all 179 other P8 bodies pinned and pin request to the committed M4 body.
  assert.equal(fixture.api.request,'57f6ce5815889631b9861f5b252869c8425d2d93b6363952ed7b0479c67efc43');
