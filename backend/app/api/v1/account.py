@@ -33,7 +33,11 @@ from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
-from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.enrollment_completion import (
+    completion_can_proceed,
+    ensure_enrollment_completed,
+    get_completion_readiness,
+)
 from app.services.enrollment_completion_readiness import evaluate_enrollment_completion_readiness
 from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 from app.services.registry_action_lockset import (
@@ -2527,16 +2531,17 @@ async def complete_account_course_lesson(
             completion_modules
         )
 
+        blocked_completion = None
         if (
             completion_progress["required_lessons_total"] > 0
             and completion_progress["required_lessons_completed"]
             >= completion_progress["required_lessons_total"]
         ):
-            await ensure_enrollment_completed(
-                enrollment=enrollment,
-                session=session,
-                completed_at=now,
-            )
+            readiness = await get_completion_readiness(session, enrollment)
+            if completion_can_proceed(readiness):
+                await ensure_enrollment_completed(enrollment=enrollment, session=session, completed_at=now)
+            else:
+                blocked_completion = readiness
 
         await boundary.commit()
 
@@ -2547,7 +2552,8 @@ async def complete_account_course_lesson(
         enrollment_id=str(row.enrollment_id),
     )
 
-    return build_account_course_detail_from_row(row, modules)
+    detail = build_account_course_detail_from_row(row, modules)
+    return detail.model_copy(update={"completion_readiness": blocked_completion}) if blocked_completion else detail
 
 
 @router.post("/courses/{course_id}/enroll", response_model=AccountCourseItemResponse, status_code=status.HTTP_201_CREATED)
@@ -2682,25 +2688,19 @@ async def start_account_course_learning(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> AccountCourseItemResponse:
-    enrollment = await get_account_enrollment_entity_or_404(
-        enrollment_id=enrollment_id,
-        current_user=current_user,
-        session=session,
-    )
-
-    await ensure_account_learning_mutation_allowed(
-        enrollment,
-        session,
-        completed_detail="Completed course cannot be started",
-        allow_assigned=True,
-    )
-
-    enrollment.status = "active"
-
-    if enrollment.started_at is None:
-        enrollment.started_at = datetime.now(timezone.utc)
-
-    await session.commit()
+    async with _account_registry_source_write_transaction(
+        enrollment_id=enrollment_id, current_user=current_user, session=session,
+    ) as enrollment:
+        await ensure_account_learning_mutation_allowed(
+            enrollment,
+            session,
+            completed_detail="Completed course cannot be started",
+            allow_assigned=True,
+        )
+        enrollment.status = "active"
+        if enrollment.started_at is None:
+            enrollment.started_at = datetime.now(timezone.utc)
+        await session.commit()
 
     row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
 

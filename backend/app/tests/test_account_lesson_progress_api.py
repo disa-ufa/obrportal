@@ -8,7 +8,7 @@ from test_account_course_detail_api import (
 from test_course_lessons_admin_api import (
     ADMIN_EMAIL,
     ADMIN_PASSWORD,
-    create_admin_course,
+    create_admin_course as create_unconfigured_course,
     delete_admin_course,
     login,
     request_json,
@@ -18,6 +18,15 @@ from test_auth_rbac_admin_api import (
     patch_multipart_admin_document,
 )
 from test_public_course_outline import create_course_lesson, create_course_module
+
+
+def create_admin_course(token):
+    course = create_unconfigured_course(token)
+    status, configured = request_json("PATCH", f"/api/v1/admin/courses/{course['id']}", {
+        "frdo_requirement_mode": "not_required", "mintrud_requirement_mode": "not_required",
+    }, token=token)
+    assert status == 200, configured
+    return configured
 
 
 def create_course_with_module_and_lesson(admin_token: str) -> dict:
@@ -58,6 +67,10 @@ def find_lesson(detail: dict, lesson_id: str) -> dict:
 
 
 def start_learner_course(token: str, enrollment_id: str) -> dict:
+    status, _ = request_json("PATCH", "/api/v1/account/profile", {
+        "first_name": "Synthetic", "last_name": "Learner",
+    }, token=token)
+    assert status == 200
     status, started = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/start",
@@ -70,6 +83,54 @@ def start_learner_course(token: str, enrollment_id: str) -> dict:
     assert started["status"] == "active"
 
     return started
+
+
+def test_incomplete_profile_preserves_last_lesson_and_can_retry_finalization():
+    administrator = login(ADMIN_EMAIL, ADMIN_PASSWORD)
+    learner = register_learner(prefix="completion-gate")
+    owner = login(learner["email"], learner["password"])
+    setup = create_course_with_module_and_lesson(administrator)
+    course, lesson = setup["course"]["id"], setup["lesson"]["id"]
+    enrollment_id = enroll_learner_to_course(owner, course)["enrollment_id"]
+    path = f"/api/v1/account/courses/{enrollment_id}"
+    try:
+        start_learner_course(owner, enrollment_id)
+        assert request_json("PATCH", "/api/v1/account/profile", {"first_name": None}, token=owner)[0] == 200
+        status, saved = request_json("POST", f"{path}/lessons/{lesson}/complete", token=owner)
+        assert status == 200, saved
+        assert saved["status"] == "active" and saved["required_lessons_completed"] == 1
+        assert saved["completion_readiness"]["missing_fields"][0]["field"] == "learner_profile.first_name"
+        status, denied = request_json("POST", f"{path}/complete", token=owner)
+        assert status == 409 and denied["detail"]["code"] == "completion.profile_incomplete"
+        assert denied["detail"]["reason"] == "learner_profile"
+        status, documents = request_json("GET", f"/api/v1/admin/documents?enrollment_id={enrollment_id}", token=administrator)
+        assert status == 200 and documents == []
+        assert request_json("PATCH", f"/api/v1/admin/courses/{course}", {
+            "mintrud_requirement_mode": "required",
+        }, token=administrator)[0] == 200
+        status, denied = request_json("POST", f"{path}/complete", token=owner)
+        assert status == 409 and denied["detail"]["reason"] == "administrator_action"
+        assert any(issue["field"] == "employer.reporting_scenario" and issue["resolvable_by"] == "administrator"
+                   for issue in denied["detail"]["missing_fields"])
+        assert request_json("PATCH", f"/api/v1/admin/courses/{course}", {
+            "regulatory_program_type": "unspecified", "mintrud_requirement_mode": "auto",
+        }, token=administrator)[0] == 200
+        status, denied = request_json("POST", f"{path}/complete", token=owner)
+        assert status == 409 and denied["detail"]["reason"] == "policy_unresolved"
+        assert request_json("PATCH", f"/api/v1/admin/courses/{course}", {
+            "mintrud_requirement_mode": "not_required",
+        }, token=administrator)[0] == 200
+        assert request_json("PATCH", "/api/v1/account/profile", {"first_name": "Synthetic"}, token=owner)[0] == 200
+        status, completed = request_json("POST", f"{path}/complete", token=owner)
+        assert status == 200 and completed["status"] == "completed"
+        status, repeated = request_json("POST", f"{path}/complete", token=owner)
+        assert status == 400 and repeated["detail"] == "Completed course cannot be changed"
+        status, documents = request_json("GET", f"/api/v1/admin/documents?enrollment_id={enrollment_id}", token=administrator)
+        assert status == 200 and len(documents) == 1
+    finally:
+        delete_admin_documents_for_enrollment(administrator, enrollment_id)
+        delete_admin_enrollment(administrator, enrollment_id)
+        delete_admin_course(administrator, course)
 
 
 def delete_admin_documents_for_enrollment(token: str, enrollment_id: str) -> None:

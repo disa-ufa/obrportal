@@ -164,7 +164,10 @@ from app.services.completion_documents import (
     mark_completion_document_generation_metadata,
     write_completion_document_pdf_to_storage,
 )
-from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.enrollment_completion import (
+    ensure_enrollment_completed,
+    prepare_new_enrollment_completions,
+)
 from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUSES,
@@ -7687,14 +7690,16 @@ async def create_admin_enrollment(
         course_id=course_id,
         organization_id=organization_id,
         learning_group_id=learning_group_id,
-        status=normalized_status,
+        status="assigned" if normalized_status == "completed" else normalized_status,
         started_at=payload.started_at,
         completed_at=payload.completed_at,
     )
     boundary = CompletionPDFTransactionBoundary(session)
-    session.add(enrollment)
 
     try:
+        if normalized_status == "completed":
+            await prepare_new_enrollment_completions(session, [enrollment])
+        session.add(enrollment)
         await session.flush()
         enrollment_id = str(enrollment.id)
 
@@ -7818,15 +7823,17 @@ async def create_admin_group_enrollments(
             course_id=course_id,
             organization_id=organization_id,
             learning_group_id=learning_group_id,
-            status=normalized_status,
+            status="assigned" if normalized_status == "completed" else normalized_status,
             started_at=payload.started_at,
             completed_at=payload.completed_at,
         )
-        session.add(enrollment)
         created_enrollments.append(enrollment)
 
     boundary = CompletionPDFTransactionBoundary(session)
     try:
+        if normalized_status == "completed":
+            await prepare_new_enrollment_completions(session, created_enrollments, group=True)
+        session.add_all(created_enrollments)
         await session.flush()
         created_enrollment_ids = [
             str(enrollment.id)
@@ -8160,12 +8167,25 @@ async def update_admin_enrollment(
             )
 
             # Re-read values after a competing transaction may have committed.
-            await session.refresh(enrollment)
+            await session.refresh(enrollment, with_for_update=True)
 
         before = enrollment_snapshot(enrollment)
+        existing_completion = enrollment.status == "completed"
+        wanted_status = (
+            normalize_enrollment_status(data["status"])
+            if data.get("status") is not None
+            else enrollment.status
+        )
+        if existing_completion and (
+            wanted_status != "completed" or any(
+                field in data and data[field] != getattr(enrollment, field)
+                for field in ("started_at", "completed_at")
+            )
+        ):
+            raise HTTPException(409, {"code": "completion.historical_completion_protected"})
 
-        if "status" in data and data["status"] is not None:
-            enrollment.status = normalize_enrollment_status(data["status"])
+        if wanted_status != "completed":
+            enrollment.status = wanted_status
 
         if "organization_id" in data:
             organization_id = normalize_optional_reference(data["organization_id"])
@@ -8192,7 +8212,7 @@ async def update_admin_enrollment(
             session=session,
         )
 
-        if enrollment.status == "completed":
+        if wanted_status == "completed" and not existing_completion:
             await ensure_enrollment_completed(
                 enrollment=enrollment,
                 session=session,

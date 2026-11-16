@@ -229,6 +229,7 @@ class AccountCourseModuleResponse(BaseModel):
 
 
 class AccountCourseDetailResponse(AccountCourseItemResponse):
+    completion_readiness: AccountCompletionReadinessResponse | None = None
     lessons_total: int = 0
     lessons_completed: int = 0
     required_lessons_total: int = 0

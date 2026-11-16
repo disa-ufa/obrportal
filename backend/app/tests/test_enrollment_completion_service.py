@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from fastapi import HTTPException
 
 import app.services.enrollment_completion as completion_service
 from app.services.enrollment_completion import (
@@ -18,6 +20,14 @@ class FakeSession:
     def __init__(self):
         self.flush_calls = 0
         self.commit_calls = 0
+        self.no_autoflush = nullcontext()
+        self.persisted_status = "completed"
+
+    async def scalar(self, statement):
+        return self.persisted_status if "enrollments.status" in str(statement) else None
+
+    async def scalars(self, statement):
+        return SimpleNamespace(all=list)
 
     async def flush(self):
         self.flush_calls += 1
@@ -45,6 +55,14 @@ def build_enrollment(
         started_at=started_at,
         completed_at=completed_at,
     )
+
+
+@pytest.fixture(autouse=True)
+def readiness_fixture(monkeypatch):
+    async def ready(session, enrollment):
+        return SimpleNamespace(is_ready=True, status="ready", missing_fields=[], invalid_fields=[],
+                               policy_unresolved=False, requires_administrator_action=False)
+    monkeypatch.setattr(completion_service, "get_completion_readiness", ready)
 
 
 def install_downstream_stubs(
@@ -297,7 +315,7 @@ def test_existing_first_completion_timestamp_is_never_overwritten(
     asyncio.run(case())
 
 
-def test_existing_completed_at_backfills_missing_started_at(
+def test_historical_completion_preserves_missing_started_at(
     monkeypatch,
 ) -> None:
     async def case():
@@ -335,18 +353,30 @@ def test_existing_completed_at_backfills_missing_started_at(
         )
         assert (
             enrollment.started_at
-            == first_completed_at
+            is None
         )
         assert (
             result.started_at_was_set
-            is True
+            is False
         )
         assert (
             result.completed_at_was_set
             is False
         )
+        assert events == []
+        assert session.flush_calls == 0
 
     asyncio.run(case())
+
+
+def test_transient_completed_status_cannot_bypass_readiness():
+    enrollment = build_enrollment(status="completed")
+    session = FakeSession()
+    session.persisted_status = "active"
+    with pytest.raises(HTTPException) as denied:
+        asyncio.run(ensure_enrollment_completed(enrollment=enrollment, session=session))
+    assert denied.value.detail["code"] == "completion.unpersisted_completed_status"
+    assert session.flush_calls == 0
 
 
 def test_existing_started_at_is_preserved_on_first_completion(
