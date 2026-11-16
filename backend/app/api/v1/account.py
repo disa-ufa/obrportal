@@ -33,6 +33,7 @@ from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
 from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.enrollment_completion_readiness import evaluate_enrollment_completion_readiness
 from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 from app.services.registry_action_lockset import (
     RegistryActionLockError,
@@ -67,6 +68,7 @@ from app.schemas.account import (
     AccountActivityItemResponse,
     AccountAssignmentSubmissionSubmitRequest,
     AccountAssignmentSubmissionResponse,
+    AccountCompletionReadinessResponse,
     AccountCourseDetailResponse,
     AccountCourseItemResponse,
     AccountCourseLessonResponse,
@@ -1709,6 +1711,28 @@ async def get_account_course_detail(
     )
 
     return build_account_course_detail_from_row(row, modules)
+
+
+@router.get(
+    "/courses/{enrollment_id}/completion-readiness",
+    response_model=AccountCompletionReadinessResponse,
+)
+async def get_account_completion_readiness(
+    enrollment_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCompletionReadinessResponse:
+    row = (await session.execute(
+        select(Enrollment, Course, LearnerProfile)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(LearnerProfile, LearnerProfile.user_id == Enrollment.user_id)
+        .where(Enrollment.id == enrollment_id.strip(), Enrollment.user_id == current_user.id)
+    )).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
+
+    enrollment, course, profile = row
+    return evaluate_enrollment_completion_readiness(enrollment, course, current_user, profile)
 
 
 async def get_missing_required_quiz_block_ids(

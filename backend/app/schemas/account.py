@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from datetime import date, datetime
 
@@ -70,6 +70,22 @@ class AccountLearnerProfileUpdateRequest(BaseModel):
         default=None,
         max_length=32,
     )
+
+
+class CompletionReadinessIssue(BaseModel):
+    code: str
+    field: str
+    message: str
+    resolvable_by: Literal["learner", "administrator"]
+
+
+class AccountCompletionReadinessResponse(BaseModel):
+    is_ready: bool
+    status: Literal["ready", "incomplete", "policy_unresolved", "already_completed"]
+    missing_fields: list[CompletionReadinessIssue]
+    invalid_fields: list[CompletionReadinessIssue]
+    requires_administrator_action: bool
+    policy_unresolved: bool
 
 
 class AccountCourseItemResponse(BaseModel):
