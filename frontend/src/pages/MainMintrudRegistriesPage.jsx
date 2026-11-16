@@ -3604,7 +3604,15 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                                     {T.mintrudBatchSelect}
                                   </span>
                                 </label>
-                                {batchBlock && <p id={`mintrud-batch-block-${obligation.id}`} className="mt-1">{batchBlock}</p>}
+                                {batchBlock && (
+                                  <p
+                                    id={`mintrud-batch-block-${obligation.id}`}
+                                    role={obligation.status === "approved" ? "status" : undefined}
+                                    className="mt-1 leading-5 text-amber-800"
+                                  >
+                                    {batchBlock}
+                                  </p>
+                                )}
                                 </div>
                               ) : null}
 
