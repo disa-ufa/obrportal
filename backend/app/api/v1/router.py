@@ -4,6 +4,7 @@ from app.api.v1 import (
     account,
     admin,
     auth,
+    mintrud_historical_reapproval,
     org,
     public,
     registry_applicability_preview,
@@ -19,6 +20,7 @@ api_router.include_router(public.router)
 api_router.include_router(admin.router)
 api_router.include_router(registry_applicability_preview.router)
 api_router.include_router(registry_historical_mintrud_api.router)
+api_router.include_router(mintrud_historical_reapproval.router)
 api_router.include_router(org.router)
 
 from app.api.v1 import mintrud_local_workflow
