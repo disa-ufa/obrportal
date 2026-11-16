@@ -22,9 +22,11 @@ def _declared_too_large(value: str) -> bool:
 
 
 class SignedScanUploadLimitRoute(APIRoute):
+    upload_suffix = "/{protocol_id}/signed-scan"
+
     def get_route_handler(self):
         handler = super().get_route_handler()
-        if "POST" not in self.methods or not self.path.endswith("/{protocol_id}/signed-scan"):
+        if "POST" not in self.methods or not self.path.endswith(self.upload_suffix):
             return handler
 
         async def bounded(request: Request):
