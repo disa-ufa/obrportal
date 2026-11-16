@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - develop
+      - rebaseline/20261114
 
 jobs:
   test:

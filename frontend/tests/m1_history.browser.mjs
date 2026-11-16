@@ -10,7 +10,8 @@ const root='/admin/registries?registry=mintrud&registryView=batches';
 const id='12345678-1234-4234-8234-123456789abc';
 const batch={id,registry:'mintrud',status:'generated',record_count:1,obligation_count:1,items:[]};
 let selectionMode=false, firstApproval=id;
-const learnerIds=[id,'12345678-1234-4234-8234-123456789abd','12345678-1234-4234-8234-123456789abe','12345678-1234-4234-8234-123456789abf'];
+const learnerIds=[id,'12345678-1234-4234-8234-123456789abd','12345678-1234-4234-8234-123456789abe','12345678-1234-4234-8234-123456789abf',
+  '12345678-1234-4234-8234-123456789ac1','12345678-1234-4234-8234-123456789ac2'];
 let exportMode='allowed', mode='rows', writes=0, invalidReads=0, checks=0;
 await context.addInitScript(() => sessionStorage.setItem('obrportal_access_token','synthetic-ui-test'));
 await context.route('**/*', async route => {
@@ -28,6 +29,8 @@ await context.route('**/*', async route => {
     const base={obligation_id:obligationId,read_only:true,not_authorization_for_export:true};
     if(obligationId===learnerIds[2])return json({...base,batch_eligible:false,block_reason:'mintrud.data_not_ready',issue_codes:['learner_profile.snils_missing']});
     if(obligationId===learnerIds[3])return json({...base,batch_eligible:false,block_reason:'approval.current_data_fingerprint_mismatch'});
+    if(obligationId===learnerIds[4])return json({...base,batch_eligible:false,block_reason:'registry.approval_already_exported'});
+    if(obligationId===learnerIds[5])return json({...base,batch_eligible:false,block_reason:'registry.applicability_missing'});
     return json({...base,batch_eligible:true,approval_event_id:obligationId===id?firstApproval:obligationId});
   }
   if(path.endsWith('/mintrud/obligations'))return json((selectionMode?learnerIds:[id]).map((rowId,index)=>({id:rowId,registry:'mintrud',status:'approved',user_full_name:`Synthetic ${index}`,course_id:'synthetic-course',mintrud_requirement_mode:'required',readiness_errors:[]})));
@@ -85,6 +88,14 @@ try {
   check(!(await rowCheck(0).isChecked()) && await rowCheck(1).isChecked(),'multiple rows and deselection');
   check(await rowCheck(2).isDisabled() && await reason(2,/СНИЛС/).isVisible(),'missing data has visible reason');
   check(await rowCheck(3).isDisabled() && await reason(3,/отличаются от утверждённых/).isVisible(),'stale approval has visible reason');
+  for (const [index, message] of [[4, /Повторная выгрузка запрещена/], [5, /контролируемая сверка/]]) {
+    const blocked = rowCheck(index);
+    const explanation = reason(index,message).and(page.getByRole('status'));
+    await explanation.waitFor();
+    check(await blocked.isDisabled() &&
+      await blocked.getAttribute('aria-describedby') === await explanation.getAttribute('id'),
+    'blocked checkbox exposes the reason as a status');
+  }
   check(await page.getByTestId('admin-registries-mintrud-batch-download').isDisabled(),'selection stays independent of closed export gate');
   await rowCheck(0).check();await count(2);
   firstApproval='12345678-1234-4234-8234-123456789ac0';

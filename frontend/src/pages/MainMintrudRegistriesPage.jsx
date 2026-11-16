@@ -20,6 +20,7 @@ import { MintrudProtocolDraftsPanel } from "../components/admin/MintrudProtocolD
 import { MintrudLinkedProtocols } from "../components/admin/MintrudLinkedProtocols";
 import { formatMintrudError, prepareAndDownloadMintrudBatch, verifyMintrudExportSelection, createMintrudBatchWithDefiniteRejection } from "../utils/mintrudWorkflow";
 import { createMintrudBatchCreateJournal, validMintrudApprovalEventId, withMintrudBatchCreateLock } from "../utils/mintrudBatchCreateJournal.js";
+import { mintrudBatchEligibilityResult } from "../utils/mintrudBatchEligibility.js";
 
 
 const MINTRUD_RESULT_PENDING_KEY =
@@ -1684,18 +1685,14 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
           Promise.all(visible.filter(item => item.status === "approved").map(async ({ id }) => {
             try {
               const review = await ownedApi.getAdminMintrudExportReadiness(id);
-              if (review?.obligation_id !== id || review.read_only !== true || review.not_authorization_for_export !== true) {
-                return [id, { reason: BATCH_READINESS_MESSAGES.unverified }];
-              }
-              if (review.batch_eligible === true && validMintrudApprovalEventId(review.approval_event_id)) {
-                return [id, { approvalEventId: review.approval_event_id }];
-              }
-              return [id, { reason: mintrudBatchBlockMessage(review) }];
+              return [id, mintrudBatchEligibilityResult({
+                obligationId: id,
+                review,
+                messages: BATCH_READINESS_MESSAGES,
+                issueLabels: READINESS_LABELS,
+              })];
             } catch (error) {
-              const reason = error?.status === 403 ? "Нет права на экспорт Минтруда."
-                : error?.status === 401 ? "Войдите снова, чтобы проверить готовность записи."
-                : BATCH_READINESS_MESSAGES.unverified;
-              return [id, { reason }];
+              return [id, mintrudBatchEligibilityResult({ obligationId: id, error })];
             }
           })),
         ]);
@@ -3607,7 +3604,15 @@ export function MainMintrudRegistriesPage({ onFrdo }) {
                                     {T.mintrudBatchSelect}
                                   </span>
                                 </label>
-                                {batchBlock && <p id={`mintrud-batch-block-${obligation.id}`} className="mt-1">{batchBlock}</p>}
+                                {batchBlock && (
+                                  <p
+                                    id={`mintrud-batch-block-${obligation.id}`}
+                                    role={obligation.status === "approved" ? "status" : undefined}
+                                    className="mt-1 leading-5 text-amber-800"
+                                  >
+                                    {batchBlock}
+                                  </p>
+                                )}
                                 </div>
                               ) : null}
 
