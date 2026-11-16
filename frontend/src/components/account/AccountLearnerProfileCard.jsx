@@ -1,19 +1,40 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import {
+  getAccountCitizenshipOptions,
   getAccountLearnerProfile,
   updateAccountLearnerProfile,
 } from "../../api/client";
 import { formatApiError } from "../../utils/apiErrors";
 import { Alert } from "../ui/Alert";
 import { SectionCard } from "../ui/SectionCard";
+import regionByCode from "../../utils/oksM49Regions.json";
+
+// Numeric codes come from the backend's FRDO catalog. M49 supplies display-name lookups.
+const regionNames = new Intl.DisplayNames(["ru"], { type: "region", fallback: "none" });
+const additionalOksmLabels = {
+  "158": "Тайвань (Китай)",
+  "895": "Абхазия",
+  "896": "Южная Осетия",
+  "897": "ДНР",
+  "898": "ЛНР",
+};
+
+function citizenshipLabel(code) {
+  const region = regionByCode[code];
+  const name = additionalOksmLabels[code] ?? (region ? regionNames.of(region) : null);
+  return name ? `${name} (${code})` : `Код ОКСМ ${code}`;
+}
 
 
 const EMPTY_FORM = {
   last_name: "",
   first_name: "",
   middle_name: "",
+  no_middle_name: false,
   birth_date: "",
+  sex: "",
+  citizenship_country_code: "",
   snils: "",
   phone: "",
   email: "",
@@ -41,13 +62,16 @@ function toFormData(profile) {
   return Object.fromEntries(
     Object.keys(EMPTY_FORM).map((field) => [
       field,
-      profile[field] ?? "",
+      profile[field] ?? EMPTY_FORM[field],
     ])
   );
 }
 
 function normalizePayloadValue(field, value) {
   if (
+    field === "sex" ||
+    field === "citizenship_country_code" ||
+    field === "middle_name" ||
     field === "birth_date" ||
     field === "identity_document_issued_at"
   ) {
@@ -151,6 +175,7 @@ function FormField({
   autoComplete,
   placeholder,
   inputMode,
+  disabled,
 }) {
   return (
     <label className="block space-y-2">
@@ -164,6 +189,7 @@ function FormField({
         autoComplete={autoComplete}
         placeholder={placeholder}
         inputMode={inputMode}
+        disabled={disabled}
         className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
       />
     </label>
@@ -171,6 +197,7 @@ function FormField({
 }
 
 export function AccountLearnerProfileCard({ accountUser }) {
+  const profileFieldId = useId();
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [loading, setLoading] = useState(true);
@@ -178,6 +205,8 @@ export function AccountLearnerProfileCard({ accountUser }) {
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveNotice, setSaveNotice] = useState("");
+  const [citizenshipCodes, setCitizenshipCodes] = useState(null);
+  const [citizenshipError, setCitizenshipError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +244,13 @@ export function AccountLearnerProfileCard({ accountUser }) {
     }
 
     loadProfile();
+    getAccountCitizenshipOptions().then((codes) => {
+      if (!cancelled) {
+        setCitizenshipCodes([...codes].sort((a, b) => citizenshipLabel(a).localeCompare(citizenshipLabel(b), "ru")));
+      }
+    }).catch(() => {
+      if (!cancelled) setCitizenshipError(true);
+    });
 
     return () => {
       cancelled = true;
@@ -365,13 +401,24 @@ export function AccountLearnerProfileCard({ accountUser }) {
                   onChange={updateField}
                   autoComplete="given-name"
                 />
-                <FormField
-                  label="Отчество"
-                  field="middle_name"
-                  value={formData.middle_name}
-                  onChange={updateField}
-                  autoComplete="additional-name"
-                />
+                <div className="space-y-2">
+                  <FormField
+                    label="Отчество"
+                    field="middle_name"
+                    value={formData.middle_name}
+                    onChange={updateField}
+                    autoComplete="additional-name"
+                    disabled={formData.no_middle_name}
+                  />
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input type="checkbox" checked={formData.no_middle_name} onChange={(event) => {
+                      const checked = event.target.checked;
+                      updateField("no_middle_name", checked);
+                      if (checked) updateField("middle_name", "");
+                    }} />
+                    Отчества нет
+                  </label>
+                </div>
                 <FormField
                   label="Дата рождения"
                   field="birth_date"
@@ -388,6 +435,28 @@ export function AccountLearnerProfileCard({ accountUser }) {
                   placeholder="123-456-789 00"
                   inputMode="numeric"
                 />
+                <div className="space-y-2 text-sm font-semibold text-slate-800">
+                  <label className="block" htmlFor={`${profileFieldId}-sex`}>Пол</label>
+                  <select id={`${profileFieldId}-sex`} className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4"
+                    value={formData.sex} onChange={(event) => updateField("sex", event.target.value)}>
+                    <option value="">Не указан</option>
+                    <option value="female">Женский</option>
+                    <option value="male">Мужской</option>
+                  </select>
+                </div>
+                <div className="space-y-2 text-sm font-semibold text-slate-800">
+                  <label className="block" htmlFor={`${profileFieldId}-citizenship`}>Гражданство</label>
+                  <select id={`${profileFieldId}-citizenship`} className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4"
+                    value={formData.citizenship_country_code} disabled={!citizenshipCodes}
+                    onChange={(event) => updateField("citizenship_country_code", event.target.value)}>
+                    <option value="">Не указано</option>
+                    {formData.citizenship_country_code && !citizenshipCodes?.includes(formData.citizenship_country_code)
+                      ? <option value={formData.citizenship_country_code}>{citizenshipLabel(formData.citizenship_country_code)}</option>
+                      : null}
+                    {citizenshipCodes?.map((code) => <option key={code} value={code}>{citizenshipLabel(code)}</option>)}
+                  </select>
+                  {citizenshipError ? <span role="status">Справочник не загрузился. Обновите страницу.</span> : null}
+                </div>
               </div>
             </section>
 

@@ -5,6 +5,7 @@ import re
 
 from app.models.course import Course
 from app.models.enrollment import Enrollment
+from app.models.enrollment_employment_details import EnrollmentEmploymentDetails
 from app.models.learner_profile import LearnerProfile
 from app.models.user import User
 from app.schemas.account import AccountCompletionReadinessResponse, CompletionReadinessIssue
@@ -13,6 +14,7 @@ from app.services.compliance_registry_rules import (
     DECISION_UNDETERMINED,
     evaluate_course_registry_requirements,
 )
+from app.services.enrollment_employment import employment_requirement, is_valid_russian_inn
 from app.services.learner_profile_fields import (
     is_valid_learner_email,
     is_valid_learner_phone,
@@ -26,12 +28,13 @@ from app.services.learner_profile_fields import (
 
 @dataclass(frozen=True)
 class EnrollmentEmployerData:
-    """M2 input for the same enrollment, resolved before a registry obligation exists."""
+    """Employment input for the same enrollment, before a registry obligation exists."""
 
     enrollment_id: str
     profession_or_position: str | None = None
     employer_name: str | None = None
     employer_inn: str | None = None
+    reporting_scenario: str | None = None
 
 
 def evaluate_enrollment_completion_readiness(
@@ -40,7 +43,7 @@ def evaluate_enrollment_completion_readiness(
     user: User,
     profile: LearnerProfile | None,
     *,
-    employer: EnrollmentEmployerData | None = None,
+    employer: EnrollmentEmployerData | EnrollmentEmploymentDetails | None = None,
 ) -> AccountCompletionReadinessResponse:
     missing = []
     invalid = []
@@ -89,6 +92,10 @@ def evaluate_enrollment_completion_readiness(
     frdo = "frdo" in rules and rules["frdo"].decision == DECISION_REQUIRED
     mintrud = "mintrud" in rules and rules["mintrud"].decision == DECISION_REQUIRED
     vocational_frdo = frdo and course.regulatory_program_type == "vocational_training"
+    if vocational_frdo and not (
+        normalize_learner_name(getattr(profile, "middle_name", None)) or getattr(profile, "no_middle_name", False)
+    ):
+        issue(missing, "learner_profile.middle_name", "missing", "Укажите отчество или отметьте его отсутствие.")
     birth_date = getattr(profile, "birth_date", None)
     sex = normalize_learner_name(getattr(profile, "sex", None))
     citizenship = normalize_learner_name(getattr(profile, "citizenship_country_code", None))
@@ -124,22 +131,24 @@ def evaluate_enrollment_completion_readiness(
                 issue(invalid, f"learner_profile.{key}", "invalid", message)
 
     if mintrud:
-        if employer is None:
-            issue(missing, "employer", "source_unavailable",
-                  "Сведения о работодателе до завершения обучения ещё недоступны.", "administrator")
-        elif employer.enrollment_id != enrollment.id:
+        if employer is not None and employer.enrollment_id != enrollment.id:
             issue(invalid, "employer", "source_mismatch", "Источник работодателя относится к другому зачислению.", "administrator")
         else:
-            for key, message in (
-                ("profession_or_position", "Укажите профессию или должность."),
-                ("employer_name", "Укажите наименование работодателя."),
-                ("employer_inn", "Укажите ИНН работодателя."),
-            ):
-                if not normalize_learner_name(getattr(employer, key)):
-                    issue(missing, f"employer.{key}", "missing", message)
-            inn = normalize_learner_name(employer.employer_inn)
-            if inn and not re.fullmatch(r"(?:[0-9]{10}|[0-9]{12})", inn):
-                issue(invalid, "employer.employer_inn", "invalid", "Проверьте формат ИНН работодателя.")
+            requirement = employment_requirement(DECISION_REQUIRED, getattr(employer, "reporting_scenario", None))
+            if not normalize_learner_name(getattr(employer, "profession_or_position", None)):
+                issue(missing, "employer.profession_or_position", "missing", "Укажите профессию или должность.")
+            if requirement == "administrator_action":
+                unresolved = True
+                issue(missing, "employer.reporting_scenario", "unresolved",
+                      "Администратору нужно указать сценарий обучения для Минтруда.", "administrator")
+            if requirement == "employer_required":
+                if not normalize_learner_name(employer.employer_name):
+                    issue(missing, "employer.employer_name", "missing", "Укажите наименование работодателя.")
+                inn = normalize_learner_name(employer.employer_inn)
+                if not inn:
+                    issue(missing, "employer.employer_inn", "missing", "Укажите ИНН работодателя.")
+                elif not is_valid_russian_inn(inn):
+                    issue(invalid, "employer.employer_inn", "invalid", "Проверьте формат и контрольные цифры ИНН.")
 
     if unresolved:
         return result("policy_unresolved")

@@ -36,6 +36,7 @@ from app.services.registry_document_transaction import (
 )
 from app.models.learner_profile import LearnerProfile
 from app.schemas.account import (
+    EnrollmentEmploymentScenarioUpdate,
     AccountLearnerProfileResponse,
     AccountLearnerProfileUpdateRequest,
 )
@@ -66,6 +67,7 @@ from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.enrollment_employment_details import EnrollmentEmploymentDetails
 from app.models.import_batch import ImportBatch, ImportRow
 from app.services.mintrud_protocol_candidates import summarize_protocol_candidate
 from app.models.quiz_attempt import QuizAttempt
@@ -189,6 +191,7 @@ from app.services.frdo_po_portal_mapping import (
     search_frdo_po_classifier_values,
 )
 from app.services.registry_action_lockset import RegistryActionLockError, RegistrySourceFence
+from app.services.enrollment_employment import employment_is_editable, get_employment_details
 from app.services.registry_source_write_scope import acquire_discovered_registry_source_write_scope
 from app.services.compliance_registry_approval import (
     apply_registry_approval,
@@ -7895,6 +7898,44 @@ async def create_admin_group_enrollments(
         created=created_items,
         skipped=skipped,
     )
+
+
+@router.patch("/enrollments/{enrollment_id}/employment-reporting-scenario",
+              response_model=EnrollmentEmploymentScenarioUpdate)
+async def set_enrollment_employment_reporting_scenario(
+    enrollment_id: str,
+    payload: EnrollmentEmploymentScenarioUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("mintrud.write")),
+    session: AsyncSession = Depends(get_db),
+) -> EnrollmentEmploymentScenarioUpdate:
+    # Use the same enrollment lock as learner edits and course completion.
+    enrollment = await get_admin_enrollment_or_404(enrollment_id.strip(), session)
+    try:
+        await acquire_discovered_registry_source_write_scope(
+            session=session, roots=(RegistrySourceFence("enrollment", enrollment.id),),
+        )
+    except RegistryActionLockError as exc:
+        await session.rollback()
+        raise HTTPException(409, "Enrollment changed. Reload and try again.") from exc
+    await session.refresh(enrollment, with_for_update=True)
+    if not await employment_is_editable(session, enrollment):
+        raise HTTPException(409, "Enrollment employment details are protected")
+
+    details = await get_employment_details(session, enrollment.id)
+    previous = getattr(details, "reporting_scenario", None)
+    if previous != payload.reporting_scenario:
+        if details is None:
+            details = EnrollmentEmploymentDetails(enrollment_id=enrollment.id)
+            session.add(details)
+        details.reporting_scenario = payload.reporting_scenario
+        await create_admin_audit_event(
+            session, actor_user=current_user, action="admin.enrollment_employment_scenario_updated",
+            entity_type="enrollment", entity_id=enrollment.id, request=request,
+            payload={"before": previous, "after": payload.reporting_scenario},
+        )
+    await session.commit()
+    return payload
 
 
 @router.get("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)

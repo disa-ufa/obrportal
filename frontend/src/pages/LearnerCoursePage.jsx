@@ -21,6 +21,7 @@ import {
   startAccountCourse,
 } from "../api/client";
 import { LearnerAssignmentBlock } from "../components/learner/LearnerAssignmentBlock";
+import { LearnerCourseEmployment } from "../components/learner/LearnerCourseEmployment";
 import { LearnerContentBlock } from "../components/learner/LearnerContentBlock";
 import { LearnerQuizBlock } from "../components/learner/LearnerQuizBlock";
 import { formatApiError } from "../utils/apiErrors";
@@ -811,6 +812,12 @@ export function LearnerCoursePage() {
         </div>
         </div>
       </header>
+
+      {isOverviewRoute && (
+        <div className="mt-6">
+          <LearnerCourseEmployment key={`${enrollmentId}:${detail.status}`} enrollmentId={enrollmentId} />
+        </div>
+      )}
 
       {detail.status === "completed" ? (
         <div

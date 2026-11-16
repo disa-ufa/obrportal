@@ -150,6 +150,10 @@ export async function getAccountLearnerProfile() {
   return request("/api/v1/account/profile");
 }
 
+export function getAccountCitizenshipOptions() {
+  return request("/api/v1/account/profile/citizenship-options");
+}
+
 export async function updateAccountLearnerProfile(payload) {
   return request("/api/v1/account/profile", {
     method: "PATCH",
@@ -167,6 +171,21 @@ export async function getAccountActivities() {
 
 export async function getAccountCourseDetail(enrollmentId) {
   return request(`/api/v1/account/courses/${enrollmentId}`);
+}
+
+export function getAccountCompletionReadiness(enrollmentId) {
+  return request(`/api/v1/account/courses/${encodeURIComponent(enrollmentId)}/completion-readiness`);
+}
+
+export function getAccountEnrollmentEmployment(enrollmentId) {
+  return request(`/api/v1/account/courses/${encodeURIComponent(enrollmentId)}/employment`);
+}
+
+export function updateAccountEnrollmentEmployment(enrollmentId, payload) {
+  return request(`/api/v1/account/courses/${encodeURIComponent(enrollmentId)}/employment`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function completeAccountCourseLesson(enrollmentId, lessonId) {

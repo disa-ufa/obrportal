@@ -31,7 +31,7 @@ def records():
     enrollment = Enrollment(id="enrollment", user_id=user.id, course_id=course.id, status="in_progress")
     profile = LearnerProfile(user_id=user.id, last_name="Synthetic", first_name="Learner",
                              birth_date=date(1990, 1, 1), sex="female", citizenship_country_code="643",
-                             snils="001-001-998 00")
+                             snils="001-001-998 00", no_middle_name=True)
     return enrollment, course, user, profile
 
 
@@ -95,13 +95,17 @@ def test_unit_occupational_safety_uses_employer_contract(records):
     profile.birth_date = profile.sex = profile.citizenship_country_code = None
     result = evaluate_enrollment_completion_readiness(*records)
     assert not result.is_ready and result.requires_administrator_action
-    assert [item.code for item in result.missing_fields] == ["completion.employer.source_unavailable"]
-    employer = EnrollmentEmployerData(enrollment.id, "Synthetic role", "Synthetic employer", "1234567890")
+    assert result.policy_unresolved
+    assert issue_fields(result.missing_fields) == {"employer.reporting_scenario", "employer.profession_or_position"}
+    employer = EnrollmentEmployerData(enrollment.id, "Synthetic role", "Synthetic employer", "1234567894",
+                                      "external_training_provider")
     assert evaluate_enrollment_completion_readiness(*records, employer=employer).is_ready
     assert not evaluate_enrollment_completion_readiness(
         *records, employer=EnrollmentEmployerData("other-enrollment", "Role", "Employer", "1234567890")
     ).is_ready
-    incomplete = evaluate_enrollment_completion_readiness(*records, employer=EnrollmentEmployerData(enrollment.id))
+    incomplete = evaluate_enrollment_completion_readiness(
+        *records, employer=EnrollmentEmployerData(enrollment.id, reporting_scenario="external_training_provider"),
+    )
     assert issue_fields(incomplete.missing_fields) == {
         "employer.profession_or_position", "employer.employer_name", "employer.employer_inn",
     }
@@ -134,7 +138,7 @@ def api_client(records):
         params = statement.compile().params
         assert set(params.values()) == {enrollment.id, user.id}
         assert "enrollments.user_id =" in str(statement.whereclause)
-        return SimpleNamespace(one_or_none=lambda: (enrollment, course, profile) if user is owner else None)
+        return SimpleNamespace(one_or_none=lambda: (enrollment, course, profile, None) if user is owner else None)
 
     session.execute.side_effect = execute
     application = FastAPI()

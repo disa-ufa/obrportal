@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
@@ -28,6 +28,7 @@ class LearnerProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     last_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     first_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     middle_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    no_middle_name: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sex: Mapped[str | None] = mapped_column(String(16), nullable=True)
     citizenship_country_code: Mapped[str | None] = mapped_column(
@@ -56,3 +57,9 @@ class LearnerProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user = relationship("User")
+
+    @validates("middle_name")
+    def clear_absence_when_name_is_supplied(self, _key: str, value: str | None) -> str | None:
+        if value and value.strip():
+            self.no_middle_name = None
+        return value
