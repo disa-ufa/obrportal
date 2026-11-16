@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
@@ -1136,3 +1136,24 @@ async def me(
     session: AsyncSession = Depends(get_db),
 ) -> CurrentUserResponse:
     return await build_current_user_response(session, current_user)
+
+
+from app.schemas.auth import OwnPermissionsResponse
+
+
+@router.get("/me/permissions", response_model=OwnPermissionsResponse)
+async def own_permissions(
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    # Local import avoids auth <-> rbac's existing dependency cycle.
+    from app.api.v1.rbac import get_user_permission_codes
+
+    if request.query_params:
+        raise HTTPException(status_code=422, detail="This endpoint accepts no query parameters")
+    codes = await get_user_permission_codes(current_user, session)
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Vary"] = "Authorization"
+    return {"mintrud": {"read": "mintrud.read" in codes, "write": "mintrud.write" in codes}}

@@ -3,6 +3,7 @@ from app.services.registry_batch_transaction import get_registry_batch_db, requi
 from app.services.registry_import_transaction import prepare_import_scope, get_registry_import_db, require_registry_import_user
 
 import asyncio
+from contextlib import AsyncExitStack, asynccontextmanager
 from hashlib import sha256
 import re
 import shutil
@@ -12,7 +13,11 @@ from pathlib import Path, PurePosixPath
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from app.services.registry_release_gate import require_registry_batch_exports_enabled
+from app.services.registry_release_gate import (
+    mintrud_local_database_errors_as_conflict,
+    require_mintrud_batch_exports_enabled,
+    require_registry_batch_exports_enabled,
+)
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
@@ -20,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.exc import IntegrityError
 
+from app.api.v1.auth import get_current_user, oauth2_scheme
 from app.api.v1.rbac import get_user_permission_codes, require_permission
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -13757,6 +13763,38 @@ async def get_admin_mintrud_submission_batch_detail(
     )
 
 
+async def get_mintrud_batch_db():
+    async with AsyncExitStack() as stack:
+        with mintrud_local_database_errors_as_conflict():
+            session = await stack.enter_async_context(
+                asynccontextmanager(get_registry_batch_db)()
+            )
+        yield session
+
+
+_require_mintrud_batch_user = require_registry_batch_user("mintrud")
+_require_mintrud_download_permission = require_permission("mintrud.export")
+
+
+async def require_mintrud_batch_user(
+    token: str = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_mintrud_batch_db),
+) -> User:
+    with mintrud_local_database_errors_as_conflict():
+        return await _require_mintrud_batch_user(token=token, session=session)
+
+
+async def require_mintrud_download_user(
+    token: str = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_db),
+) -> User:
+    with mintrud_local_database_errors_as_conflict():
+        user = await get_current_user(token=token, session=session)
+        return await _require_mintrud_download_permission(
+            current_user=user, session=session
+        )
+
+
 @router.post(
     "/mintrud/batches",
     response_model=(
@@ -13767,12 +13805,10 @@ async def get_admin_mintrud_submission_batch_detail(
 async def prepare_admin_mintrud_submission_batch(
     payload: AdminMintrudSubmissionBatchCreate,
     request: Request,
-    current_user: User = Depends(
-        require_registry_batch_user('mintrud')
-    ),
-    session: AsyncSession = Depends(get_registry_batch_db),
+    current_user: User = Depends(require_mintrud_batch_user),
+    session: AsyncSession = Depends(get_mintrud_batch_db),
 ) -> AdminMintrudSubmissionBatchItem:
-    require_registry_batch_exports_enabled()
+    await require_mintrud_batch_exports_enabled(session)
     artifact_path_to_cleanup: (
         str | None
     ) = None
@@ -14242,16 +14278,12 @@ async def record_admin_mintrud_submission_batch_result(
 )
 async def download_admin_mintrud_submission_batch(
     batch_id: str,
-    _: User = Depends(
-        require_permission(
-            "mintrud.export"
-        )
-    ),
+    _: User = Depends(require_mintrud_download_user),
     session: AsyncSession = Depends(
         get_db
     ),
 ):
-    require_registry_batch_exports_enabled()
+    await require_mintrud_batch_exports_enabled(session)
     batch = await session.scalar(
         select(
             RegistrySubmissionBatch

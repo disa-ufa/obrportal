@@ -13,7 +13,7 @@ export default [
     ],
   },
   {
-    files: ["src/**/*.{js,jsx}"],
+    files: ["src/**/*.{js,jsx}", "tests/**/*.{js,jsx,mjs}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -43,4 +43,5 @@ export default [
       "react-hooks/exhaustive-deps": "off",
     },
   },
+  { files: ["src/pages/AdminRegistriesPage.jsx", "src/pages/MainMintrudRegistriesPage.jsx", "src/pages/FrdoRegistryWorkspace.jsx", "src/api/client.js", "src/utils/registrySession.js", "src/components/admin/AdminRegistryLearnerProfileForm.jsx", "src/hooks/useFrdoSubmissionFence.js", "src/components/admin/registries/*.jsx"], rules: { "no-undef": "error" } },
 ];

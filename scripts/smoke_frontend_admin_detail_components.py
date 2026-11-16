@@ -350,47 +350,73 @@ def main() -> None:
     require_occurs("frontend/src/components/admin/RoleForm.jsx", "<Field", 3)
     require_occurs("frontend/src/components/admin/UserForm.jsx", "<Field", 4)
 
-    # Real FRDO PO panel contract: create, download, submit and partial reconciliation.
-    require_contains(
-        "frontend/src/components/admin/FrdoPoBatchesPanel.jsx",
-        [
-            "export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })",
+    # FRDO lifecycle responsibilities are split across guarded modules.
+    frdo_contracts = {
+        "frontend/src/components/admin/FrdoPoBatchesPanel.jsx": [
+            "export function FrdoPoBatchesPanel({ readOnly = false",
             'data-testid="admin-registries-frdo-batches-readonly"',
-            "const canRecord = !readOnly && expanded",
-            "if (readOnly) return;",
-            '!readOnly && batch.status === "exported"',
             'data-testid="admin-registries-frdo-batches"',
-            'data-testid="admin-registries-frdo-batch-create"',
-            'data-testid="admin-registries-frdo-batch-results-form"',
-            'item.status === "approved"',
-            'item.regulatory_program_type === "vocational_training"',
-            "selectedVisible.map((item) => item.id)",
-            "ids.length > 1001",
-            "prepareAdminFrdoSubmissionBatch(ids)",
             "getAdminFrdoSubmissionBatches()",
             "getAdminFrdoSubmissionBatch(batch.id)",
-            "downloadAdminFrdoSubmissionBatch(created.id)",
-            "downloadAdminFrdoSubmissionBatch(batch.id)",
-            "markAdminFrdoSubmissionBatchSubmitted(batch.id, {",
-            "external_reference: submissionReference.trim() || null",
+            "<RegistryBatchCard",
+        ],
+        "frontend/src/components/admin/registries/FrdoBatchCreation.jsx": [
+            "export const creationCandidates",
+            'item.status === "approved"',
+            'item.regulatory_program_type === "vocational_training"',
+            "!ids.length || ids.length > 1001",
+            "inFlight.current = true",
+            "isCurrentAuthSession(owner.current)",
+            "prepareAdminFrdoSubmissionBatch(ids)",
+            "await downloadAdminFrdoSubmissionBatch(batch.id)",
+            'data-testid="admin-registries-frdo-batch-create"',
+        ],
+        "frontend/src/components/admin/registries/FrdoBatchDownload.jsx": [
+            "runBatchDownload(batch, downloadAdminFrdoSubmissionBatch)",
+        ],
+        "frontend/src/hooks/useFrdoSubmissionFence.js": [
+            "isCurrentAuthSession(owner.current)",
+            "journal.current.begin(batch)",
+            "markAdminFrdoSubmissionBatchSubmitted(batch.id, { external_reference: reference.trim() || null })",
+            "journal.current.readback(id, detail)",
+            "await check(batch.id)",
+        ],
+        "frontend/src/components/admin/registries/FrdoBatchSubmission.jsx": [
+            "const eligible = !readOnly && !confirmed && canConfirmFrdoSubmission(batch);",
+            "const blocked = checking || unknown;",
+            "await submission.confirm(batch, reference);",
+            'data-testid="frdo-selected-submission-form"',
+        ],
+        "frontend/src/components/admin/registries/FrdoBatchResults.jsx": [
+            "const canRecord = !readOnly",
+            'detail.status === "submitted" && !detail.reconciled_at',
+            "createFrdoResultFence()",
+            "item.result_status == null && forms[item.obligation_id]?.selected",
             "recordAdminFrdoSubmissionBatchResults(batch.id, {",
             "source_description: sourceDescription.trim()",
             "source_reference: sourceReference.trim() || null",
-            "item.result_status == null && forms[item.obligation_id]?.selected",
-            "if (!items.length)",
-            "result_status: form.result_status",
-            "form.result_status === \"accepted\"",
-            'batch.status === "submitted" && !detail.reconciled_at',
-            "setForms(Object.fromEntries(",
-            "(updated.items || []).map((item) => [",
-            "pendingForm(item)",
-            "...defaults,",
-            "...(previous[obligationId] || {}),",
-            "if (onRefresh) await onRefresh();",
-            "Система не отправляет сведения во внешний реестр автоматически.",
-            "Подтвердить фактическую отправку",
+            'data-testid="admin-registries-frdo-batch-results-form"',
         ],
-    )
+        "frontend/src/components/admin/registries/SelectedRegistryBatch.jsx": [
+            "validBatchId(id)",
+            "<RegistryBatchCard",
+            "<FrdoBatchDownload",
+            "<FrdoBatchSubmission",
+            "<FrdoBatchResults",
+        ],
+        "frontend/src/pages/FrdoRegistryWorkspace.jsx": [
+            "useFrdoSubmissionFence(",
+            "<FrdoBatchCreation",
+            "<FrdoPoBatchesPanel",
+            "<SelectedRegistryBatch",
+        ],
+    }
+
+    for component_path, markers in frdo_contracts.items():
+        require_contains(component_path, markers)
+
+    print("FRDO_MODULAR_CONTRACTS=PASS")
+    print("FRDO_COMPONENTS_CHECKED=" + str(len(frdo_contracts)))
 
     panel_source = read_text(
         "frontend/src/components/admin/FrdoPoBatchesPanel.jsx"
@@ -403,6 +429,14 @@ def main() -> None:
     ):
         if forbidden in panel_source:
             raise SystemExit("FRDO PO panel has forbidden pattern: " + forbidden)
+
+    for forbidden in (
+        "prepareAdminFrdoSubmissionBatch(",
+        "markAdminFrdoSubmissionBatchSubmitted(",
+        "recordAdminFrdoSubmissionBatchResults(",
+    ):
+        if forbidden in panel_source:
+            raise SystemExit("FRDO_DUPLICATE_MUTATION_OWNER")
 
     print("FRDO_PO_BATCH_PANEL_CONTRACT=PASS")
 
@@ -472,7 +506,8 @@ def main() -> None:
         [
             'export function buildProtocolDraftPrintHtml(draft)',
             'export function openProtocolDraftPrint(popup, draft)',
-            'draft.document_kind !== "DRAFT_PREVIEW_ONLY"',
+            'draft.document_kind === "DRAFT_PREVIEW_ONLY" && draft.status === "draft"',
+            'draft.document_kind === "RECORDED_PREVIEW_ONLY" && draft.status === "recorded"',
             'htmlEscape',
             'popup.document.write(page)',
         ],

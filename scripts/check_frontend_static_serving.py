@@ -96,22 +96,67 @@ def require_api_proxy(nginx_text: str) -> None:
         raise SystemExit(f"frontend nginx config parse failed: {exc}") from exc
 
     api_scope = (("server",), ("location", "/api/"))
-    proxies = [(scope, directive) for scope, directive in directives
-               if directive[0] == "proxy_pass"]
-    # No trailing slash: preserve the /api/ prefix on requests to the backend.
-    if blocks.count(api_scope) != 1 or proxies != [
-        (api_scope, ("proxy_pass", "http://backend:8000"))
+    scan_scope = (
+        ("server",),
+        ("location", "~",
+         "^/api/v1/admin/mintrud/protocol-drafts/[^/]+/signed-scan$"),
+    )
+    upstream = ("proxy_pass", "http://backend:8000")
+
+    proxies = [
+        (scope, directive)
+        for scope, directive in directives
+        if directive[0] == "proxy_pass"
+    ]
+
+    expected = {
+        (api_scope, upstream),
+        (scan_scope, upstream),
+    }
+
+    if (
+        blocks.count(api_scope) != 1
+        or blocks.count(scan_scope) != 1
+        or len(proxies) != 2
+        or set(proxies) != expected
+    ):
+        raise SystemExit(
+            "frontend nginx permits only /api/ and exact "
+            "signed-scan proxy to internal backend"
+        )
+
+    limits = [
+        (scope, directive)
+        for scope, directive in directives
+        if directive[0] == "client_max_body_size"
+    ]
+
+    if limits != [
+        (scan_scope, ("client_max_body_size", "10551296"))
     ]:
-        raise SystemExit("frontend nginx requires exactly one internal /api/ proxy; other proxies are forbidden")
+        raise SystemExit(
+            "signed-scan body limit must be exact and isolated"
+        )
 
-    for header, value in [("Host", "$host"), ("X-Forwarded-Proto", "$scheme"),
-                          ("X-Forwarded-For", "$proxy_add_x_forwarded_for")]:
-        expected = (api_scope, ("proxy_set_header", header, value))
-        actual = [(scope, directive) for scope, directive in directives
-                  if scope == api_scope and directive[:2] == ("proxy_set_header", header)]
-        if actual != [expected]:
-            raise SystemExit(f"frontend nginx /api/ requires one correct {header} header")
-
+    for scope in (api_scope, scan_scope):
+        for header, value in [
+            ("Host", "$host"),
+            ("X-Forwarded-Proto", "$scheme"),
+            ("X-Forwarded-For", "$proxy_add_x_forwarded_for"),
+        ]:
+            target = (
+                scope, ("proxy_set_header", header, value)
+            )
+            actual = [
+                (s, directive)
+                for s, directive in directives
+                if s == scope
+                and directive[:2] == ("proxy_set_header", header)
+            ]
+            if actual != [target]:
+                raise SystemExit(
+                    f"frontend nginx proxy header invalid: {header}"
+                )
 
 def main() -> None:
     dockerfile_text = require_file(DOCKERFILE)

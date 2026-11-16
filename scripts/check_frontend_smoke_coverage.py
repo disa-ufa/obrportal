@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from run_frontend_node_tests import collect_unit_tests
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,6 +50,7 @@ REQUIRED_FRONTEND_SMOKE_SCRIPTS = [
     "scripts/smoke_public_pages.py",
     "scripts/smoke_account_page.py",
     "scripts/smoke_frontend_hooks_layout.py",
+    "scripts/run_frontend_node_tests.py",
     "scripts/smoke_frontend_utils_routes.py",
     "scripts/smoke_documents_page.py",
     "scripts/smoke_admin_components.py",
@@ -105,7 +107,8 @@ def collect_check_scripts_text() -> str:
         key=lambda path: path.as_posix().lower(),
     )
 
-    return "\n".join(read_text(path) for path in script_files)
+    node_tests = collect_unit_tests()
+    return "\n".join(read_text(path) for path in [*script_files, *node_tests])
 
 
 def is_likely_covered(path: Path, script_text: str) -> bool:
@@ -116,6 +119,9 @@ def is_likely_covered(path: Path, script_text: str) -> bool:
 
 
 def main() -> None:
+    workflow = read_text(ROOT / ".github/workflows/ci.yml")
+    if "python scripts/run_frontend_node_tests.py" not in workflow:
+        raise SystemExit("FRONTEND_NODE_TEST_CI_GATE_MISSING")
     script_text = collect_check_scripts_text()
     frontend_diagnostics = get_frontend_smoke_guard_diagnostics(script_text)
 

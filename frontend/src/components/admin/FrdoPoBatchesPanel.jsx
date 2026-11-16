@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import RegistryBatchCard from "./registries/RegistryBatchCard";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  prepareAdminFrdoSubmissionBatch,
   getAdminFrdoSubmissionBatches,
   getAdminFrdoSubmissionBatch,
-  downloadAdminFrdoSubmissionBatch,
-  markAdminFrdoSubmissionBatchSubmitted,
-  recordAdminFrdoSubmissionBatchResults,
 } from "../../api/client";
 
 const BUTTON = "rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50";
@@ -39,33 +36,24 @@ function pendingForm(item) {
   };
 }
 
-export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false }) {
-  const [selected, setSelected] = useState([]);
+export function FrdoPoBatchesPanel({ readOnly = false, stage = "all", onSelectBatch, confirmedSubmission, refreshKey = 0 }) {
+  const detailTarget = useRef(null);
+  const detailGeneration = useRef(0);
+  const historyGeneration = useRef(0);
   const [batches, setBatches] = useState([]);
   const [detail, setDetail] = useState(null);
   const [forms, setForms] = useState({});
   const [sourceDescription, setSourceDescription] = useState("");
   const [sourceReference, setSourceReference] = useState("");
-  const [submissionId, setSubmissionId] = useState("");
-  const [submissionReference, setSubmissionReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const approved = useMemo(
-    () => (obligations || []).filter(
-      (item) => (
-        item.status === "approved"
-        && item.regulatory_program_type === "vocational_training"
-      )
-    ),
-    [obligations]
-  );
-  const approvedIds = useMemo(() => new Set(approved.map((item) => item.id)), [approved]);
-  const selectedVisible = approved.filter((item) => selected.includes(item.id));
-
   const reload = useCallback(async () => {
+    const generation = ++historyGeneration.current;
     const data = await getAdminFrdoSubmissionBatches();
+    if (generation !== historyGeneration.current) return;
+    setError("");
     setBatches(Array.isArray(data) ? data : []);
   }, []);
 
@@ -77,20 +65,8 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })
     }).finally(() => {
       if (active) setLoading(false);
     });
-    return () => { active = false; };
-  }, [reload]);
-
-  useEffect(() => {
-    setSelected((current) => current.filter((id) => approvedIds.has(id)));
-  }, [approvedIds]);
-
-  useEffect(() => {
-    if (readOnly) {
-      setSelected([]);
-      setSubmissionId("");
-      setForms({});
-    }
-  }, [readOnly]);
+    return () => { active = false; historyGeneration.current += 1; };
+  }, [reload, refreshKey]);
 
   async function perform(callback) {
     setBusy(true);
@@ -106,107 +82,30 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })
     }
   }
 
-  async function createBatch() {
-    if (readOnly) return;
-    const ids = selectedVisible.map((item) => item.id);
-    if (!ids.length || ids.length > 1001) return;
-    await perform(async () => {
-      const created = await prepareAdminFrdoSubmissionBatch(ids);
-      setSelected([]);
-      await reload();
-      await downloadAdminFrdoSubmissionBatch(created.id);
-      if (onRefresh) await onRefresh();
-    });
-  }
-
   async function openDetail(batch) {
+    const generation = ++detailGeneration.current;
+    detailTarget.current = batch.id;
     if (detail?.id === batch.id) {
+      detailTarget.current = null;
       setDetail(null);
       return;
     }
     await perform(async () => {
       const next = await getAdminFrdoSubmissionBatch(batch.id);
+      if (generation !== detailGeneration.current || next?.id !== batch.id || !Array.isArray(next.items)) return;
       setDetail(next);
       setForms(Object.fromEntries(
         (next.items || []).map((item) => [item.obligation_id, pendingForm(item)])
       ));
       setSourceDescription("");
       setSourceReference("");
-      setSubmissionId("");
     });
   }
 
-  async function submitBatch(event, batch) {
-    event.preventDefault();
-    if (readOnly) return;
-    const completed = await perform(async () => {
-      await markAdminFrdoSubmissionBatchSubmitted(batch.id, {
-        external_reference: submissionReference.trim() || null,
-      });
-      const updated = await getAdminFrdoSubmissionBatch(batch.id);
-      setDetail(updated);
-      setForms(Object.fromEntries(
-        (updated.items || []).map((item) => [
-          item.obligation_id,
-          pendingForm(item),
-        ])
-      ));
-      await reload();
-      if (onRefresh) await onRefresh();
-    });
-    if (completed) setSubmissionId("");
-  }
-
-  function updateForm(obligationId, key, value) {
-    if (readOnly) return;
-    const item = (detail?.items || []).find(
-      (row) => row.obligation_id === obligationId
-    );
-    const defaults = pendingForm(item || {});
-    setForms((previous) => ({
-      ...previous,
-      [obligationId]: {
-        ...defaults,
-        ...(previous[obligationId] || {}),
-        [key]: value,
-      },
-    }));
-  }
-
-  async function saveResults(event, batch) {
-    event.preventDefault();
-    if (readOnly) return;
-    if (!detail || detail.id !== batch.id || detail.reconciled_at) return;
-    const items = (detail.items || [])
-      .filter((item) => item.result_status == null && forms[item.obligation_id]?.selected)
-      .map((item) => {
-        const form = forms[item.obligation_id];
-        return {
-          obligation_id: item.obligation_id,
-          result_status: form.result_status,
-          external_id: form.result_status === "accepted" ? (form.external_id.trim() || null) : null,
-          errors: form.result_status === "accepted" ? [] :
-            form.errors.split("\n").map((value) => value.trim()).filter(Boolean),
-        };
-      });
-    if (!items.length) {
-      setError("Выберите хотя бы одну запись с полученным результатом.");
-      return;
-    }
-    await perform(async () => {
-      const next = await recordAdminFrdoSubmissionBatchResults(batch.id, {
-        source_description: sourceDescription.trim(),
-        source_reference: sourceReference.trim() || null,
-        items,
-      });
-      setDetail(next);
-      setForms(Object.fromEntries(
-        (next.items || []).map((item) => [item.obligation_id, pendingForm(item)])
-      ));
-      await reload();
-      if (onRefresh) await onRefresh();
-    });
-  }
+  useEffect(() => {
+    if (confirmedSubmission?.registry !== "frdo") return;
+    setBatches(current => current.map(batch => batch.id === confirmedSubmission.id ? { ...batch, ...confirmedSubmission } : batch));
+  }, [confirmedSubmission]);
 
   return (
     <section data-testid="admin-registries-frdo-batches" className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -214,108 +113,45 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })
       <p className="mt-2 text-xs leading-5 text-slate-600">
         {readOnly
           ? "История ранее сформированных партий ФРДО. Доступны просмотр деталей и скачивание XLSX. Изменение данных отключено."
-          : "Выберите утверждённые записи, сформируйте XLSX и загрузите его во ФРДО вручную. После загрузки отдельно подтвердите отправку и внесите фактические результаты. Система не отправляет сведения во внешний реестр автоматически."}
+          : "Откройте партию для скачивания XLSX, подтверждения ручной отправки и внесения фактических результатов. Система не отправляет сведения во внешний реестр автоматически."}
       </p>
       {error ? (
         <div role="alert" data-testid="admin-registries-frdo-batch-error" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</div>
       ) : null}
-      {!readOnly ? (
-        <>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="text-sm text-slate-700">Выбрано: {selectedVisible.length} / 1001</span>
-        <button type="button" className={SECONDARY} disabled={busy || !approved.length}
-          onClick={() => setSelected(approved.slice(0, 1001).map((item) => item.id))}>
-          Выбрать утверждённые на странице
-        </button>
-        <button type="button" className={SECONDARY} disabled={busy || !selected.length}
-          onClick={() => setSelected([])}>Очистить выбор</button>
-        <button type="button" className={PRIMARY}
-          data-testid="admin-registries-frdo-batch-create"
-          disabled={busy || !selectedVisible.length || selectedVisible.length > 1001}
-          onClick={createBatch}>Сформировать и скачать XLSX</button>
-        <button type="button" className={SECONDARY} disabled={busy}
-          onClick={() => perform(reload)}>Обновить историю</button>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {readOnly && <p data-testid="admin-registries-frdo-batches-readonly" className="text-xs text-slate-600">Режим только для просмотра. Создание партий и изменение результатов недоступны.</p>}
+        <button type="button" className={SECONDARY} disabled={busy} onClick={() => perform(reload)}>Обновить историю</button>
       </div>
-      {approved.length ? (
-        <div className="mt-3 max-h-36 overflow-auto rounded-xl border border-slate-200 p-2">
-          {approved.map((item) => (
-            <label key={item.id} className="flex items-center gap-2 p-1 text-xs text-slate-700">
-              <input type="checkbox" checked={selected.includes(item.id)} disabled={busy}
-                onChange={(event) => setSelected((current) =>
-                  event.target.checked ?
-                    [...current.filter((id) => id !== item.id), item.id] :
-                    current.filter((id) => id !== item.id)
-                )}/>
-              <span className="break-all">{item.id}</span>
-            </label>
-          ))}
-        </div>
-      ) : <p className="mt-3 text-xs text-slate-500">На текущей странице нет утверждённых записей профессионального обучения (ПО).</p>}
-        </>
-      ) : (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <p
-            data-testid="admin-registries-frdo-batches-readonly"
-            className="text-xs text-slate-600"
-          >
-            Режим только для просмотра. Создание партий и изменение результатов недоступны.
-          </p>
-          <button
-            type="button"
-            className={SECONDARY}
-            disabled={busy}
-            onClick={() => perform(reload)}
-          >
-            Обновить историю
-          </button>
-        </div>
-      )}
 
       <h3 className="mt-6 text-sm font-bold text-slate-900">История пакетов</h3>
       {loading ? <p className="mt-2 text-xs">Загрузка пакетов...</p> : null}
-      {!loading && batches.length === 0 ? <p className="mt-2 text-xs text-slate-500">Пакетов пока нет.</p> : null}
+      {!loading && !error && batches.length === 0 ? <p className="mt-2 text-xs text-slate-500">Пакетов пока нет.</p> : null}
+      {!loading && !error && batches.length > 0 && !batches.some(batch => stage === "all" || (stage === "reconciled" ? Boolean(batch.reconciled_at) : !batch.reconciled_at && batch.status === stage)) ? <p role="status" className="mt-2 text-sm text-slate-600">В выбранной стадии партий нет. Выберите другую стадию.</p> : null}
       <div className="mt-3 grid gap-3">
-        {batches.map((batch) => {
+        {batches.filter(batch => stage === "all" || (stage === "reconciled" ? Boolean(batch.reconciled_at) : !batch.reconciled_at && batch.status === stage)).map((batch) => {
           const expanded = detail?.id === batch.id;
-          const canRecord = !readOnly && expanded && batch.status === "submitted" && !detail.reconciled_at;
           return (
             <article key={batch.id} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200"
               data-testid={`admin-registries-frdo-batch-${batch.id}`}>
+              <RegistryBatchCard batch={batch} knownDetail={detail} expanded={onSelectBatch ? false : undefined} onToggle={onSelectBatch ? () => onSelectBatch(batch.id) : undefined} />
               <div className="flex flex-wrap justify-between gap-2">
                 <div>
-                  <div className="break-all text-sm font-semibold">{batch.id}</div>
+                  <div className="break-all text-sm font-semibold">ФРДО ПО · XLSX</div>
                   <div className="mt-1 text-xs text-slate-500">
-                    {batch.record_count} записей · {batch.status} · {batch.generated_at || "—"}
+                    {batch.record_count} записей · создано: {batch.generated_at || "—"}
                   </div>
                 </div>
                 <span className="text-xs font-semibold text-slate-700">
                   {batch.reconciled_at ? "Результаты сверены" : batch.status === "submitted" ? "Ожидаются результаты" : "Ожидается отправка"}
                 </span>
               </div>
-              <div className="mt-2 break-all text-[11px] text-slate-500">SHA-256: {batch.artifact_sha256}</div>
+              <details className="mt-2 break-all text-xs text-slate-500"><summary>Технические реквизиты</summary><p>UUID: {batch.id}</p><p>SHA-256: {batch.artifact_sha256}</p></details>
               <div className="mt-3 flex flex-wrap gap-2">
-                {batch.has_artifact ? <button type="button" className={SECONDARY} disabled={busy}
-                  onClick={() => perform(() => downloadAdminFrdoSubmissionBatch(batch.id))}>Скачать XLSX</button> : null}
-                {!readOnly && batch.status === "exported" ? <button type="button" className={PRIMARY} disabled={busy}
-                  onClick={() => { setSubmissionId(batch.id); setSubmissionReference(""); setDetail(null); }}>
-                  Зафиксировать отправку
-                </button> : null}
+
                 <button type="button" className={SECONDARY} disabled={busy} onClick={() => openDetail(batch)}>
                   {expanded ? "Скрыть детали" : "Детали и результаты"}
                 </button>
               </div>
-              {!readOnly && submissionId === batch.id && batch.status === "exported" ? (
-                <form onSubmit={(event) => submitBatch(event, batch)} className="mt-3 grid gap-2">
-                  <label className="text-xs">Внешний номер отправки (необязательно)
-                    <input className={INPUT} maxLength={255} value={submissionReference}
-                      onChange={(event) => setSubmissionReference(event.target.value)} disabled={busy}/>
-                  </label>
-                  <div className="flex gap-2">
-                    <button className={PRIMARY} disabled={busy} type="submit">Подтвердить фактическую отправку</button>
-                    <button type="button" className={SECONDARY} disabled={busy} onClick={() => setSubmissionId("")}>Отмена</button>
-                  </div>
-                </form>
-              ) : null}
               {expanded ? (
                 <div className="mt-4 grid gap-3">
                   <p className="text-xs text-slate-700">
@@ -323,62 +159,6 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })
                       (detail.items || []).filter((item) => item.result_status !== null).length
                     }. Для частичной сверки отметьте только записи, результаты которых уже получены.
                   </p>
-                  {canRecord ? (
-                    <form onSubmit={(event) => saveResults(event, batch)}
-                      data-testid="admin-registries-frdo-batch-results-form" className="grid gap-3">
-                      <label className="grid gap-1 text-xs font-semibold">
-                        Источник результатов (обязательно)
-                        <input className={INPUT} minLength={3} maxLength={512} required
-                          placeholder="Например: протокол обработки в личном кабинете ФРДО"
-                          disabled={busy} value={sourceDescription}
-                          onChange={(event) => setSourceDescription(event.target.value)}/>
-                      </label>
-                      <label className="grid gap-1 text-xs">
-                        Номер / ссылка на результат (необязательно)
-                        <input className={INPUT} maxLength={255} disabled={busy}
-                          value={sourceReference} onChange={(event) => setSourceReference(event.target.value)}/>
-                      </label>
-                      {(detail.items || []).map((item) => {
-                        const form = forms[item.obligation_id] || pendingForm(item);
-                        const recorded = item.result_status !== null;
-                        return (
-                          <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200" key={item.obligation_id}>
-                            <div className="break-all text-xs font-semibold">{item.position + 1}. {item.obligation_id}</div>
-                            {recorded ? (
-                              <p className="mt-2 text-xs text-emerald-800">
-                                Результат зафиксирован: {item.result_status} {item.external_id || ""}
-                                {(item.errors_json || []).length ? " · " + item.errors_json.join("; ") : ""}
-                              </p>
-                            ) : (
-                              <>
-                                <label className="mt-2 flex items-center gap-2 text-xs">
-                                  <input type="checkbox" checked={Boolean(form.selected)} disabled={busy}
-                                    onChange={(event) => updateForm(item.obligation_id, "selected", event.target.checked)}/>
-                                  Результат получен
-                                </label>
-                                {form.selected ? (
-                                  <div className="mt-2 grid gap-2">
-                                    <select className={INPUT} value={form.result_status} disabled={busy}
-                                      onChange={(event) => updateForm(item.obligation_id, "result_status", event.target.value)}>
-                                      {OUTCOMES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-                                    </select>
-                                    {form.result_status === "accepted" ?
-                                      <input className={INPUT} maxLength={255} placeholder="Внешний ID (при наличии)"
-                                        value={form.external_id} disabled={busy}
-                                        onChange={(event) => updateForm(item.obligation_id, "external_id", event.target.value)}/> :
-                                      <textarea className={INPUT} placeholder="Ошибки обработки, по одной на строку"
-                                        value={form.errors} disabled={busy}
-                                        onChange={(event) => updateForm(item.obligation_id, "errors", event.target.value)}/>}
-                                  </div>
-                                ) : null}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                      <button type="submit" className={PRIMARY} disabled={busy}>Сохранить выбранные результаты</button>
-                    </form>
-                  ) : (
                     <div className="grid gap-2">
                       {(detail.items || []).map((item) => (
                         <div key={item.id} className="rounded-lg bg-white p-2 text-xs">
@@ -388,7 +168,7 @@ export function FrdoPoBatchesPanel({ obligations, onRefresh, readOnly = false })
                         </div>
                       ))}
                     </div>
-                  )}
+
                 </div>
               ) : null}
             </article>

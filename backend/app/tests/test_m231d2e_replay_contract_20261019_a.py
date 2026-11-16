@@ -89,6 +89,10 @@ def make_app(registry, actor, session_dependency):
     path = f"/api/v1/admin/{registry}/batches"
     route = next(r for r in app.routes if isinstance(r, APIRoute) and r.path == path and "POST" in r.methods)
     app.dependency_overrides[admin.get_registry_batch_db] = session_dependency
+    # Only the synthetic HTTP harness overrides the Mintrud wrapper.
+    # Production continues to use the original guarded dependency.
+    if registry == 'mintrud':
+        app.dependency_overrides[admin.get_mintrud_batch_db] = session_dependency
 
     async def authenticated_actor():
         return SimpleNamespace(id=actor)
