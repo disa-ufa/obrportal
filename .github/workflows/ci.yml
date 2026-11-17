@@ -325,7 +325,10 @@ jobs:
             apk add --no-cache chromium >/dev/null
             browser=$(command -v chromium-browser || command -v chromium)
             test -n "$browser"
-            UI_BROWSER_PATH="$browser" node tests/learner_course_completion.browser.mjs
+            # The normal CI build intentionally uses VITE_API_BASE_URL from .env.
+            # Make an isolated relative-API build for synthetic, same-origin mocks.
+            VITE_API_BASE_URL="" VITE_API_URL="" npm run build -- --outDir dist-browser-test
+            UI_BUILD_DIR=dist-browser-test UI_BROWSER_PATH="$browser" node tests/learner_course_completion.browser.mjs
           '
 
       - name: Run enrollment CSV unit tests

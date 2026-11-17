@@ -10,7 +10,10 @@ const enrollment = "a15cc510-d620-4fa7-8961-f1502bbfd137";
 const course = "b15cc510-d620-4fa7-8961-f1502bbfd137";
 const overview = `/account/courses/${enrollment}`;
 const courseApi = "/api/v1" + overview;
-const server = await preview({ preview: { host: "127.0.0.1", port: 0 } });
+const server = await preview({
+  build: { outDir: process.env.UI_BUILD_DIR || "dist" },
+  preview: { host: "127.0.0.1", port: 0 },
+});
 const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
 const browser = await chromium.launch({
   headless: true, executablePath: browserPath,
@@ -160,7 +163,19 @@ try {
     const document = page.getByTestId("learner-course-completion-document-status");
     try {
       await page.goto(origin + overview + "/lessons/lesson-1");
-      await lessonAction.waitFor();
+      try {
+        await lessonAction.waitFor();
+      } catch (cause) {
+        // Report only non-sensitive routing/test state, never tokens or profile values.
+        const pathname = new URL(page.url()).pathname;
+        const markers = await Promise.all([
+          "public-route-loading-state",
+          "learner-course-content-active-lesson",
+          "learner-course-lesson-not-found",
+          "learner-course-start-required",
+        ].map(async (id) => [id, await page.getByTestId(id).count()]));
+        throw new Error(`Lesson action missing: pathname=${pathname}, markers=${JSON.stringify(markers)}, pageErrors=${stand.diagnostics.length}`, { cause });
+      }
       assert.equal(await panel.count(), 0);
       for (const [error, message] of [
         ["required_quiz_not_passed", "обязательные тесты"],
