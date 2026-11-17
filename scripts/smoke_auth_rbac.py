@@ -3264,6 +3264,8 @@ def main() -> int:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -3427,6 +3429,31 @@ def main() -> int:
         == "Complete required lessons before completing course"
     )
     checks.append("learner course completion requires required lesson")
+
+    status, completion_profile = request_json(
+        "PATCH",
+        "/api/v1/account/profile",
+        body={"first_name": "Smoke", "last_name": "Learner"},
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner completion profile setup")
+    assert isinstance(completion_profile, dict)
+    assert completion_profile["first_name"] == "Smoke"
+    assert completion_profile["last_name"] == "Learner"
+    checks.append("learner completion profile setup ok")
+
+    status, completion_readiness = request_json(
+        "GET",
+        "/api/v1/account/courses/"
+        + str(self_enrollment["enrollment_id"])
+        + "/completion-readiness",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner completion readiness")
+    assert isinstance(completion_readiness, dict)
+    assert completion_readiness["status"] == "ready", completion_readiness
+    assert completion_readiness["is_ready"] is True, completion_readiness
+    checks.append("learner completion readiness ok")
 
     status, detail_after_required_lesson = request_json(
         "POST",
