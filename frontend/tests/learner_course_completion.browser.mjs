@@ -42,6 +42,7 @@ function readiness(state) {
   }
   const missing = [];
   if (!state.profile.first_name) missing.push(issue("learner_profile.first_name"));
+  if (!state.profile.last_name) missing.push(issue("learner_profile.last_name"));
   if (!state.employment.profession_or_position) missing.push(issue("employer.profession_or_position"));
   if (state.admin) missing.push(issue("employer.reporting_scenario", "administrator"));
   const invalid = state.extraIssue ? [state.extraIssue] : [];
@@ -141,7 +142,7 @@ async function setupBrowser(width) {
   return { context, page, diagnostics, get state() { return state; }, reset: (overrides) => { state = fixture(overrides); } };
 }
 
-const readyData = { profile: { first_name: "Учебный" }, employment: { profession_or_position: "Учебная должность" } };
+const readyData = { profile: { first_name: "Учебный", last_name: "Слушатель" }, employment: { profession_or_position: "Учебная должность" } };
 
 async function screenshot(page, name) {
   if (!screenshotDir) return;
@@ -191,7 +192,7 @@ try {
       await page.waitForURL("**/lesson-2");
       assert.equal(await panel.count(), 0);
       await lessonAction.click();
-      await panel.getByText("Вы успешно прошли обучение.", { exact: false }).waitFor();
+      await panel.getByText("Обучение пройдено. Для оформления заполните оставшиеся сведения.", { exact: true }).waitFor();
       assert.equal(new URL(page.url()).pathname, overview);
       assert.equal(stand.state.status, "active");
       assert.equal(stand.state.done, 2);
@@ -201,6 +202,7 @@ try {
       assert.equal(await finalAction.count(), 0);
       assert.equal(stand.state.documentReads, 0);
       assert.ok(await panel.getByText("Имя", { exact: true }).isVisible());
+      assert.ok(await panel.getByText("Фамилия", { exact: true }).isVisible());
       assert.ok(await panel.getByText("Должность или профессия", { exact: true }).isVisible());
       await assertNoHorizontalOverflow(page);
       if (width === 390) await screenshot(page, "01-incomplete-390.png");
@@ -209,12 +211,13 @@ try {
       assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), "Открыть профиль");
       await page.keyboard.press("Enter");
       await page.getByTestId("account-learner-profile").getByLabel("Имя", { exact: true }).fill("Учебный");
+      await page.getByTestId("account-learner-profile").getByLabel("Фамилия", { exact: true }).fill("Слушатель");
       await assertNoHorizontalOverflow(page);
       const beforeProfile = stand.state.readinessReads;
-      await page.getByRole("button", { name: "Сохранить данные", exact: true }).click();
-      await panel.getByText("Персональные данные сохранены в профиле слушателя.").waitFor();
-      await page.getByTestId("learner-completion-return").click();
+      await panel.getByRole("button", { name: "Сохранить и продолжить", exact: true }).click();
+      await page.getByTestId("learner-completion-save-success").getByText("Сведения профиля сохранены.", { exact: false }).waitFor();
       await panel.getByText("Имя", { exact: true }).waitFor({ state: "hidden" });
+      assert.equal(new URL(page.url()).search, "", "Profile save returns to finalization");
       assert.equal(stand.state.profilePatches, 1);
       assert.ok(stand.state.readinessReads > beforeProfile);
       await panel.getByRole("link", { name: "Открыть сведения о работодателе" }).click();
@@ -222,12 +225,13 @@ try {
       await panel.getByLabel("Должность или профессия").fill("Учебная должность");
       await assertNoHorizontalOverflow(page);
       const beforeEmployment = stand.state.readinessReads;
-      await panel.getByRole("button", { name: "Сохранить сведения" }).click();
+      await panel.getByRole("button", { name: "Сохранить и продолжить", exact: true }).click();
+      await page.getByTestId("learner-completion-save-success").getByText("Сведения о работодателе сохранены.", { exact: false }).waitFor();
       await panel.getByText("Обязательные сведения заполнены.").waitFor();
       assert.equal(stand.state.employmentPatches, 1);
       assert.ok(stand.state.readinessReads > beforeEmployment);
       assert.equal(stand.state.finalPosts, 0);
-      await page.getByTestId("learner-completion-return").click();
+      assert.equal(new URL(page.url()).search, "", "Employment save returns to finalization");
       await finalAction.waitFor();
       assert.equal(new URL(page.url()).search, "");
       assert.equal(await finalAction.isEnabled(), true);
@@ -263,7 +267,7 @@ try {
 
         stand.reset({ ...readyData, done: 2, admin: true, policy: true });
         await page.goto(origin + overview);
-        await page.getByTestId("learner-completion-policy-unresolved").waitFor();
+        await page.getByTestId("learner-completion-admin-action").waitFor();
         assert.equal(await page.getByTestId("learner-completion-admin-action").isVisible(), true);
         assert.equal(await panel.getByRole("link").count(), 0);
         assert.equal(await finalAction.count(), 0);
@@ -279,7 +283,7 @@ try {
         stand.reset({ done: 2, completedElsewhere: true });
         await page.goto(origin + overview + "?completion=profile");
         await panel.getByText("Курс уже завершён.", { exact: false }).waitFor();
-        assert.equal(await panel.getByText("Вы успешно прошли обучение.", { exact: false }).count(), 0);
+        assert.equal(await page.getByTestId("learner-completion-issues").count(), 0);
         assert.equal(await page.getByTestId("account-learner-profile").count(), 0);
         assert.equal(stand.state.finalPosts, 0);
 
