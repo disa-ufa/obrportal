@@ -30,5 +30,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("enrollment_employment_details")
-    op.drop_column("learner_profiles", "no_middle_name")
+    # Never discard employment records or explicit absence-of-patronymic data.
+    # A safe recovery requires a separately approved backup-backed plan.
+    raise RuntimeError("Employment details and patronymic absence must not be discarded; use an approved recovery plan")
