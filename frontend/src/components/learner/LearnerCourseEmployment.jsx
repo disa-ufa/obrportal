@@ -19,7 +19,8 @@ function toForm(details) {
   return Object.fromEntries(fields.map(({ key }) => [key, details[key] ?? ""]));
 }
 
-export function LearnerCourseEmployment({ enrollmentId }) {
+export function LearnerCourseEmployment({ enrollmentId, onSaved, onDirtyChange, completed = false }) {
+  const checkReadiness = !onSaved && !completed;
   const [details, setDetails] = useState(null);
   const [readiness, setReadiness] = useState(null);
   const [form, setForm] = useState(null);
@@ -30,7 +31,10 @@ export function LearnerCourseEmployment({ enrollmentId }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getAccountEnrollmentEmployment(enrollmentId), getAccountCompletionReadiness(enrollmentId)])
+    Promise.all([
+      getAccountEnrollmentEmployment(enrollmentId),
+      checkReadiness ? getAccountCompletionReadiness(enrollmentId) : null,
+    ])
       .then(([employment, review]) => {
         if (!active) return;
         setDetails(employment);
@@ -41,7 +45,7 @@ export function LearnerCourseEmployment({ enrollmentId }) {
         if (active) setError(formatApiError(cause, "Не удалось загрузить данные для оформления обучения."));
       });
     return () => { active = false; };
-  }, [enrollmentId, loadVersion]);
+  }, [checkReadiness, enrollmentId, loadVersion]);
 
   const fieldsToShow = fields.filter(({ key }) => {
     if (!details) return false;
@@ -50,6 +54,10 @@ export function LearnerCourseEmployment({ enrollmentId }) {
       || (key === "profession_or_position" && details.requirement !== "not_required");
   });
   const changed = fieldsToShow.filter(({ key }) => form[key].trim() !== (details[key] ?? ""));
+  const hasChanges = changed.length > 0;
+  useEffect(() => {
+    onDirtyChange?.(hasChanges);
+  }, [hasChanges, onDirtyChange]);
   const issues = [...(readiness?.missing_fields ?? []), ...(readiness?.invalid_fields ?? [])];
 
   async function save(event) {
@@ -65,11 +73,15 @@ export function LearnerCourseEmployment({ enrollmentId }) {
       setDetails(saved);
       setForm(toForm(saved));
       setNotice("Сведения сохранены.");
-      setReadiness(null);
-      try {
-        setReadiness(await getAccountCompletionReadiness(enrollmentId));
-      } catch {
-        setError("Сведения сохранены. Обновите состояние заполнения.");
+      if (onSaved) {
+        onSaved();
+      } else if (checkReadiness) {
+        setReadiness(null);
+        try {
+          setReadiness(await getAccountCompletionReadiness(enrollmentId));
+        } catch {
+          setError("Сведения сохранены. Обновите состояние заполнения.");
+        }
       }
     } catch (cause) {
       setError(formatApiError(cause, "Не удалось сохранить сведения."));
@@ -82,8 +94,8 @@ export function LearnerCourseEmployment({ enrollmentId }) {
     <SectionCard title="Данные для оформления обучения">
       {error && <p role="alert" className="mb-3 text-sm text-red-800">{error}</p>}
       {notice && <p role="status" className="mb-3 text-sm text-green-800">{notice}</p>}
-      {!readiness && !error && !saving && <p role="status" className="text-sm text-slate-600">Загрузка данных…</p>}
-      {error && !readiness && (
+      {(!details || (checkReadiness && !readiness)) && !error && !saving && <p role="status" className="text-sm text-slate-600">Загрузка данных…</p>}
+      {error && (!details || (checkReadiness && !readiness)) && (
         <button type="button" className="text-sm font-bold text-blue-700 underline" onClick={() => {
           setError("");
           setLoadVersion((version) => version + 1);
@@ -122,7 +134,7 @@ export function LearnerCourseEmployment({ enrollmentId }) {
           {details.source === "learner" && <p className="text-sm text-slate-600">Сведения указаны слушателем.</p>}
           {details.can_edit && <button type="submit" disabled={saving || changed.length === 0}
             className="min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white disabled:opacity-50">
-            {saving ? "Сохранение…" : "Сохранить сведения"}
+            {saving ? "Сохранение…" : onSaved ? "Сохранить и продолжить" : "Сохранить сведения"}
           </button>}
         </form>
       )}

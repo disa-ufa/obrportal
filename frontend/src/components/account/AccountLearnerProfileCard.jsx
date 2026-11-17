@@ -196,7 +196,7 @@ function FormField({
   );
 }
 
-export function AccountLearnerProfileCard({ accountUser }) {
+export function AccountLearnerProfileCard({ accountUser, onSaved, onDirtyChange }) {
   const profileFieldId = useId();
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
@@ -265,6 +265,10 @@ export function AccountLearnerProfileCard({ accountUser }) {
     );
   }, [formData, profile]);
 
+  useEffect(() => {
+    onDirtyChange?.(hasChanges);
+  }, [hasChanges, onDirtyChange]);
+
   function updateField(field, value) {
     setFormData((current) => ({
       ...current,
@@ -297,6 +301,7 @@ export function AccountLearnerProfileCard({ accountUser }) {
       setSaveNotice(
         "Персональные данные сохранены в профиле слушателя."
       );
+      onSaved?.();
     } catch (error) {
       setSaveError(formatProfileSaveError(error));
     } finally {
@@ -566,7 +571,7 @@ export function AccountLearnerProfileCard({ accountUser }) {
                 disabled={saving || !hasChanges}
                 className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving ? "Сохраняем..." : "Сохранить данные"}
+                {saving ? "Сохраняем..." : onSaved ? "Сохранить и продолжить" : "Сохранить данные"}
               </button>
 
               <button

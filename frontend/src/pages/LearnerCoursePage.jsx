@@ -10,8 +10,8 @@ import {
   PlayCircle,
   RefreshCw,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   buildApiUrl,
@@ -21,10 +21,12 @@ import {
   startAccountCourse,
 } from "../api/client";
 import { LearnerAssignmentBlock } from "../components/learner/LearnerAssignmentBlock";
+import { LearnerCourseCompletionPanel } from "../components/learner/LearnerCourseCompletionPanel";
 import { LearnerCourseEmployment } from "../components/learner/LearnerCourseEmployment";
 import { LearnerContentBlock } from "../components/learner/LearnerContentBlock";
 import { LearnerQuizBlock } from "../components/learner/LearnerQuizBlock";
 import { formatApiError } from "../utils/apiErrors";
+import { needsCourseFinalization } from "../utils/courseCompletion";
 
 
 function getStatusLabel(status) {
@@ -207,14 +209,17 @@ async function loadCompletionDocumentForEnrollment(enrollmentId) {
       (documentItem) =>
         `${documentItem?.enrollment_id || ""}` ===
         `${enrollmentId || ""}`
-    ) ||
-    items[0] ||
-    null
+    ) || null
   );
 }
 
 
-export function LearnerCoursePage() {
+export function LearnerCoursePage({ accountUser }) {
+  const { enrollmentId } = useParams();
+  return <LearnerCourseWorkspace key={enrollmentId} accountUser={accountUser} />;
+}
+
+function LearnerCourseWorkspace({ accountUser }) {
   const {
     enrollmentId,
     lessonId,
@@ -232,8 +237,13 @@ export function LearnerCoursePage() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [courseContentsOpen, setCourseContentsOpen] = useState(false);
+  const [focusCompleted, setFocusCompleted] = useState(false);
+  const completedBanner = useRef(null);
 
   const readOnly = detail?.status !== "active";
+  const finalizationNeeded = needsCourseFinalization(detail);
+  const completionConfirmed = detail?.status === "completed";
+  const overviewPath = `/account/courses/${enrollmentId}`;
   const isOverviewRoute = !lessonId;
   const lessonAccessBlocked = Boolean(
     lessonId
@@ -252,23 +262,8 @@ export function LearnerCoursePage() {
           enrollmentId
         );
 
-        let documentItem = null;
-
-        if (response?.status === "completed") {
-
-          try {
-            documentItem =
-              await loadCompletionDocumentForEnrollment(
-                enrollmentId
-              );
-          } catch {
-            documentItem = null;
-          }
-        }
-
         if (!cancelled) {
           setDetail(response);
-          setCompletionDocument(documentItem);
         }
       } catch (err) {
         if (!cancelled) {
@@ -303,6 +298,19 @@ export function LearnerCoursePage() {
       cancelled = true;
     };
   }, [enrollmentId, reloadKey]);
+
+  useEffect(() => {
+    if (!completionConfirmed) return;
+    let active = true;
+    loadCompletionDocumentForEnrollment(enrollmentId)
+      .then((documentItem) => { if (active) setCompletionDocument(documentItem); })
+      .catch(() => { if (active) setCompletionDocument(null); });
+    return () => { active = false; };
+  }, [completionConfirmed, enrollmentId, reloadKey]);
+
+  useEffect(() => {
+    if (completionConfirmed && focusCompleted) completedBanner.current?.focus();
+  }, [completionConfirmed, focusCompleted]);
 
   const allLessons = useMemo(
     () => flattenCourseLessons(detail),
@@ -520,21 +528,11 @@ export function LearnerCoursePage() {
       setDetail(response);
 
       if (response?.status === "completed") {
-        let documentItem = null;
-
-        try {
-          documentItem =
-            await loadCompletionDocumentForEnrollment(
-              enrollmentId
-            );
-        } catch {
-          documentItem = null;
-        }
-
-        setCompletionDocument(documentItem);
         setLessonCompletionSuccess(
           "\u0423\u0440\u043e\u043a \u0438\u0437\u0443\u0447\u0435\u043d. \u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430."
         );
+      } else if (needsCourseFinalization(response)) {
+        navigate(overviewPath, { replace: true });
       } else if (nextIncompleteLesson) {
         setLessonCompletionSuccess(
           `\u0423\u0440\u043e\u043a \u00ab${completedLessonTitle}\u00bb \u0438\u0437\u0443\u0447\u0435\u043d. \u041e\u0442\u043a\u0440\u044b\u0442 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u043a: ${nextIncompleteLesson.title}.`
@@ -555,6 +553,17 @@ export function LearnerCoursePage() {
       setLessonCompletionSuccess("");
     } finally {
       setLessonCompletionLoading(false);
+    }
+  }
+
+  async function handleCourseCompleted(result) {
+    setFocusCompleted(true);
+    setDetail((current) => ({ ...current, ...result }));
+    try {
+      const confirmed = await getAccountCourseDetail(enrollmentId);
+      if (confirmed?.status === "completed") setDetail(confirmed);
+    } catch {
+      // The successful completion response remains authoritative.
     }
   }
 
@@ -786,6 +795,7 @@ export function LearnerCoursePage() {
 
           {isOverviewRoute
           && detail.status === "active"
+          && !finalizationNeeded
           && nextIncompleteLesson ? (
             <div
                 data-testid="learner-course-next-step"
@@ -813,17 +823,31 @@ export function LearnerCoursePage() {
         </div>
       </header>
 
-      {isOverviewRoute && (
+      {isOverviewRoute && finalizationNeeded && (
+        <LearnerCourseCompletionPanel
+          enrollmentId={enrollmentId}
+          accountUser={accountUser}
+          initialReadiness={detail.completion_readiness}
+          onCompleted={handleCourseCompleted}
+        />
+      )}
+
+      {isOverviewRoute && !finalizationNeeded && (
         <div className="mt-6">
-          <LearnerCourseEmployment key={`${enrollmentId}:${detail.status}`} enrollmentId={enrollmentId} />
+          <LearnerCourseEmployment key={`${enrollmentId}:${detail.status}`} enrollmentId={enrollmentId}
+            completed={completionConfirmed} />
         </div>
       )}
 
       {detail.status === "completed" ? (
         <div
+          ref={completedBanner}
+          tabIndex={-1}
+          role="region"
+          aria-label="Программа завершена"
           data-testid="learner-course-course-completed"
           data-document-status={completionDocument?.status || "unknown"}
-          className="mt-4 flex gap-3 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-100"
+          className="mt-4 flex gap-3 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600"
         >
           <CheckCircle2 className="h-5 w-5 shrink-0" />
 
@@ -1211,7 +1235,11 @@ export function LearnerCoursePage() {
                       Отлично! Материал урока изучен, прогресс обучения обновлён.
                     </p>
 
-                    {detail.status !== "completed" && nextIncompleteLesson ? (
+                    {finalizationNeeded ? (
+                      <Link to={overviewPath} className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
+                        Перейти к завершению обучения
+                      </Link>
+                    ) : detail.status !== "completed" && nextIncompleteLesson ? (
                       <div
                         data-testid="learner-course-next-lesson-preview"
                         className="mt-4 rounded-xl bg-white/70 p-3 ring-1 ring-green-200"
@@ -1303,6 +1331,7 @@ export function LearnerCoursePage() {
                 {lessonCompletionError ? (
                   <div
                     data-testid="learner-course-lesson-completion-error"
+                    role="alert"
                     className="mt-3 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700 ring-1 ring-red-200"
                   >
                     {lessonCompletionError}

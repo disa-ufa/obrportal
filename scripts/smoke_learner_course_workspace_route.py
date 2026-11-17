@@ -53,10 +53,10 @@ def test_authenticated_learner_course_routes_exist() -> None:
         < learner_gate.index("user ?")
     )
 
-    assert "<LearnerCoursePage />" in learner_gate
+    assert "<LearnerCoursePage accountUser={user} />" in learner_gate
     assert '<Navigate to="/login" replace />' in learner_gate
 
-    assert "<LearnerCoursePage />" in routes
+    assert "<LearnerCoursePage accountUser={user} />" in routes
     assert '<Navigate to="/login" replace />' in routes
 
 
@@ -237,6 +237,7 @@ def test_workspace_uses_effective_progress_and_statuses() -> None:
     assert (
         'isOverviewRoute\n'
         '          && detail.status === "active"\n'
+        '          && !finalizationNeeded\n'
         '          && nextIncompleteLesson'
         in page
     )
