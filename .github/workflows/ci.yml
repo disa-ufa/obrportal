@@ -319,6 +319,15 @@ jobs:
         run: |
           docker compose exec -T frontend npm run build
 
+      - name: Run learner completion synthetic browser regression
+        run: |
+          docker compose exec -T frontend sh -ec '
+            apk add --no-cache chromium >/dev/null
+            browser=$(command -v chromium-browser || command -v chromium)
+            test -n "$browser"
+            UI_BROWSER_PATH="$browser" node tests/learner_course_completion.browser.mjs
+          '
+
       - name: Run enrollment CSV unit tests
         run: |
           node --test frontend/src/utils/adminEnrollmentsCsv.test.js
