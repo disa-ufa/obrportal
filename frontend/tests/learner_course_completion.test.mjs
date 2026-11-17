@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { canFinalizeCourse, describeCompletionIssues, needsCourseFinalization } from "../src/utils/courseCompletion.js";
@@ -45,4 +46,49 @@ test("diagnostics link only editable fields and never copy API message values", 
   assert.match(issues[0].instruction, /отметьте его отсутствие/);
   assert.match(issues[2].instruction, /исправьте/);
   assert.doesNotMatch(JSON.stringify(issues), /PRIVATE_FIXTURE_VALUE/);
+});
+
+function readLearnerComponent(filename) {
+  return readFileSync(new URL(`../src/components/learner/${filename}`, import.meta.url), "utf8");
+}
+
+test("completion panel enforces server readiness, replay safety and conflict recovery", () => {
+  const source = readLearnerComponent("LearnerCourseCompletionPanel.jsx");
+  const required = [
+    "getAccountCompletionReadiness(enrollmentId)",
+    "const ready = canFinalizeCourse(readiness);",
+    "const canSubmit = ready && !checking && !readinessError && !completionError;",
+    "if (!canSubmit || submitting.current) return;",
+    "completeAccountCourse(enrollmentId)",
+    'if (result?.status !== "completed") throw new Error("Unexpected completion status");',
+    "onCompleted(result);",
+    'error.status === 409 && detail?.code === "completion.profile_incomplete"',
+    "setCompletionConflict(true);",
+    "refreshReadiness();",
+    'data-testid="learner-course-finalize-button"',
+    "if (formDirty && !window.confirm(",
+  ];
+  for (const contract of required) {
+    assert.ok(source.includes(contract), `Completion panel contract missing: ${contract}`);
+  }
+});
+
+test("employment editor submits only changed fields and preserves failed edits", () => {
+  const source = readLearnerComponent("LearnerCourseEmployment.jsx");
+  const required = [
+    "getAccountEnrollmentEmployment(enrollmentId)",
+    "if (!details?.can_edit || saving || changed.length === 0) return;",
+    "updateAccountEnrollmentEmployment(",
+    "Object.fromEntries(changed.map(",
+    "setDetails(saved);",
+    "setForm(toForm(saved));",
+    "onDirtyChange?.(hasChanges);",
+    'setError(formatApiError(cause, "Не удалось сохранить сведения."));',
+    "disabled={!details.can_edit || saving}",
+    "onSaved();",
+  ];
+  for (const contract of required) {
+    assert.ok(source.includes(contract), `Employment editor contract missing: ${contract}`);
+  }
+  assert.match(source, /catch \(cause\) \{\s*setError\(formatApiError\(cause, "Не удалось сохранить сведения\."\)\);\s*\} finally/);
 });
