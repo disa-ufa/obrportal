@@ -3569,6 +3569,8 @@ def main() -> int:
             "hours": 16,
             "format": "online",
             "document_type": "Удостоверение",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
         },
     )
@@ -3587,6 +3589,19 @@ def main() -> int:
     )
     assert_status(status, 201, "admin completion enrollment create")
     assert isinstance(admin_completion_enrollment, dict)
+
+    status, admin_completion_readiness = request_json(
+        "GET",
+        "/api/v1/account/courses/"
+        + str(admin_completion_enrollment["id"])
+        + "/completion-readiness",
+        token=learner_token,
+    )
+    assert_status(status, 200, "admin completion readiness")
+    assert isinstance(admin_completion_readiness, dict)
+    assert admin_completion_readiness["is_ready"] is True, admin_completion_readiness
+    assert admin_completion_readiness["status"] == "ready", admin_completion_readiness
+    checks.append("admin completion readiness ok")
 
     status, completed_admin_enrollment = request_json(
         "PATCH",
