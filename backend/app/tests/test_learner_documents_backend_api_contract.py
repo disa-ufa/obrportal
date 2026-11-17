@@ -32,6 +32,15 @@ def complete_course_and_get_document() -> tuple[str, str, str, dict, dict]:
     enrollment = enroll_learner_to_course(learner_token, course_id)
     enrollment_id = str(enrollment["enrollment_id"])
 
+    status, profile = request_json(
+        "PATCH",
+        "/api/v1/account/profile",
+        {"first_name": "Synthetic", "last_name": "Learner"},
+        token=learner_token,
+    )
+    assert status == 200, profile
+    assert isinstance(profile, dict)
+
     status, started = request_json(
         "POST",
         f"/api/v1/account/courses/{enrollment_id}/start",

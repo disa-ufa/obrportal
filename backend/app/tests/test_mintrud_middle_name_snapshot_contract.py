@@ -181,7 +181,7 @@ def test_account_middle_name_approval_invalidation_is_not_readiness_gated():
     )
 
     readiness_gate_pos = function_source.index(
-        "if set(changed_fields).intersection(",
+        "if set(affected_fields).intersection(",
         invalidation_pos,
     )
 

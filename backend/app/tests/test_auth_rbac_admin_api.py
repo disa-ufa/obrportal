@@ -286,6 +286,20 @@ def login(email: str, password: str) -> str:
 
 
 
+def prepare_non_registry_completion_profile(learner_token: str) -> None:
+    """Give the synthetic learner the identity fields required for completion."""
+    status, profile = request_json(
+        "PATCH",
+        "/api/v1/account/profile",
+        body={"first_name": "Synthetic", "last_name": "Learner"},
+        token=learner_token,
+    )
+    assert status == 200, profile
+    assert isinstance(profile, dict)
+    assert profile["first_name"] == "Synthetic"
+    assert profile["last_name"] == "Learner"
+
+
 def test_public_set_password_with_initial_token_activates_user_and_allows_login() -> None:
     email = f"set_password_{uuid4().hex[:12]}@example.com"
     new_password = "NewSetupPassword123!"
@@ -4749,6 +4763,8 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -4766,6 +4782,7 @@ def test_admin_can_regenerate_generated_completion_document() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -6332,6 +6349,8 @@ def test_learner_can_start_and_complete_self_enrolled_course() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -6349,6 +6368,7 @@ def test_learner_can_start_and_complete_self_enrolled_course() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -6416,6 +6436,8 @@ def test_account_course_progress_dates_are_returned() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -6436,6 +6458,7 @@ def test_account_course_progress_dates_are_returned() -> None:
     assert enrolled["completed_at"] is None
 
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -6497,6 +6520,8 @@ def test_complete_course_creates_draft_document() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -6515,6 +6540,7 @@ def test_complete_course_creates_draft_document() -> None:
     assert isinstance(enrolled, dict)
 
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -6609,6 +6635,8 @@ def test_draft_completion_document_cannot_be_downloaded_by_learner() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -6627,6 +6655,7 @@ def test_draft_completion_document_cannot_be_downloaded_by_learner() -> None:
     assert isinstance(enrolled, dict)
 
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -6696,6 +6725,8 @@ def test_admin_can_publish_completion_document_for_learner_download() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -6714,6 +6745,7 @@ def test_admin_can_publish_completion_document_for_learner_download() -> None:
     assert isinstance(enrolled, dict)
 
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -7193,6 +7225,8 @@ def test_learner_course_completion_generates_draft_pdf_file() -> None:
             "hours": 36,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -7210,6 +7244,7 @@ def test_learner_course_completion_generates_draft_pdf_file() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -7367,6 +7402,8 @@ def test_completion_document_keeps_enrollment_course_and_user_integrity() -> Non
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -7384,6 +7421,7 @@ def test_completion_document_keeps_enrollment_course_and_user_integrity() -> Non
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -7473,6 +7511,8 @@ def test_admin_can_publish_generated_completion_pdf_without_reupload() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -7490,6 +7530,7 @@ def test_admin_can_publish_generated_completion_pdf_without_reupload() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",
@@ -7598,6 +7639,8 @@ def test_public_can_verify_published_generated_completion_pdf() -> None:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -7615,6 +7658,7 @@ def test_public_can_verify_published_generated_completion_pdf() -> None:
     assert status == 201
     assert isinstance(enrolled, dict)
     enrollment_id = enrolled["enrollment_id"]
+    prepare_non_registry_completion_profile(learner_token)
 
     status, started = request_json(
         "POST",

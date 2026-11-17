@@ -7,6 +7,8 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from test_course_lessons_admin_api import LEARNER_PASSWORD
+
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
 ADMIN_EMAIL = os.getenv("TEST_ADMIN_EMAIL", "admin@obrportal.local")
@@ -188,6 +190,8 @@ def create_course(token: str, *, title: str) -> dict:
             "hours": 16,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
         },
         token=token,
@@ -340,6 +344,20 @@ def test_admin_documents_action_required_filter() -> None:
 def test_admin_enrollments_action_required_filter() -> None:
     token = login()
     user_id = get_user_id_by_email(token, LEARNER_EMAIL)
+
+    login_status, learner_login = request_json(
+        "POST", "/api/v1/auth/login",
+        {"email": LEARNER_EMAIL, "password": LEARNER_PASSWORD},
+    )
+    assert login_status == 200, learner_login
+    assert isinstance(learner_login, dict)
+    profile_status, profile = request_json(
+        "PATCH", "/api/v1/account/profile",
+        {"first_name": "Synthetic", "last_name": "Learner"},
+        token=learner_login["access_token"],
+    )
+    assert profile_status == 200, profile
+    assert isinstance(profile, dict)
 
     prefix = f"Action Required Enrollments {uuid4().hex[:10]}"
     created_courses: list[dict] = []
