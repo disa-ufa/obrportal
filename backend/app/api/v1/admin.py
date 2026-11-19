@@ -67,6 +67,7 @@ from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.lesson_progress import LessonProgress
 from app.models.enrollment_employment_details import EnrollmentEmploymentDetails
 from app.models.import_batch import ImportBatch, ImportRow
 from app.services.mintrud_protocol_candidates import summarize_protocol_candidate
@@ -196,6 +197,10 @@ from app.services.frdo_po_portal_mapping import (
 from app.services.registry_action_lockset import RegistryActionLockError, RegistrySourceFence
 from app.services.enrollment_employment import employment_is_editable, get_employment_details
 from app.services.registry_source_write_scope import acquire_discovered_registry_source_write_scope
+from app.services.registry_enrollment_delete_guard import (
+    RegistryEnrollmentDeleteConflict,
+    acquire_registry_enrollment_deletion_guard,
+)
 from app.services.compliance_registry_approval import (
     apply_registry_approval,
     build_registry_approval_snapshot,
@@ -7564,17 +7569,37 @@ async def ensure_enrollment_can_be_deleted(
     enrollment: Enrollment,
     session: AsyncSession,
 ) -> None:
-    document_result = await session.execute(
-        select(DocumentRecord.id)
-        .where(DocumentRecord.enrollment_id == enrollment.id)
-        .limit(1)
-    )
-
-    if document_result.scalar_one_or_none() is not None:
+    """Allow ordinary deletion only without completed or learning history."""
+    if await session.scalar(
+        select(DocumentRecord.id).where(
+            DocumentRecord.enrollment_id == enrollment.id
+        ).limit(1)
+    ) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete enrollment with documents",
         )
+
+    if (enrollment.status == "completed" or enrollment.started_at is not None
+            or enrollment.completed_at is not None):
+        raise HTTPException(status_code=409, detail={
+            "code": "enrollment.delete_history_protected",
+            "reason": "enrollment_lifecycle",
+        })
+
+    for model, reason in (
+        (LessonProgress, "lesson_progress"),
+        (QuizAttempt, "quiz_attempts"),
+        (AssignmentSubmission, "assignment_submissions"),
+        (EnrollmentEmploymentDetails, "employment_details"),
+    ):
+        if await session.scalar(
+            select(model.id).where(model.enrollment_id == enrollment.id).limit(1)
+        ) is not None:
+            raise HTTPException(status_code=409, detail={
+                "code": "enrollment.delete_history_protected",
+                "reason": reason,
+            })
 
 
 @router.get("/enrollments", response_model=list[AdminEnrollmentItem])
@@ -8268,6 +8293,15 @@ async def delete_admin_enrollment(
     session: AsyncSession = Depends(get_db),
 ) -> AdminDeleteResult:
     enrollment = await get_admin_enrollment_or_404(enrollment_id, session)
+    try:
+        enrollment = await acquire_registry_enrollment_deletion_guard(
+            session=session, enrollment_id=str(enrollment.id),
+        )
+    except (RegistryActionLockError, RegistryEnrollmentDeleteConflict) as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc),
+        ) from exc
     await ensure_enrollment_can_be_deleted(enrollment, session)
 
     deleted_enrollment_id = str(enrollment.id)
