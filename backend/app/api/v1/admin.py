@@ -8179,7 +8179,10 @@ async def update_admin_enrollment(
         if existing_completion and (
             wanted_status != "completed" or any(
                 field in data and data[field] != getattr(enrollment, field)
-                for field in ("started_at", "completed_at")
+                for field in (
+                    "started_at", "completed_at",
+                    "organization_id", "learning_group_id",
+                )
             )
         ):
             raise HTTPException(409, {"code": "completion.historical_completion_protected"})
