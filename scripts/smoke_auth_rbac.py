@@ -3639,22 +3639,39 @@ def main() -> int:
     assert_status(status, 200, "admin completion document cleanup delete")
     assert isinstance(deleted_admin_completion_document, dict)
 
-    status, deleted_admin_completion_enrollment = request_json(
+    # A completed enrollment is permanent learning history. Deleting its draft
+    # document must not make its enrollment (or parent course) deletable.
+    status, protected_admin_completion_enrollment = request_json(
         "DELETE",
         "/api/v1/admin/enrollments/" + str(admin_completion_enrollment["id"]),
         token=admin_token,
     )
-    assert_status(status, 200, "admin completion enrollment cleanup delete")
-    assert isinstance(deleted_admin_completion_enrollment, dict)
+    assert_status(status, 409, "admin completed enrollment deletion protected")
+    assert isinstance(protected_admin_completion_enrollment, dict)
+    assert protected_admin_completion_enrollment.get("detail") == {
+        "code": "enrollment.delete_history_protected",
+        "reason": "enrollment_lifecycle",
+    }, protected_admin_completion_enrollment
 
-    status, deleted_admin_completion_course = request_json(
-        "DELETE",
+    status, retained_admin_completion_enrollment = request_json(
+        "GET",
+        "/api/v1/admin/enrollments/" + str(admin_completion_enrollment["id"]),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin completed enrollment retained")
+    assert isinstance(retained_admin_completion_enrollment, dict)
+    assert retained_admin_completion_enrollment["status"] == "completed"
+    assert retained_admin_completion_enrollment["completed_at"] == completed_admin_enrollment["completed_at"]
+
+    status, retained_admin_completion_course = request_json(
+        "GET",
         "/api/v1/admin/courses/" + str(admin_completion_course["id"]),
         token=admin_token,
     )
-    assert_status(status, 200, "admin completion course cleanup delete")
-    assert isinstance(deleted_admin_completion_course, dict)
-    checks.append("admin completion draft document cleanup ok")
+    assert_status(status, 200, "admin completed enrollment course retained")
+    assert isinstance(retained_admin_completion_course, dict)
+    assert retained_admin_completion_course["id"] == admin_completion_course["id"]
+    checks.append("admin completion draft document deleted; enrollment history and course retained")
 
     status, draft_download_payload = request_json(
         "GET",
