@@ -99,6 +99,24 @@ async def test_administrative_routes_and_group_atomicity(stand):
     assert historical.status_code == 200 and historical.json()["status"] == "completed"
     assert await historical_snapshot() == before
 
+    # A completed record and its historical registry/document snapshots must
+    # not be silently reassigned to another organization or learning group.
+    for field, value in (
+        ("organization_id", str(organization.id)),
+        ("learning_group_id", str(group_id)),
+    ):
+        denied = await client.patch(
+            f"/api/v1/admin/enrollments/{stand.ids[2]}",
+            headers=headers, json={field: value},
+        )
+        assert denied.status_code == 409, denied.text
+        assert denied.json()["detail"]["code"] == "completion.historical_completion_protected"
+    async with stand.maker() as session:
+        preserved = await session.get(Enrollment, stand.ids[2])
+        assert preserved.organization_id is None
+        assert preserved.learning_group_id is None
+    assert await historical_snapshot() == before
+
 
 @pytest.mark.asyncio
 async def test_profile_writer_fence_prevents_stale_completion(stand):
