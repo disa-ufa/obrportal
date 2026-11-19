@@ -3648,10 +3648,15 @@ def main() -> int:
     )
     assert_status(status, 409, "admin completed enrollment deletion protected")
     assert isinstance(protected_admin_completion_enrollment, dict)
-    assert protected_admin_completion_enrollment.get("detail") == {
-        "code": "enrollment.delete_history_protected",
-        "reason": "enrollment_lifecycle",
-    }, protected_admin_completion_enrollment
+    # The canonical registry-history guard runs before the enrollment
+    # lifecycle guard. Both are explicit, fail-closed 409 outcomes.
+    assert protected_admin_completion_enrollment.get("detail") in (
+        "registry.enrollment_delete_has_obligations",
+        {
+            "code": "enrollment.delete_history_protected",
+            "reason": "enrollment_lifecycle",
+        },
+    ), protected_admin_completion_enrollment
 
     status, retained_admin_completion_enrollment = request_json(
         "GET",
