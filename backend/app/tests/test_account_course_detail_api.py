@@ -113,6 +113,45 @@ def delete_admin_enrollment(token: str, enrollment_id: str) -> None:
     assert payload["id"] == enrollment_id
 
 
+def is_protected_enrollment_delete_conflict(payload: object) -> bool:
+    """Only an explicit history-protection 409 permits retaining a CI fixture."""
+    if not isinstance(payload, dict):
+        return False
+    detail = payload.get("detail")
+    if isinstance(detail, dict):
+        return (
+            detail.get("code") == "enrollment.delete_history_protected"
+            and detail.get("reason") in {
+                "enrollment_lifecycle", "lesson_progress", "quiz_attempts",
+                "assignment_submissions", "employment_details",
+            }
+        )
+    return detail in {
+        "registry.enrollment_delete_has_obligations",
+        "registry.enrollment_delete_has_decisions",
+        "registry.enrollment_delete_has_audit_history",
+    }
+
+
+def cleanup_admin_enrollment_preserving_history(token: str, enrollment_id: str) -> bool:
+    """Return False if history protects the fixture; never bypass API policy.
+
+    In disposable CI the remaining synthetic data is removed when the test
+    database/volume is destroyed. Do not delete its dependent course.
+    """
+    status, payload = request_json(
+        "DELETE", f"/api/v1/admin/enrollments/{enrollment_id}", token=token,
+    )
+    if status == 409:
+        assert is_protected_enrollment_delete_conflict(payload), (status, payload)
+        return False
+    assert status == 200, (status, payload)
+    assert isinstance(payload, dict)
+    assert payload["status"] == "deleted"
+    assert payload["id"] == enrollment_id
+    return True
+
+
 def test_account_course_detail_returns_own_active_outline_only_sorted() -> None:
     admin_token = login(ADMIN_EMAIL, ADMIN_PASSWORD)
     learner = register_learner(prefix="outline-learner")
