@@ -319,7 +319,7 @@ jobs:
         run: |
           docker compose exec -T frontend npm run build
 
-      - name: Run learner completion synthetic browser regression
+      - name: Run learner completion and registry navigation synthetic browser regressions
         run: |
           docker compose exec -T frontend sh -ec '
             apk add --no-cache chromium >/dev/null
@@ -329,6 +329,8 @@ jobs:
             # Make an isolated relative-API build for synthetic, same-origin mocks.
             VITE_API_BASE_URL="" VITE_API_URL="" npm run build -- --outDir dist-browser-test
             UI_BUILD_DIR=dist-browser-test UI_BROWSER_PATH="$browser" node tests/learner_course_completion.browser.mjs
+            mkdir -p dist-browser-evidence
+            UI_BUILD_DIR=dist-browser-test UI_BROWSER_PATH="$browser" UI_EVIDENCE_DIR=dist-browser-evidence node tests/registry_batch_navigation.browser.mjs
           '
 
       - name: Run enrollment CSV unit tests
