@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from test_course_lessons_admin_api import LEARNER_PASSWORD
+from test_account_course_detail_api import cleanup_admin_enrollment_preserving_history
 
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
@@ -409,15 +410,18 @@ def test_admin_enrollments_action_required_filter() -> None:
         assert isinstance(non_required_enrollments, list)
         assert {item["status"] for item in non_required_enrollments} == {"active", "cancelled"}
     finally:
+        protected_course_ids = set()
         for enrollment in created_enrollments:
             delete_admin_documents_for_enrollment(
                 token,
                 str(enrollment["id"]),
             )
-            delete_ignore(
-                token,
-                f"/api/v1/admin/enrollments/{enrollment['id']}",
+            deleted = cleanup_admin_enrollment_preserving_history(
+                token, str(enrollment["id"]),
             )
+            if not deleted:
+                protected_course_ids.add(str(enrollment["course_id"]))
 
         for course in created_courses:
-            delete_ignore(token, f"/api/v1/admin/courses/{course['id']}")
+            if str(course["id"]) not in protected_course_ids:
+                delete_ignore(token, f"/api/v1/admin/courses/{course['id']}")
