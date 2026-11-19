@@ -3,7 +3,7 @@ from __future__ import annotations
 from urllib.parse import quote
 
 from test_account_course_detail_api import (
-    delete_admin_enrollment,
+    cleanup_admin_enrollment_preserving_history,
     enroll_learner_to_course,
     register_learner,
 )
@@ -158,11 +158,13 @@ def test_learner_documents_contract_fields_filters_and_public_verification() -> 
             assert status == 404
             assert status_by_number == 404
     finally:
+        can_delete_course = True
         if admin_token is not None and enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
-            delete_admin_enrollment(admin_token, enrollment_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
         if admin_token is not None and course_id is not None:
-            delete_admin_course(admin_token, course_id)
+            if can_delete_course:
+                delete_admin_course(admin_token, course_id)
 
 
 def test_learner_document_download_rejects_foreign_learner() -> None:
@@ -186,8 +188,10 @@ def test_learner_document_download_rejects_foreign_learner() -> None:
         assert status == 404
         assert isinstance(payload, dict)
     finally:
+        can_delete_course = True
         if admin_token is not None and enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
-            delete_admin_enrollment(admin_token, enrollment_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
         if admin_token is not None and course_id is not None:
-            delete_admin_course(admin_token, course_id)
+            if can_delete_course:
+                delete_admin_course(admin_token, course_id)
