@@ -7,6 +7,9 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from test_course_lessons_admin_api import LEARNER_PASSWORD
+from test_account_course_detail_api import cleanup_admin_enrollment_preserving_history
+
 
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000")
 ADMIN_EMAIL = os.getenv("TEST_ADMIN_EMAIL", "admin@obrportal.local")
@@ -188,6 +191,8 @@ def create_course(token: str, *, title: str) -> dict:
             "hours": 16,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
         },
         token=token,
@@ -341,6 +346,20 @@ def test_admin_enrollments_action_required_filter() -> None:
     token = login()
     user_id = get_user_id_by_email(token, LEARNER_EMAIL)
 
+    login_status, learner_login = request_json(
+        "POST", "/api/v1/auth/login",
+        {"email": LEARNER_EMAIL, "password": LEARNER_PASSWORD},
+    )
+    assert login_status == 200, learner_login
+    assert isinstance(learner_login, dict)
+    profile_status, profile = request_json(
+        "PATCH", "/api/v1/account/profile",
+        {"first_name": "Synthetic", "last_name": "Learner"},
+        token=learner_login["access_token"],
+    )
+    assert profile_status == 200, profile
+    assert isinstance(profile, dict)
+
     prefix = f"Action Required Enrollments {uuid4().hex[:10]}"
     created_courses: list[dict] = []
     created_enrollments: list[dict] = []
@@ -391,15 +410,18 @@ def test_admin_enrollments_action_required_filter() -> None:
         assert isinstance(non_required_enrollments, list)
         assert {item["status"] for item in non_required_enrollments} == {"active", "cancelled"}
     finally:
+        protected_course_ids = set()
         for enrollment in created_enrollments:
             delete_admin_documents_for_enrollment(
                 token,
                 str(enrollment["id"]),
             )
-            delete_ignore(
-                token,
-                f"/api/v1/admin/enrollments/{enrollment['id']}",
+            deleted = cleanup_admin_enrollment_preserving_history(
+                token, str(enrollment["id"]),
             )
+            if not deleted:
+                protected_course_ids.add(str(enrollment["course_id"]))
 
         for course in created_courses:
-            delete_ignore(token, f"/api/v1/admin/courses/{course['id']}")
+            if str(course["id"]) not in protected_course_ids:
+                delete_ignore(token, f"/api/v1/admin/courses/{course['id']}")

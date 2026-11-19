@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.auth import CurrentUserResponse
+from app.services.enrollment_employment import EmploymentRequirement, EmploymentScenario
 
 
 class AccountSummaryResponse(BaseModel):
@@ -22,6 +23,7 @@ class AccountLearnerProfileResponse(BaseModel):
     last_name: str | None = None
     first_name: str | None = None
     middle_name: str | None = None
+    no_middle_name: bool | None = None
     birth_date: date | None = None
     sex: str | None = None
     citizenship_country_code: str | None = None
@@ -48,6 +50,7 @@ class AccountLearnerProfileUpdateRequest(BaseModel):
     last_name: str | None = Field(default=None, max_length=128)
     first_name: str | None = Field(default=None, max_length=128)
     middle_name: str | None = Field(default=None, max_length=128)
+    no_middle_name: bool | None = None
     birth_date: date | None = None
     sex: str | None = Field(
         default=None,
@@ -70,6 +73,47 @@ class AccountLearnerProfileUpdateRequest(BaseModel):
         default=None,
         max_length=32,
     )
+
+
+class EnrollmentEmploymentUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profession_or_position: str | None = Field(default=None, max_length=255)
+    employer_name: str | None = Field(default=None, max_length=512)
+    employer_inn: str | None = Field(default=None, max_length=32)
+
+
+class EnrollmentEmploymentResponse(BaseModel):
+    enrollment_id: str
+    profession_or_position: str | None = None
+    employer_name: str | None = None
+    employer_inn: str | None = None
+    source: str | None = None
+    reporting_scenario: EmploymentScenario | None = None
+    requirement: EmploymentRequirement
+    can_edit: bool
+
+
+class EnrollmentEmploymentScenarioUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reporting_scenario: EmploymentScenario | None
+
+
+class CompletionReadinessIssue(BaseModel):
+    code: str
+    field: str
+    message: str
+    resolvable_by: Literal["learner", "administrator"]
+
+
+class AccountCompletionReadinessResponse(BaseModel):
+    is_ready: bool
+    status: Literal["ready", "incomplete", "policy_unresolved", "already_completed"]
+    missing_fields: list[CompletionReadinessIssue]
+    invalid_fields: list[CompletionReadinessIssue]
+    requires_administrator_action: bool
+    policy_unresolved: bool
 
 
 class AccountCourseItemResponse(BaseModel):
@@ -185,6 +229,7 @@ class AccountCourseModuleResponse(BaseModel):
 
 
 class AccountCourseDetailResponse(AccountCourseItemResponse):
+    completion_readiness: AccountCompletionReadinessResponse | None = None
     lessons_total: int = 0
     lessons_completed: int = 0
     required_lessons_total: int = 0

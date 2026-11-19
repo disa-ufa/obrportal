@@ -15,7 +15,9 @@ import app.services.completion_documents as completion_documents
 import app.services.enrollment_completion as completion_service
 
 from app.models.document_record import DocumentRecord
+from app.models.course import Course
 from app.models.enrollment import Enrollment
+from app.models.learner_profile import LearnerProfile
 from app.models.registry_obligation import RegistryObligation
 from app.models.user import User
 
@@ -24,11 +26,21 @@ from app.services.registry_action_lockset import (
     acquire_registry_source_write_fences,
 )
 
-from test_m21_enrollment_source_fence_pg import make_enrollment
+from test_m21_enrollment_source_fence_pg import make_enrollment as make_unprepared_enrollment
 from test_registry_applicability_writer_pg import (
     pg_applicability_db,
     _wait_for_pg_blocker,
 )
+
+
+async def make_enrollment(maker):
+    course_id, actor_id, enrollment_id = await make_unprepared_enrollment(maker)
+    async with maker.begin() as session:
+        course = await session.get(Course, course_id)
+        course.frdo_requirement_mode = course.mintrud_requirement_mode = "not_required"
+        enrollment = await session.get(Enrollment, enrollment_id)
+        session.add(LearnerProfile(user_id=enrollment.user_id, first_name="Synthetic", last_name="Learner"))
+    return course_id, actor_id, enrollment_id
 
 
 def stub_pdf_storage(monkeypatch):

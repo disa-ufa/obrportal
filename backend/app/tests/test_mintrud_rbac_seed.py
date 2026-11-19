@@ -24,6 +24,7 @@ EXPECTED_MINTRUD_PERMISSIONS = {
     "mintrud.write",
     "mintrud.validate",
     "mintrud.approve",
+    "mintrud.applicability.confirm",
     "mintrud.export",
 }
 
@@ -34,6 +35,7 @@ EXPECTED_MINTRUD_ROLE_PERMISSIONS = {
     "mintrud.write",
     "mintrud.validate",
     "mintrud.approve",
+    "mintrud.applicability.confirm",
     "mintrud.export",
     "audit.read",
     "files.read",

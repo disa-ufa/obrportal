@@ -1,8 +1,12 @@
+import { validMintrudApprovalEventId } from "./mintrudBatchCreateJournal.js";
+
 const REAPPROVE = "Проверьте данные и нажмите «Повторно утвердить».";
 
 // Only fixed messages are displayed: API errors can include XML values or paths.
 export function formatMintrudError(error, readinessLabels = {}) {
   const detail = error?.payload?.detail;
+  if (detail?.code === "mintrud.batch_selection_changed") return "Готовность выбранных записей изменилась. Список обновлён; проверьте применимость, утверждение и историю.";
+  if (/registry\.applicability|registry\.manual_authority/.test(typeof detail === "string" ? detail : detail?.code || "")) return "Применимость не подтверждена. Откройте проверку применимости; исторические записи требуют отдельной сверки.";
   if (detail?.code === "registry.batch_export.disabled") return "Пакетная выгрузка отключена в этой среде. История доступна для просмотра.";
   const issues = detail?.issues || detail?.readiness_errors || [];
   if (issues.length) {
@@ -59,4 +63,111 @@ export async function prepareAndDownloadMintrudBatch({ ids, create, download, re
   }
   if (downloadError) throw downloadError;
   return batch;
+}
+
+export async function verifyMintrudExportSelection(api, ids, { requireApprovalEvents = false } = {}) {
+  const gate = await api.getAdminMintrudExportStatus();
+  if (gate?.enabled !== true || gate.read_only !== true) throw new Error("Разрешение на экспорт не подтверждено.");
+  const reviews = await Promise.all(ids.map(id => api.getAdminMintrudExportReadiness(id)));
+  if (!ids.length || new Set(ids).size !== ids.length || reviews.some((item, index) =>
+    item?.obligation_id !== ids[index] || item.batch_eligible !== true || item.read_only !== true || item.not_authorization_for_export !== true)) {
+    throw new Error("Готовность выбранных записей не подтверждена.");
+  }
+  if (requireApprovalEvents) {
+    const targets = reviews.map((item, index) => ({
+      obligation_id: ids[index],
+      approval_event_id: item.approval_event_id,
+    }));
+
+    if (targets.some(item =>
+      !validMintrudApprovalEventId(item.approval_event_id)
+    )) {
+      throw new Error("Не удалось подтвердить идентификатор события утверждения.");
+    }
+
+    return { gate, targets };
+  }
+
+  return gate;
+}
+
+// Only responses that establish rejection before the batch writer
+// may release the reservation. A general HTTP 409 is NOT sufficient.
+export function isDefiniteMintrudPrewriteRejection(error) {
+  const detail = error?.payload?.detail;
+
+  if (error?.status === 422 &&
+      Array.isArray(detail) &&
+      detail.length > 0 &&
+      detail.every(item =>
+        Array.isArray(item?.loc) &&
+        item.loc[0] === "body" &&
+        typeof item.type === "string" &&
+        item.type.length > 0
+      )) {
+    return true;
+  }
+
+  if (error?.status === 403 &&
+      detail === "Permission required: mintrud.export") {
+    return true;
+  }
+
+  if (error?.status === 409 &&
+      detail !== null &&
+      typeof detail === "object" &&
+      !Array.isArray(detail) &&
+      detail.code === "registry.batch_export.disabled") {
+    return true;
+  }
+
+  return false;
+}
+
+// No automatic retry. An unknown result keeps every selected ID
+// reserved, even if the caller later receives an unrelated error.
+export async function createMintrudBatchWithDefiniteRejection({
+  ids, create, attemptedIds, journal = null, targets = null,
+}) {
+  if (journal) {
+    if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length ||
+        !Array.isArray(targets) || targets.length !== ids.length ||
+        targets.some((item, index) =>
+          item?.obligation_id !== ids[index] ||
+          !validMintrudApprovalEventId(item.approval_event_id)
+        )) {
+      throw new Error("Не удалось подтвердить выбранные записи и их события утверждения.");
+    }
+
+    const reservation = journal.begin(targets);
+    if (!reservation) {
+      throw new Error("Создание XML заблокировано. Проверьте историю пакетов и состояние журнала попыток.");
+    }
+
+    try {
+      return await create(ids);
+    } catch (error) {
+      if (isDefiniteMintrudPrewriteRejection(error)) {
+        journal.releaseDefiniteRejection(reservation);
+      }
+      throw error;
+    }
+  }
+
+  if (!Array.isArray(ids) || !ids.length ||
+      new Set(ids).size !== ids.length ||
+      ids.some(id => attemptedIds.has(id))) {
+    throw new Error("Создание пакета остановлено. Проверьте выбор записей и историю пакетов.");
+  }
+
+  ids.forEach(id => attemptedIds.add(id));
+
+  try {
+    return await create(ids);
+  } catch (error) {
+    if (isDefiniteMintrudPrewriteRejection(error)) {
+      ids.forEach(id => attemptedIds.delete(id));
+    }
+    throw error;
+  }
 }

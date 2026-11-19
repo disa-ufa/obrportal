@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     environment: str = "local"
     # Closed in every environment unless separately authorized for exports.
     production_exports_enabled: bool = False
+    # Explicit local-only Mintrud XML batch authorization.
+    local_mintrud_xml_export_enabled: bool = False
+    local_mintrud_db_marker: SecretStr | None = None
     # Partial attempt-only veto. Activation requires historical reconciliation
     # and separate approval; this is NOT the full applicability/export gate.
     registry_attempt_applicability_veto_enabled: bool = False

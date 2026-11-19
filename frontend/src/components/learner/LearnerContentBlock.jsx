@@ -656,19 +656,49 @@ function ImageBlock({ block }) {
 
 
 function PresentationBlock({ block }) {
+  // M4P9_LOCAL_PRESENTATION_ORIGIN
+  // Rewrite only legacy presentation links in the local UI.
+  const localPresentationHref = (value) => {
+    const source = `${value || ""}`.trim();
+
+    if (
+      typeof window === "undefined" ||
+      !["127.0.0.1", "localhost"].includes(window.location.hostname) ||
+      window.location.port !== "5173"
+    ) {
+      return source;
+    }
+
+    try {
+      const url = new URL(source);
+
+      if (
+        !["http:", "https:"].includes(url.protocol) ||
+        url.hostname !== "portal.rcdo02.ru" ||
+        !/^\/api\/v1\/public\/lesson-presentations\/[^/]+\/[^/]+\/(view|download)$/.test(url.pathname)
+      ) {
+        return source;
+      }
+
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return source;
+    }
+  };
+
   const content = getContent(block);
 
   const rawViewer =
     getPresentationViewerUrl(block);
 
   const safeViewer =
-    getSafeHref(rawViewer);
+    getSafeHref(localPresentationHref(rawViewer));
 
   const rawDownload =
     getPresentationDownloadUrl(block);
 
   const safeDownload =
-    getSafeHref(rawDownload);
+    getSafeHref(localPresentationHref(rawDownload));
 
   const filename =
     getPresentationFilename(block);

@@ -683,6 +683,13 @@ def main() -> None:
     )
     require_contains(
         "frontend/src/pages/AdminRegistriesPage.jsx",
+        [
+            'import { MainMintrudRegistriesPage } from "./MainMintrudRegistriesPage";',
+            '<MainMintrudRegistriesPage onFrdo={() => navigate("frdo")} />',
+        ],
+    )
+    require_contains(
+        "frontend/src/pages/MainMintrudRegistriesPage.jsx",
         ["prepareAndDownloadMintrudBatch({", "validated?.obligation?.status", "Повторно утвердить"],
     )
     print("Frontend utils/routes behavior smoke passed")

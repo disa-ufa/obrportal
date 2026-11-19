@@ -48,6 +48,12 @@ export const ADMIN_ROUTE_ITEMS = [
     description: "Выданные документы, PDF, QR и проверка.",
   },
   {
+    key: "knowledgeProtocols",
+    label: "Протоколы проверки знаний",
+    path: "/admin/knowledge-protocols",
+    description: "Комиссия, результаты, фиксация и подписание протоколов.",
+  },
+  {
     key: "registries",
     label: "Госреестры",
     path: "/admin/registries",
@@ -82,7 +88,7 @@ export const ADMIN_ROUTE_GROUPS = [
   {
     key: "operations",
     label: "Операции",
-    items: ["users", "organizations", "groups", "enrollments", "learnerImports", "documents", "registries"],
+    items: ["users", "organizations", "groups", "enrollments", "learnerImports", "documents", "knowledgeProtocols", "registries"],
   },
   {
     key: "content",
@@ -126,7 +132,24 @@ export function getAdminLessonStudioRouteParams(pathname) {
   };
 }
 
+export function buildAdminKnowledgeProtocolPath(id) {
+  return `/admin/knowledge-protocols/${encodeURIComponent(id)}`;
+}
+
+export function getAdminKnowledgeProtocolRouteParams(pathname) {
+  const match = String(pathname || "").match(/^\/admin\/knowledge-protocols(?:\/([^/]+))?\/?$/);
+  if (!match) return null;
+  if (!match[1]) return { mode: "list" };
+  if (match[1] === "new") return { mode: "new" };
+  try {
+    const id = decodeURIComponent(match[1]);
+    if (!id || /[/?#]/.test(id)) return null;
+    return { mode: "detail", id };
+  } catch { return null; }
+}
+
 export function getAdminPageFromPathname(pathname) {
+  if (getAdminKnowledgeProtocolRouteParams(pathname)) return "knowledgeProtocols";
   if (getAdminLessonStudioRouteParams(pathname)) {
     return "courses";
   }

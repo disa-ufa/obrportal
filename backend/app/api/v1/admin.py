@@ -3,6 +3,7 @@ from app.services.registry_batch_transaction import get_registry_batch_db, requi
 from app.services.registry_import_transaction import prepare_import_scope, get_registry_import_db, require_registry_import_user
 
 import asyncio
+from contextlib import AsyncExitStack, asynccontextmanager
 from hashlib import sha256
 import re
 import shutil
@@ -12,7 +13,11 @@ from pathlib import Path, PurePosixPath
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from app.services.registry_release_gate import require_registry_batch_exports_enabled
+from app.services.registry_release_gate import (
+    mintrud_local_database_errors_as_conflict,
+    require_mintrud_batch_exports_enabled,
+    require_registry_batch_exports_enabled,
+)
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
@@ -20,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.exc import IntegrityError
 
+from app.api.v1.auth import get_current_user, oauth2_scheme
 from app.api.v1.rbac import get_user_permission_codes, require_permission
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -30,6 +36,7 @@ from app.services.registry_document_transaction import (
 )
 from app.models.learner_profile import LearnerProfile
 from app.schemas.account import (
+    EnrollmentEmploymentScenarioUpdate,
     AccountLearnerProfileResponse,
     AccountLearnerProfileUpdateRequest,
 )
@@ -60,6 +67,8 @@ from app.models.course_module import CourseModule
 from app.models.document_generation_event import DocumentGenerationEvent
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.lesson_progress import LessonProgress
+from app.models.enrollment_employment_details import EnrollmentEmploymentDetails
 from app.models.import_batch import ImportBatch, ImportRow
 from app.services.mintrud_protocol_candidates import summarize_protocol_candidate
 from app.models.quiz_attempt import QuizAttempt
@@ -156,7 +165,10 @@ from app.services.completion_documents import (
     mark_completion_document_generation_metadata,
     write_completion_document_pdf_to_storage,
 )
-from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.enrollment_completion import (
+    ensure_enrollment_completed,
+    prepare_new_enrollment_completions,
+)
 from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 from app.services.compliance_registry_contract import (
     OBLIGATION_STATUSES,
@@ -183,7 +195,12 @@ from app.services.frdo_po_portal_mapping import (
     search_frdo_po_classifier_values,
 )
 from app.services.registry_action_lockset import RegistryActionLockError, RegistrySourceFence
+from app.services.enrollment_employment import employment_is_editable, get_employment_details
 from app.services.registry_source_write_scope import acquire_discovered_registry_source_write_scope
+from app.services.registry_enrollment_delete_guard import (
+    RegistryEnrollmentDeleteConflict,
+    acquire_registry_enrollment_deletion_guard,
+)
 from app.services.compliance_registry_approval import (
     apply_registry_approval,
     build_registry_approval_snapshot,
@@ -7552,17 +7569,37 @@ async def ensure_enrollment_can_be_deleted(
     enrollment: Enrollment,
     session: AsyncSession,
 ) -> None:
-    document_result = await session.execute(
-        select(DocumentRecord.id)
-        .where(DocumentRecord.enrollment_id == enrollment.id)
-        .limit(1)
-    )
-
-    if document_result.scalar_one_or_none() is not None:
+    """Allow ordinary deletion only without completed or learning history."""
+    if await session.scalar(
+        select(DocumentRecord.id).where(
+            DocumentRecord.enrollment_id == enrollment.id
+        ).limit(1)
+    ) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete enrollment with documents",
         )
+
+    if (enrollment.status == "completed" or enrollment.started_at is not None
+            or enrollment.completed_at is not None):
+        raise HTTPException(status_code=409, detail={
+            "code": "enrollment.delete_history_protected",
+            "reason": "enrollment_lifecycle",
+        })
+
+    for model, reason in (
+        (LessonProgress, "lesson_progress"),
+        (QuizAttempt, "quiz_attempts"),
+        (AssignmentSubmission, "assignment_submissions"),
+        (EnrollmentEmploymentDetails, "employment_details"),
+    ):
+        if await session.scalar(
+            select(model.id).where(model.enrollment_id == enrollment.id).limit(1)
+        ) is not None:
+            raise HTTPException(status_code=409, detail={
+                "code": "enrollment.delete_history_protected",
+                "reason": reason,
+            })
 
 
 @router.get("/enrollments", response_model=list[AdminEnrollmentItem])
@@ -7678,14 +7715,16 @@ async def create_admin_enrollment(
         course_id=course_id,
         organization_id=organization_id,
         learning_group_id=learning_group_id,
-        status=normalized_status,
+        status="assigned" if normalized_status == "completed" else normalized_status,
         started_at=payload.started_at,
         completed_at=payload.completed_at,
     )
     boundary = CompletionPDFTransactionBoundary(session)
-    session.add(enrollment)
 
     try:
+        if normalized_status == "completed":
+            await prepare_new_enrollment_completions(session, [enrollment])
+        session.add(enrollment)
         await session.flush()
         enrollment_id = str(enrollment.id)
 
@@ -7809,15 +7848,17 @@ async def create_admin_group_enrollments(
             course_id=course_id,
             organization_id=organization_id,
             learning_group_id=learning_group_id,
-            status=normalized_status,
+            status="assigned" if normalized_status == "completed" else normalized_status,
             started_at=payload.started_at,
             completed_at=payload.completed_at,
         )
-        session.add(enrollment)
         created_enrollments.append(enrollment)
 
     boundary = CompletionPDFTransactionBoundary(session)
     try:
+        if normalized_status == "completed":
+            await prepare_new_enrollment_completions(session, created_enrollments, group=True)
+        session.add_all(created_enrollments)
         await session.flush()
         created_enrollment_ids = [
             str(enrollment.id)
@@ -7889,6 +7930,44 @@ async def create_admin_group_enrollments(
         created=created_items,
         skipped=skipped,
     )
+
+
+@router.patch("/enrollments/{enrollment_id}/employment-reporting-scenario",
+              response_model=EnrollmentEmploymentScenarioUpdate)
+async def set_enrollment_employment_reporting_scenario(
+    enrollment_id: str,
+    payload: EnrollmentEmploymentScenarioUpdate,
+    request: Request,
+    current_user: User = Depends(require_permission("mintrud.write")),
+    session: AsyncSession = Depends(get_db),
+) -> EnrollmentEmploymentScenarioUpdate:
+    # Use the same enrollment lock as learner edits and course completion.
+    enrollment = await get_admin_enrollment_or_404(enrollment_id.strip(), session)
+    try:
+        await acquire_discovered_registry_source_write_scope(
+            session=session, roots=(RegistrySourceFence("enrollment", enrollment.id),),
+        )
+    except RegistryActionLockError as exc:
+        await session.rollback()
+        raise HTTPException(409, "Enrollment changed. Reload and try again.") from exc
+    await session.refresh(enrollment, with_for_update=True)
+    if not await employment_is_editable(session, enrollment):
+        raise HTTPException(409, "Enrollment employment details are protected")
+
+    details = await get_employment_details(session, enrollment.id)
+    previous = getattr(details, "reporting_scenario", None)
+    if previous != payload.reporting_scenario:
+        if details is None:
+            details = EnrollmentEmploymentDetails(enrollment_id=enrollment.id)
+            session.add(details)
+        details.reporting_scenario = payload.reporting_scenario
+        await create_admin_audit_event(
+            session, actor_user=current_user, action="admin.enrollment_employment_scenario_updated",
+            entity_type="enrollment", entity_id=enrollment.id, request=request,
+            payload={"before": previous, "after": payload.reporting_scenario},
+        )
+    await session.commit()
+    return payload
 
 
 @router.get("/enrollments/{enrollment_id}", response_model=AdminEnrollmentItem)
@@ -8113,12 +8192,28 @@ async def update_admin_enrollment(
             )
 
             # Re-read values after a competing transaction may have committed.
-            await session.refresh(enrollment)
+            await session.refresh(enrollment, with_for_update=True)
 
         before = enrollment_snapshot(enrollment)
+        existing_completion = enrollment.status == "completed"
+        wanted_status = (
+            normalize_enrollment_status(data["status"])
+            if data.get("status") is not None
+            else enrollment.status
+        )
+        if existing_completion and (
+            wanted_status != "completed" or any(
+                field in data and data[field] != getattr(enrollment, field)
+                for field in (
+                    "started_at", "completed_at",
+                    "organization_id", "learning_group_id",
+                )
+            )
+        ):
+            raise HTTPException(409, {"code": "completion.historical_completion_protected"})
 
-        if "status" in data and data["status"] is not None:
-            enrollment.status = normalize_enrollment_status(data["status"])
+        if wanted_status != "completed":
+            enrollment.status = wanted_status
 
         if "organization_id" in data:
             organization_id = normalize_optional_reference(data["organization_id"])
@@ -8145,7 +8240,7 @@ async def update_admin_enrollment(
             session=session,
         )
 
-        if enrollment.status == "completed":
+        if wanted_status == "completed" and not existing_completion:
             await ensure_enrollment_completed(
                 enrollment=enrollment,
                 session=session,
@@ -8198,6 +8293,15 @@ async def delete_admin_enrollment(
     session: AsyncSession = Depends(get_db),
 ) -> AdminDeleteResult:
     enrollment = await get_admin_enrollment_or_404(enrollment_id, session)
+    try:
+        enrollment = await acquire_registry_enrollment_deletion_guard(
+            session=session, enrollment_id=str(enrollment.id),
+        )
+    except (RegistryActionLockError, RegistryEnrollmentDeleteConflict) as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc),
+        ) from exc
     await ensure_enrollment_can_be_deleted(enrollment, session)
 
     deleted_enrollment_id = str(enrollment.id)
@@ -13757,6 +13861,38 @@ async def get_admin_mintrud_submission_batch_detail(
     )
 
 
+async def get_mintrud_batch_db():
+    async with AsyncExitStack() as stack:
+        with mintrud_local_database_errors_as_conflict():
+            session = await stack.enter_async_context(
+                asynccontextmanager(get_registry_batch_db)()
+            )
+        yield session
+
+
+_require_mintrud_batch_user = require_registry_batch_user("mintrud")
+_require_mintrud_download_permission = require_permission("mintrud.export")
+
+
+async def require_mintrud_batch_user(
+    token: str = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_mintrud_batch_db),
+) -> User:
+    with mintrud_local_database_errors_as_conflict():
+        return await _require_mintrud_batch_user(token=token, session=session)
+
+
+async def require_mintrud_download_user(
+    token: str = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_db),
+) -> User:
+    with mintrud_local_database_errors_as_conflict():
+        user = await get_current_user(token=token, session=session)
+        return await _require_mintrud_download_permission(
+            current_user=user, session=session
+        )
+
+
 @router.post(
     "/mintrud/batches",
     response_model=(
@@ -13767,12 +13903,10 @@ async def get_admin_mintrud_submission_batch_detail(
 async def prepare_admin_mintrud_submission_batch(
     payload: AdminMintrudSubmissionBatchCreate,
     request: Request,
-    current_user: User = Depends(
-        require_registry_batch_user('mintrud')
-    ),
-    session: AsyncSession = Depends(get_registry_batch_db),
+    current_user: User = Depends(require_mintrud_batch_user),
+    session: AsyncSession = Depends(get_mintrud_batch_db),
 ) -> AdminMintrudSubmissionBatchItem:
-    require_registry_batch_exports_enabled()
+    await require_mintrud_batch_exports_enabled(session)
     artifact_path_to_cleanup: (
         str | None
     ) = None
@@ -14242,16 +14376,12 @@ async def record_admin_mintrud_submission_batch_result(
 )
 async def download_admin_mintrud_submission_batch(
     batch_id: str,
-    _: User = Depends(
-        require_permission(
-            "mintrud.export"
-        )
-    ),
+    _: User = Depends(require_mintrud_download_user),
     session: AsyncSession = Depends(
         get_db
     ),
 ):
-    require_registry_batch_exports_enabled()
+    await require_mintrud_batch_exports_enabled(session)
     batch = await session.scalar(
         select(
             RegistrySubmissionBatch

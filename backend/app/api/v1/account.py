@@ -25,6 +25,7 @@ from app.models.course_lesson import CourseLesson
 from app.models.course_module import CourseModule
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.enrollment_employment_details import EnrollmentEmploymentDetails
 from app.models.learning_group import LearningGroup
 from app.models.lesson_progress import LessonProgress
 from app.models.lesson_block import LessonBlock
@@ -32,7 +33,12 @@ from app.models.learner_profile import LearnerProfile
 from app.models.organization import Organization
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
-from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.enrollment_completion import (
+    completion_can_proceed,
+    ensure_enrollment_completed,
+    get_completion_readiness,
+)
+from app.services.enrollment_completion_readiness import evaluate_enrollment_completion_readiness
 from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 from app.services.registry_action_lockset import (
     RegistryActionLockError,
@@ -67,6 +73,7 @@ from app.schemas.account import (
     AccountActivityItemResponse,
     AccountAssignmentSubmissionSubmitRequest,
     AccountAssignmentSubmissionResponse,
+    AccountCompletionReadinessResponse,
     AccountCourseDetailResponse,
     AccountCourseItemResponse,
     AccountCourseLessonResponse,
@@ -80,7 +87,17 @@ from app.schemas.account import (
     AccountDocumentItemResponse,
     AccountDocumentsResponse,
     AccountSummaryResponse,
+    EnrollmentEmploymentResponse,
+    EnrollmentEmploymentUpdate,
 )
+from app.services.enrollment_employment import (
+    EMPLOYMENT_FIELDS,
+    course_employment_requirement,
+    employment_is_editable,
+    get_employment_details,
+    is_valid_russian_inn,
+)
+from app.services.frdo_po_portal_mapping import get_frdo_po_classifier_values
 from app.services.compliance_registry_readiness_propagation import (
     LEARNER_PROFILE_READINESS_FIELDS,
     refresh_registry_readiness_for_user,
@@ -329,6 +346,16 @@ def normalize_account_learner_profile_update_data(
                 detail="Invalid SNILS format or checksum",
             )
 
+    citizenship = normalized.get("citizenship_country_code")
+    if citizenship is not None and citizenship not in get_frdo_po_classifier_values("citizenship_country_code"):
+        raise HTTPException(422, "Unknown learner profile citizenship code")
+    if normalized.get("no_middle_name") is True:
+        if normalized.get("middle_name"):
+            raise HTTPException(422, "Middle name conflicts with declared absence")
+        normalized["middle_name"] = None
+    elif normalized.get("middle_name"):
+        normalized.setdefault("no_middle_name", None)
+
     return normalized
 
 
@@ -342,6 +369,7 @@ def build_account_learner_profile_response(
         last_name=profile.last_name if profile is not None else None,
         first_name=profile.first_name if profile is not None else None,
         middle_name=profile.middle_name if profile is not None else None,
+        no_middle_name=profile.no_middle_name if profile is not None else None,
         birth_date=profile.birth_date if profile is not None else None,
         sex=profile.sex if profile is not None else None,
         citizenship_country_code=(
@@ -438,6 +466,13 @@ async def get_account_learner_profile(
     )
 
 
+@router.get("/profile/citizenship-options", response_model=list[str])
+async def list_account_citizenship_options(
+    _: User = Depends(get_current_user),
+) -> list[str]:
+    return list(get_frdo_po_classifier_values("citizenship_country_code"))
+
+
 @router.patch(
     "/profile",
     response_model=AccountLearnerProfileResponse,
@@ -501,10 +536,11 @@ async def update_account_learner_profile(
             profile,
         )
 
+    affected_fields = sorted(set(changed_fields) | ({"middle_name"} if "no_middle_name" in changed_fields else set()))
     await lock_registry_approvals_for_learner_profile(
         session,
         user_id=str(current_user.id),
-        changed_fields=changed_fields,
+        changed_fields=affected_fields,
     )
 
     if profile is None:
@@ -527,13 +563,13 @@ async def update_account_learner_profile(
         await invalidate_registry_approvals_for_learner_profile(
             session,
             user_id=str(current_user.id),
-            changed_fields=changed_fields,
+            changed_fields=affected_fields,
             invalidated_at=datetime.now(
                 timezone.utc
             ),
         )
 
-        if set(changed_fields).intersection(
+        if set(affected_fields).intersection(
             LEARNER_PROFILE_READINESS_FIELDS
         ):
             await refresh_registry_readiness_for_user(
@@ -1711,6 +1747,90 @@ async def get_account_course_detail(
     return build_account_course_detail_from_row(row, modules)
 
 
+@router.get(
+    "/courses/{enrollment_id}/completion-readiness",
+    response_model=AccountCompletionReadinessResponse,
+)
+async def get_account_completion_readiness(
+    enrollment_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> AccountCompletionReadinessResponse:
+    row = (await session.execute(
+        select(Enrollment, Course, LearnerProfile, EnrollmentEmploymentDetails)
+        .join(Course, Course.id == Enrollment.course_id)
+        .outerjoin(LearnerProfile, LearnerProfile.user_id == Enrollment.user_id)
+        .outerjoin(EnrollmentEmploymentDetails, EnrollmentEmploymentDetails.enrollment_id == Enrollment.id)
+        .where(Enrollment.id == enrollment_id.strip(), Enrollment.user_id == current_user.id)
+    )).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
+
+    enrollment, course, profile, employment = row
+    return evaluate_enrollment_completion_readiness(enrollment, course, current_user, profile, employer=employment)
+
+
+async def account_employment_response(session, enrollment, details, *, can_edit):
+    course = await session.get(Course, enrollment.course_id)
+    return EnrollmentEmploymentResponse(
+        enrollment_id=enrollment.id,
+        **{field: getattr(details, field, None) for field in EMPLOYMENT_FIELDS},
+        source=getattr(details, "source", None),
+        reporting_scenario=getattr(details, "reporting_scenario", None),
+        requirement=course_employment_requirement(course, details),
+        can_edit=can_edit,
+    )
+
+
+@router.get("/courses/{enrollment_id}/employment", response_model=EnrollmentEmploymentResponse)
+async def get_account_employment(
+    enrollment_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> EnrollmentEmploymentResponse:
+    enrollment = await get_account_enrollment_entity_or_404(enrollment_id, current_user, session)
+    details = await get_employment_details(session, enrollment.id)
+    return await account_employment_response(
+        session, enrollment, details, can_edit=await employment_is_editable(session, enrollment),
+    )
+
+
+@router.patch("/courses/{enrollment_id}/employment", response_model=EnrollmentEmploymentResponse)
+async def update_account_employment(
+    enrollment_id: str,
+    payload: EnrollmentEmploymentUpdate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> EnrollmentEmploymentResponse:
+    async with _account_registry_source_write_transaction(
+        enrollment_id=enrollment_id, current_user=current_user, session=session,
+    ) as enrollment:
+        if not await employment_is_editable(session, enrollment):
+            raise HTTPException(409, "Enrollment employment details are protected")
+        values = {key: normalize_learner_name(value) for key, value in payload.model_dump(exclude_unset=True).items()}
+        inn = values.get("employer_inn")
+        if inn is not None and not is_valid_russian_inn(inn):
+            raise HTTPException(422, "Invalid Russian employer INN")
+        details = await get_employment_details(session, enrollment.id)
+        changes = {key: value for key, value in values.items() if getattr(details, key, None) != value}
+        if changes:
+            if details is None:
+                details = EnrollmentEmploymentDetails(enrollment_id=enrollment.id)
+                session.add(details)
+            for key, value in changes.items():
+                setattr(details, key, value)
+            details.source = "learner"
+            await write_audit_event(
+                session, action="account.enrollment_employment_updated", request=request,
+                actor_user_id=current_user.id, entity_type="enrollment", entity_id=enrollment.id,
+                payload={"changed_fields": sorted(changes)},
+            )
+        response = await account_employment_response(session, enrollment, details, can_edit=True)
+        await session.commit()
+        return response
+
+
 async def get_missing_required_quiz_block_ids(
     session: AsyncSession,
     *,
@@ -2411,16 +2531,17 @@ async def complete_account_course_lesson(
             completion_modules
         )
 
+        blocked_completion = None
         if (
             completion_progress["required_lessons_total"] > 0
             and completion_progress["required_lessons_completed"]
             >= completion_progress["required_lessons_total"]
         ):
-            await ensure_enrollment_completed(
-                enrollment=enrollment,
-                session=session,
-                completed_at=now,
-            )
+            readiness = await get_completion_readiness(session, enrollment)
+            if completion_can_proceed(readiness):
+                await ensure_enrollment_completed(enrollment=enrollment, session=session, completed_at=now)
+            else:
+                blocked_completion = readiness
 
         await boundary.commit()
 
@@ -2431,7 +2552,8 @@ async def complete_account_course_lesson(
         enrollment_id=str(row.enrollment_id),
     )
 
-    return build_account_course_detail_from_row(row, modules)
+    detail = build_account_course_detail_from_row(row, modules)
+    return detail.model_copy(update={"completion_readiness": blocked_completion}) if blocked_completion else detail
 
 
 @router.post("/courses/{course_id}/enroll", response_model=AccountCourseItemResponse, status_code=status.HTTP_201_CREATED)
@@ -2566,25 +2688,19 @@ async def start_account_course_learning(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> AccountCourseItemResponse:
-    enrollment = await get_account_enrollment_entity_or_404(
-        enrollment_id=enrollment_id,
-        current_user=current_user,
-        session=session,
-    )
-
-    await ensure_account_learning_mutation_allowed(
-        enrollment,
-        session,
-        completed_detail="Completed course cannot be started",
-        allow_assigned=True,
-    )
-
-    enrollment.status = "active"
-
-    if enrollment.started_at is None:
-        enrollment.started_at = datetime.now(timezone.utc)
-
-    await session.commit()
+    async with _account_registry_source_write_transaction(
+        enrollment_id=enrollment_id, current_user=current_user, session=session,
+    ) as enrollment:
+        await ensure_account_learning_mutation_allowed(
+            enrollment,
+            session,
+            completed_detail="Completed course cannot be started",
+            allow_assigned=True,
+        )
+        enrollment.status = "active"
+        if enrollment.started_at is None:
+            enrollment.started_at = datetime.now(timezone.utc)
+        await session.commit()
 
     row = await get_account_course_row_or_404(str(enrollment.id), current_user, session)
 

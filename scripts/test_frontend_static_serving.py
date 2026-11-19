@@ -69,6 +69,40 @@ class FrontendStaticServingTests(unittest.TestCase):
     def test_comments_do_not_create_proxy_directives(self):
         guard.require_api_proxy(self.nginx + "\n# location / { proxy_pass http://example.com; }\n")
 
+    def test_signed_scan_proxy_is_strict(self):
+        variants = {
+            "wrong_limit": self.nginx.replace(
+                "client_max_body_size 10551296;",
+                "client_max_body_size 10551297;",
+            ),
+            "missing_limit": self.nginx.replace(
+                "client_max_body_size 10551296;", ""
+            ),
+            "broadened_route": self.nginx.replace(
+                "location ~ ^/api/v1/admin/mintrud/protocol-drafts/[^/]+/signed-scan$",
+                "location ~ ^/api/.*",
+            ),
+            "external_target": self.nginx.replace(
+                "proxy_pass http://backend:8000;",
+                "proxy_pass http://example.com;", 1,
+            ),
+            "missing_scan_header": self.nginx.replace(
+                "proxy_set_header Host $host;", "", 1,
+            ),
+            "extra_proxy": self.nginx.replace(
+                "location /assets/ {",
+                "location /assets/ {\nproxy_pass http://backend:8000;",
+            ),
+            "extra_limit": self.nginx.replace(
+                "location /assets/ {",
+                "location /assets/ {\nclient_max_body_size 10551296;",
+            ),
+        }
+        for name, source in variants.items():
+            with self.subTest(case=name):
+                with self.assertRaises(SystemExit):
+                    guard.require_api_proxy(source)
+
     def test_malformed_blocks_fail_closed(self):
         for source in [self.nginx + "}", self.nginx[:-2], self.nginx + 'set $x "unterminated;']:
             with self.assertRaises(SystemExit):

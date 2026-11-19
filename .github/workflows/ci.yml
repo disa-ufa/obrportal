@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - develop
+      - rebaseline/20261114
 
 jobs:
   test:
@@ -310,9 +311,27 @@ jobs:
           python scripts/check_backend_smoke_coverage.py
           python scripts/check_no_todo_markers.py
 
+      - name: Run frontend Node unit and SSR regressions
+        run: |
+          python scripts/run_frontend_node_tests.py
+
       - name: Build frontend
         run: |
           docker compose exec -T frontend npm run build
+
+      - name: Run learner completion and registry navigation synthetic browser regressions
+        run: |
+          docker compose exec -T frontend sh -ec '
+            apk add --no-cache chromium >/dev/null
+            browser=$(command -v chromium-browser || command -v chromium)
+            test -n "$browser"
+            # The normal CI build intentionally uses VITE_API_BASE_URL from .env.
+            # Make an isolated relative-API build for synthetic, same-origin mocks.
+            VITE_API_BASE_URL="" VITE_API_URL="" npm run build -- --outDir dist-browser-test
+            UI_BUILD_DIR=dist-browser-test UI_BROWSER_PATH="$browser" node tests/learner_course_completion.browser.mjs
+            mkdir -p dist-browser-evidence
+            UI_BUILD_DIR=dist-browser-test UI_BROWSER_PATH="$browser" UI_EVIDENCE_DIR=dist-browser-evidence node tests/registry_batch_navigation.browser.mjs
+          '
 
       - name: Run enrollment CSV unit tests
         run: |

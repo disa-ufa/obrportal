@@ -1,3 +1,4 @@
+import { OwnMintrudProtocolsLink } from "./OwnMintrudProtocolsPage";
 import { formatApiError } from "../utils/apiErrors";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -385,6 +386,7 @@ export function AccountPage({ user, onPageChange, onOpenCourse }) {
       activeSection={activeAccountSection}
       onSectionChange={handleAccountSectionChange}
     >
+      <OwnMintrudProtocolsLink />
       {accountNotice && (
         <div
           data-testid="learner-account-global-notice"

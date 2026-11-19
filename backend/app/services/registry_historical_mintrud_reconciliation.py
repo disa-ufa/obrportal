@@ -11,6 +11,8 @@ from hmac import compare_digest
 from uuid import UUID
 
 from sqlalchemy import select
+from fastapi import HTTPException
+from app.services.registry_release_gate import require_mintrud_batch_exports_enabled
 from sqlalchemy.engine import make_url
 
 from app.api.v1.rbac import get_user_permission_codes
@@ -78,6 +80,17 @@ def _value(value):
     return str(value)
 
 
+def require_historical_local_target():
+    url = make_url(settings.database_url)
+    if (settings.environment != "local" or settings.production_exports_enabled
+            or not settings.local_mintrud_xml_export_enabled
+            or url.drivername != "postgresql+asyncpg"
+            or url.host != "obr-m4p9-20261111-pg" or url.port != 5432
+            or url.database != "obrportal_m4p9_workspace_20261111"
+            or url.username != "obrportal_m4p9_login" or url.query):
+        _deny("historical.local_target_required")
+
+
 async def reconcile_historical_mintrud(
     *,
     session,
@@ -118,6 +131,8 @@ async def reconcile_historical_mintrud(
 
     operator_reason = operator_reason.strip()
 
+    require_historical_local_target()
+
     # Apply is disabled by default, including for direct service callers.
     # No production database can pass this boundary.
     if apply:
@@ -125,8 +140,8 @@ async def reconcile_historical_mintrud(
         if (
             settings.environment != "local"
             or target_url.drivername != "postgresql+asyncpg"
-            or target_url.host != "postgres"
-            or target_url.database != "obrportal_prodclone_20261101"
+            or target_url.host != "obr-m4p9-20261111-pg"
+            or target_url.database != "obrportal_m4p9_workspace_20261111"
             or bool(target_url.query)
             or os.environ.get("P34D_LOCAL_HISTORICAL_APPLY")
             != "I_ACKNOWLEDGE_P34D_LOCAL_COMMIT"
@@ -185,6 +200,13 @@ async def reconcile_historical_mintrud(
 
         if global_admin_role is None:
             _deny("historical.admin_role_required")
+
+        # C is already exclusive and actor permissions were rechecked above.
+        # The real marker is read on this exact action transaction, never auth TX.
+        try:
+            await require_mintrud_batch_exports_enabled(session)
+        except HTTPException as exc:
+            raise HistoricalMintrudReconciliationError("historical.local_identity_denied") from exc
 
         selected = (obligation_id,)
 

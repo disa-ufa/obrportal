@@ -3264,6 +3264,8 @@ def main() -> int:
             "hours": 72,
             "format": "online",
             "document_type": "Сертификат",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
             "is_public": True,
         },
@@ -3428,6 +3430,31 @@ def main() -> int:
     )
     checks.append("learner course completion requires required lesson")
 
+    status, completion_profile = request_json(
+        "PATCH",
+        "/api/v1/account/profile",
+        body={"first_name": "Smoke", "last_name": "Learner"},
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner completion profile setup")
+    assert isinstance(completion_profile, dict)
+    assert completion_profile["first_name"] == "Smoke"
+    assert completion_profile["last_name"] == "Learner"
+    checks.append("learner completion profile setup ok")
+
+    status, completion_readiness = request_json(
+        "GET",
+        "/api/v1/account/courses/"
+        + str(self_enrollment["enrollment_id"])
+        + "/completion-readiness",
+        token=learner_token,
+    )
+    assert_status(status, 200, "learner completion readiness")
+    assert isinstance(completion_readiness, dict)
+    assert completion_readiness["status"] == "ready", completion_readiness
+    assert completion_readiness["is_ready"] is True, completion_readiness
+    checks.append("learner completion readiness ok")
+
     status, detail_after_required_lesson = request_json(
         "POST",
         "/api/v1/account/courses/"
@@ -3542,6 +3569,8 @@ def main() -> int:
             "hours": 16,
             "format": "online",
             "document_type": "Удостоверение",
+            "frdo_requirement_mode": "not_required",
+            "mintrud_requirement_mode": "not_required",
             "is_active": True,
         },
     )
@@ -3560,6 +3589,19 @@ def main() -> int:
     )
     assert_status(status, 201, "admin completion enrollment create")
     assert isinstance(admin_completion_enrollment, dict)
+
+    status, admin_completion_readiness = request_json(
+        "GET",
+        "/api/v1/account/courses/"
+        + str(admin_completion_enrollment["id"])
+        + "/completion-readiness",
+        token=learner_token,
+    )
+    assert_status(status, 200, "admin completion readiness")
+    assert isinstance(admin_completion_readiness, dict)
+    assert admin_completion_readiness["is_ready"] is True, admin_completion_readiness
+    assert admin_completion_readiness["status"] == "ready", admin_completion_readiness
+    checks.append("admin completion readiness ok")
 
     status, completed_admin_enrollment = request_json(
         "PATCH",
@@ -3597,22 +3639,44 @@ def main() -> int:
     assert_status(status, 200, "admin completion document cleanup delete")
     assert isinstance(deleted_admin_completion_document, dict)
 
-    status, deleted_admin_completion_enrollment = request_json(
+    # A completed enrollment is permanent learning history. Deleting its draft
+    # document must not make its enrollment (or parent course) deletable.
+    status, protected_admin_completion_enrollment = request_json(
         "DELETE",
         "/api/v1/admin/enrollments/" + str(admin_completion_enrollment["id"]),
         token=admin_token,
     )
-    assert_status(status, 200, "admin completion enrollment cleanup delete")
-    assert isinstance(deleted_admin_completion_enrollment, dict)
+    assert_status(status, 409, "admin completed enrollment deletion protected")
+    assert isinstance(protected_admin_completion_enrollment, dict)
+    # The canonical registry-history guard runs before the enrollment
+    # lifecycle guard. Both are explicit, fail-closed 409 outcomes.
+    assert protected_admin_completion_enrollment.get("detail") in (
+        "registry.enrollment_delete_has_obligations",
+        {
+            "code": "enrollment.delete_history_protected",
+            "reason": "enrollment_lifecycle",
+        },
+    ), protected_admin_completion_enrollment
 
-    status, deleted_admin_completion_course = request_json(
-        "DELETE",
+    status, retained_admin_completion_enrollment = request_json(
+        "GET",
+        "/api/v1/admin/enrollments/" + str(admin_completion_enrollment["id"]),
+        token=admin_token,
+    )
+    assert_status(status, 200, "admin completed enrollment retained")
+    assert isinstance(retained_admin_completion_enrollment, dict)
+    assert retained_admin_completion_enrollment["status"] == "completed"
+    assert retained_admin_completion_enrollment["completed_at"] == completed_admin_enrollment["completed_at"]
+
+    status, retained_admin_completion_course = request_json(
+        "GET",
         "/api/v1/admin/courses/" + str(admin_completion_course["id"]),
         token=admin_token,
     )
-    assert_status(status, 200, "admin completion course cleanup delete")
-    assert isinstance(deleted_admin_completion_course, dict)
-    checks.append("admin completion draft document cleanup ok")
+    assert_status(status, 200, "admin completed enrollment course retained")
+    assert isinstance(retained_admin_completion_course, dict)
+    assert retained_admin_completion_course["id"] == admin_completion_course["id"]
+    checks.append("admin completion draft document deleted; enrollment history and course retained")
 
     status, draft_download_payload = request_json(
         "GET",

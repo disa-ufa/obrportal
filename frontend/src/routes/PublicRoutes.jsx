@@ -91,7 +91,7 @@ export function PublicRoutes({
     ) : isMinistryAdmin ? (
       <Navigate to="/ministry" replace />
     ) : (
-      <LearnerCoursePage />
+      <LearnerCoursePage accountUser={user} />
     )
   ) : (
     <Navigate to="/login" replace />

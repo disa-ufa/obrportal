@@ -76,6 +76,7 @@ REQUIRED_CI_COMMANDS = [
     "python scripts/smoke_frontend_utils_routes.py",
     "python scripts/smoke_frontend_core.py",
     "python scripts/check_frontend_smoke_coverage.py",
+    "python scripts/run_frontend_node_tests.py",
     "python scripts/check_backend_smoke_coverage.py",
     "python scripts/check_no_todo_markers.py",
     "docker compose exec -T frontend npm run build",

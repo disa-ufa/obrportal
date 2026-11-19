@@ -50,7 +50,10 @@ from app.schemas.org import (
     OrgUserSearchOrganizationItem,
     OrgUserSearchRoleItem,
 )
-from app.services.enrollment_completion import ensure_enrollment_completed
+from app.services.enrollment_completion import (
+    ensure_enrollment_completed,
+    prepare_new_enrollment_completions,
+)
 from app.services.completion_pdf_transaction_boundary import CompletionPDFTransactionBoundary
 
 
@@ -1374,15 +1377,17 @@ async def create_org_group_enrollments(
             course_id=course.id,
             organization_id=group.organization_id,
             learning_group_id=group.id,
-            status=normalized_status,
+            status="assigned" if normalized_status == "completed" else normalized_status,
             started_at=payload.started_at,
             completed_at=payload.completed_at,
         )
-        session.add(enrollment)
         created_enrollments.append(enrollment)
 
     boundary = CompletionPDFTransactionBoundary(session)
     try:
+        if normalized_status == "completed":
+            await prepare_new_enrollment_completions(session, created_enrollments, group=True)
+        session.add_all(created_enrollments)
         await session.flush()
         created_ids = [str(enrollment.id) for enrollment in created_enrollments]
 

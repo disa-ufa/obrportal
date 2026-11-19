@@ -45,13 +45,66 @@ def test_real_batch_service_rejects_missing_boundary_before_source_read(registry
 
 @pytest.mark.parametrize('registry',['mintrud','frdo'])
 def test_api_auth_and_endpoint_share_fresh_owner(registry):
- from app.main import app
- from app.services.registry_batch_transaction import get_registry_batch_db
- route=next(r for r in app.routes if getattr(r,'path','')==f'/api/v1/admin/{registry}/batches' and 'POST' in r.methods)
- deps=route.dependant.dependencies
- assert next(d for d in deps if d.name=='session').call is get_registry_batch_db
- auth=next(d for d in deps if d.name=='current_user')
- assert next(d for d in auth.dependencies if d.name=='session').call is get_registry_batch_db
+    from app.main import app
+    from app.api.v1 import admin
+    from app.services.registry_batch_transaction import get_registry_batch_db
+
+    route = next(
+        r for r in app.routes
+        if getattr(r, 'path', '') == f'/api/v1/admin/{registry}/batches'
+        and 'POST' in r.methods
+    )
+    deps = route.dependant.dependencies
+    session_dependency = next(d for d in deps if d.name == 'session')
+    auth = next(d for d in deps if d.name == 'current_user')
+    auth_session = next(d for d in auth.dependencies if d.name == 'session')
+
+    expected = (
+        admin.get_mintrud_batch_db
+        if registry == 'mintrud'
+        else get_registry_batch_db
+    )
+
+    # Endpoint and authentication must use one cached FastAPI owner.
+    assert session_dependency.call is expected
+    assert auth_session.call is expected
+
+
+def test_mintrud_wrapper_reuses_canonical_session(monkeypatch):
+    from app.api.v1 import admin
+
+    sentinel = object()
+    events = []
+
+    async def synthetic_db():
+        events.append('open')
+        try:
+            yield sentinel
+        finally:
+            events.append('close')
+
+    monkeypatch.setattr(admin, 'get_registry_batch_db', synthetic_db)
+
+    async def verify():
+        sessions = []
+        async for session in admin.get_mintrud_batch_db():
+            sessions.append(session)
+        assert sessions == [sentinel]
+
+    asyncio.run(verify())
+    assert events == ['open', 'close']
+
+
+def test_local_workflow_raw_session_is_explicitly_read_only():
+    from pathlib import Path
+
+    path = (
+        Path(__file__).parents[1]
+        / 'api/v1/mintrud_local_workflow.py'
+    )
+    source = path.read_text(encoding='utf-8')
+    assert 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY' in source
+    assert 'await session.rollback()' in source
 
 
 def test_all_application_session_construction_is_accounted_for():
@@ -65,7 +118,7 @@ def test_all_application_session_construction_is_accounted_for():
         'create_async_engine': {'db/session.py','mintrud_catalog_cli.py',
             'registry_applicability_inventory_cli.py','registry_applicability_reconciliation_cli.py'},
         'async_sessionmaker': {'db/session.py'},
-        'AsyncSession': {'mintrud_catalog_cli.py'},
+        'AsyncSession': {'mintrud_catalog_cli.py', 'api/v1/mintrud_local_workflow.py'},
         'create_engine': set(), 'sessionmaker': set(), 'Session': set(),
     }
     for path in root.rglob('*.py'):

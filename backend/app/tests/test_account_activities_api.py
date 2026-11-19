@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from test_account_course_detail_api import (
-    delete_admin_enrollment,
+    cleanup_admin_enrollment_preserving_history,
     enroll_learner_to_course,
     register_learner,
 )
@@ -345,13 +345,15 @@ def test_account_activities_aggregate_quiz_and_assignment_state() -> None:
         assert status == 401
 
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
-            delete_admin_enrollment(
+            can_delete_course = cleanup_admin_enrollment_preserving_history(
                 admin_token,
                 enrollment_id,
             )
 
-        delete_admin_course(
+        if can_delete_course:
+            delete_admin_course(
             admin_token,
             course_id,
         )

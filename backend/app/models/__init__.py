@@ -5,6 +5,7 @@ from app.models.course_module import CourseModule
 from app.models.course_lesson import CourseLesson
 from app.models.document_record import DocumentRecord
 from app.models.enrollment import Enrollment
+from app.models.enrollment_employment_details import EnrollmentEmploymentDetails
 from app.models.frdo_registry_context import FrdoRegistryContext
 from app.models.import_batch import ImportBatch, ImportRow
 from app.models.learning_group import LearningGroup, LearningGroupMember
@@ -39,6 +40,7 @@ __all__ = [
     "CourseLesson",
     "DocumentRecord",
     "Enrollment",
+    "EnrollmentEmploymentDetails",
     "FrdoRegistryContext",
     "ImportBatch",
     "ImportRow",
