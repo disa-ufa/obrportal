@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from test_account_course_detail_api import (
-    delete_admin_enrollment,
+    cleanup_admin_enrollment_preserving_history,
     enroll_learner_to_course,
     register_learner,
 )
@@ -128,9 +128,11 @@ def test_incomplete_profile_preserves_last_lesson_and_can_retry_finalization():
         status, documents = request_json("GET", f"/api/v1/admin/documents?enrollment_id={enrollment_id}", token=administrator)
         assert status == 200 and len(documents) == 1
     finally:
+        can_delete_course = True
         delete_admin_documents_for_enrollment(administrator, enrollment_id)
-        delete_admin_enrollment(administrator, enrollment_id)
-        delete_admin_course(administrator, course)
+        can_delete_course = cleanup_admin_enrollment_preserving_history(administrator, enrollment_id)
+        if can_delete_course:
+            delete_admin_course(administrator, course)
 
 
 def delete_admin_documents_for_enrollment(token: str, enrollment_id: str) -> None:
@@ -326,10 +328,12 @@ def test_learner_can_complete_lesson_and_detail_returns_progress() -> None:
         assert download_response.content.startswith(b"%PDF")
         assert len(download_response.content) > 100
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
-            delete_admin_enrollment(admin_token, enrollment_id)
-        delete_admin_course(admin_token, course_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
+        if can_delete_course:
+            delete_admin_course(admin_token, course_id)
 
 
 def test_lesson_auto_completion_rejects_repeat_mutation() -> None:
@@ -380,10 +384,12 @@ def test_lesson_auto_completion_rejects_repeat_mutation() -> None:
         assert second_lesson["is_completed"] is True
         assert second_lesson["completed_at"] == first_completed_at
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
-            delete_admin_enrollment(admin_token, enrollment_id)
-        delete_admin_course(admin_token, course_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
+        if can_delete_course:
+            delete_admin_course(admin_token, course_id)
 
 
 def test_lesson_complete_rejects_foreign_enrollment_foreign_lesson_and_guest() -> None:
@@ -429,10 +435,13 @@ def test_lesson_complete_rejects_foreign_enrollment_foreign_lesson_and_guest() -
         )
         assert status == 401
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
-            delete_admin_enrollment(admin_token, enrollment_id)
-        delete_admin_course(admin_token, first_course_id)
-        delete_admin_course(admin_token, second_course_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
+        if can_delete_course:
+            delete_admin_course(admin_token, first_course_id)
+        if can_delete_course:
+            delete_admin_course(admin_token, second_course_id)
 
 
 def test_course_completion_requires_required_lessons() -> None:
@@ -471,9 +480,11 @@ def test_course_completion_requires_required_lessons() -> None:
         assert detail["required_lessons_total"] == 1
         assert detail["required_lessons_completed"] == 0
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
-            delete_admin_enrollment(admin_token, enrollment_id)
-        delete_admin_course(admin_token, course_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
+        if can_delete_course:
+            delete_admin_course(admin_token, course_id)
 
 
 def test_lesson_complete_rejects_completed_course() -> None:
@@ -510,10 +521,12 @@ def test_lesson_complete_rejects_completed_course() -> None:
         assert status == 400
         assert payload["detail"] == "Completed course cannot be changed"
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
             delete_admin_documents_for_enrollment(admin_token, enrollment_id)
-            delete_admin_enrollment(admin_token, enrollment_id)
-        delete_admin_course(admin_token, course_id)
+            can_delete_course = cleanup_admin_enrollment_preserving_history(admin_token, enrollment_id)
+        if can_delete_course:
+            delete_admin_course(admin_token, course_id)
 
 
 def test_course_completion_falls_back_to_all_active_lessons_when_none_are_required() -> None:
@@ -655,18 +668,20 @@ def test_course_completion_falls_back_to_all_active_lessons_when_none_are_requir
         assert detail["completed_at"] is not None
 
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
             delete_admin_documents_for_enrollment(
                 admin_token,
                 enrollment_id,
             )
 
-            delete_admin_enrollment(
+            can_delete_course = cleanup_admin_enrollment_preserving_history(
                 admin_token,
                 enrollment_id,
             )
 
-        delete_admin_course(
+        if can_delete_course:
+            delete_admin_course(
             admin_token,
             course_id,
         )
@@ -833,18 +848,20 @@ def test_course_auto_completion_ignores_incomplete_optional_lesson() -> None:
         )
 
     finally:
+        can_delete_course = True
         if enrollment_id is not None:
             delete_admin_documents_for_enrollment(
                 admin_token,
                 enrollment_id,
             )
 
-            delete_admin_enrollment(
+            can_delete_course = cleanup_admin_enrollment_preserving_history(
                 admin_token,
                 enrollment_id,
             )
 
-        delete_admin_course(
+        if can_delete_course:
+            delete_admin_course(
             admin_token,
             course_id,
         )
