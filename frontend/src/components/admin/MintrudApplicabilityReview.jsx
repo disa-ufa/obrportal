@@ -28,6 +28,17 @@ export default function MintrudApplicabilityReview({ obligationId, api, reload, 
       <p>{review.message}</p><p>{LABELS[review.calculated_decision]}: {review.rule_reason}</p>
       <p>Утверждение: {review.approval_current ? "актуально" : "не подтверждено"}. {review.historical_export ? "Есть история выгрузки — повторное включение запрещено." : ""}</p>
       {review.issues.length > 0 && <><p>Исправьте сведения в профиле слушателя, данных Минтруда или программе курса:</p><ul className="list-disc pl-4">{review.issues.map((issue,i)=><li key={`${issue.code}-${i}`}>{issue.message}</li>)}</ul></>}
+      {review.protected_history && review.decision_state === "missing" && !review.historical_export && (
+        <p role="status" data-testid="mintrud-historical-reconciliation-required" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-950">
+          Утверждение уже защищено, а сохранённого решения о применимости нет. Обычное сохранение запрещено.
+          Требуется отдельная административная сверка истории и действующего правила. Не нажимайте «Повторно утвердить» и не создавайте XML для обхода блокировки.
+        </p>
+      )}
+      {review.historical_export && (
+        <p role="status" data-testid="mintrud-existing-export-history" className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+          Запись имеет историю выгрузки. Проверьте существующую XML-партию и её результаты; новая выгрузка того же утверждения запрещена.
+        </p>
+      )}
       <p>Сохранение расчёта не заменяет решение комиссии и не разрешает экспорт.</p>
       {review.can_save && <button type="button" className="rounded border border-blue-300 px-2 py-1 text-blue-800 disabled:opacity-50" onClick={save} disabled={pending || busy}>Подтвердить и сохранить расчёт</button>}
     </div>}

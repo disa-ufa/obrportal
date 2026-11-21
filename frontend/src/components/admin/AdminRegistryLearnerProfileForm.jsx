@@ -4,6 +4,10 @@ import {
   getAdminLearnerProfile,
   updateAdminLearnerProfile,
 } from "../../api/client";
+import {
+  registryLearnerProfileSaveError,
+  registryProfileMayAffectApprovals,
+} from "../../utils/registryLearnerProfileSave.js";
 
 const FIELDS = [
   ["last_name", "Фамилия", "text"],
@@ -55,6 +59,12 @@ export function AdminRegistryLearnerProfileForm({ userId, registry, onCancel, on
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const changedProfileFields = original && FIELDS.filter(([name]) =>
+    String(form[name] ?? "").trim() !== String(original[name] ?? "").trim(),
+  ).map(([name]) => name);
+  const pendingApprovalImpact = registryProfileMayAffectApprovals(
+    Object.fromEntries((changedProfileFields || []).map((field) => [field, true])),
+  );
 
   useEffect(() => {
     let current = true;
@@ -92,8 +102,10 @@ export function AdminRegistryLearnerProfileForm({ userId, registry, onCancel, on
       setForm(values);
       setSuccess("Данные сохранены. Готовность реестров обновлена, если она зависит от изменённых полей. При необходимости нажмите «Проверить».");
       await onSaved?.();
-    } catch {
-      setError("Не удалось сохранить данные. Повторите попытку.");
+    } catch (error) {
+      if (isCurrentAuthSession(owner.current)) {
+        setError(registryLearnerProfileSaveError(error));
+      }
     } finally {
       setBusy(false);
     }
@@ -141,6 +153,11 @@ export function AdminRegistryLearnerProfileForm({ userId, registry, onCancel, on
             </label>
           ))}
         </div>
+      ) : null}
+      {pendingApprovalImpact && !busy ? (
+        <p role="status" data-testid="registry-profile-approval-impact-warning" className="mt-3 text-xs text-amber-900">
+          Изменение персональных данных может сделать ранее утверждённые сведения Минтруда или ФРДО неактуальными. После сохранения проверьте готовность и утверждение; повторно включать запись в XML без проверки истории нельзя.
+        </p>
       ) : null}
       {error ? <p role="alert" className="mt-3 text-sm text-red-700">{error}</p> : null}
       {success ? <p role="status" className="mt-3 text-sm text-green-800">{success}</p> : null}
